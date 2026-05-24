@@ -11,87 +11,67 @@
   :root{
     --bg:#0d0c1d; --panel:#16142b; --panel2:#1f1c3a; --ink:#e8e6f5;
     --green:#5cff8f; --amber:#ffcf4d; --red:#ff5c6a; --blue:#6cb8ff;
-    --purple:#c06cff; --dim:#6f6a9a; --line:#3a356b;
+    --purple:#c06cff; --dim:#6f6a9a; --line:#3a356b; --teal:#4ce0d0;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
-  body{
-    background:var(--bg); color:var(--ink);
-    font-family:'Press Start 2P',monospace; font-size:12px; line-height:1.8;
-    display:flex; justify-content:center; align-items:flex-start;
-    padding:18px 10px 40px; image-rendering:pixelated; -webkit-font-smoothing:none;
-  }
-  #app{width:100%;max-width:660px}
+  body{background:var(--bg);color:var(--ink);font-family:'Press Start 2P',monospace;font-size:12px;line-height:1.8;
+    display:flex;justify-content:center;align-items:flex-start;padding:18px 10px 40px;image-rendering:pixelated;-webkit-font-smoothing:none;}
+  #app{width:100%;max-width:680px}
   h1,h2,h3{margin:0;font-weight:400}
-  .title{text-align:center;color:var(--amber);font-size:22px;line-height:1.5;
-    text-shadow:3px 3px 0 #000, 0 0 14px rgba(255,207,77,.35);margin:14px 0 6px;}
+  .title{text-align:center;color:var(--amber);font-size:22px;line-height:1.5;text-shadow:3px 3px 0 #000,0 0 14px rgba(255,207,77,.35);margin:14px 0 6px;}
   .subtitle{text-align:center;color:var(--dim);font-size:9px;margin-bottom:22px}
-  .blink{animation:blink 1s steps(2,start) infinite}
-  @keyframes blink{to{visibility:hidden}}
-  .panel{background:var(--panel);border:3px solid var(--line);
-    box-shadow:0 0 0 3px #000, 6px 6px 0 rgba(0,0,0,.5);padding:16px;margin-bottom:14px;}
+  .blink{animation:blink 1s steps(2,start) infinite}@keyframes blink{to{visibility:hidden}}
+  .panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5);padding:16px;margin-bottom:14px;}
   .panel.tight{padding:12px}
-  .center{text-align:center}
-  .muted{color:var(--dim)}
-  .green{color:var(--green)} .amber{color:var(--amber)} .red{color:var(--red)}
-  .blue{color:var(--blue)} .purple{color:var(--purple)}
-  pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;
-    font-size:11px;white-space:pre;text-align:center;color:var(--green);
-    text-shadow:0 0 6px rgba(92,255,143,.4);}
-  .btn{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;
-    font-size:11px;color:var(--ink);background:var(--panel2);border:3px solid var(--line);
-    padding:12px 14px;margin:8px 0;line-height:1.5;transition:transform .05s, background .1s, border-color .1s;}
+  .center{text-align:center}.muted{color:var(--dim)}
+  .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
+  pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
+  .btn{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-size:11px;color:var(--ink);background:var(--panel2);border:3px solid var(--line);padding:12px 14px;margin:8px 0;line-height:1.5;transition:transform .05s,background .1s,border-color .1s;}
   .btn:hover{background:#2a265080;border-color:var(--amber);color:#fff}
   .btn:active{transform:translate(2px,2px)}
   .btn:disabled{opacity:.4;cursor:not-allowed}
   .btn .k{color:var(--amber);margin-right:8px}
   .btn small{display:block;color:var(--dim);font-size:9px;margin-top:6px;line-height:1.6}
   .btn:hover small{color:#b9b4e6}
-  .row{display:flex;gap:10px;flex-wrap:wrap}
-  .row .btn{flex:1;min-width:120px}
-  .grid3{display:flex;gap:10px;flex-wrap:wrap}
-  .grid3 .card{flex:1;min-width:150px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}.row .btn{flex:1;min-width:120px}
+  .grid3{display:flex;gap:10px;flex-wrap:wrap}.grid3 .card{flex:1;min-width:150px}
   .bar{margin:6px 0}
   .bar .lbl{font-size:9px;display:flex;justify-content:space-between;margin-bottom:3px}
   .bar .track{background:#000;border:2px solid var(--line);height:14px;padding:1px}
-  .bar.mini .track{height:9px}
+  .bar.mini .track{height:9px}.bar.xp .track{height:7px}
   .bar .fill{height:100%;transition:width .35s ease}
   .fill.hp{background:linear-gradient(var(--green),#2faf5a)}
   .fill.mp{background:linear-gradient(var(--blue),#356fbf)}
   .fill.boss{background:linear-gradient(var(--red),#a82f3a)}
-  .stats{font-size:9px;line-height:2;color:var(--dim)}
-  .stats b{color:var(--ink)}
+  .fill.xpf{background:linear-gradient(var(--amber),#b88a1f)}
+  .stats{font-size:9px;line-height:2;color:var(--dim)}.stats b{color:var(--ink)}
   .chip{display:inline-block;background:#000;border:2px solid var(--line);padding:3px 7px;margin:3px 3px 3px 0;font-size:8px}
-  .relics{margin-top:6px}
-  .relics .chip{border-color:var(--purple);color:var(--purple)}
+  .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
+  .c-burn{border-color:var(--amber);color:var(--amber)}.c-pois{border-color:var(--green);color:var(--green)}
+  .c-weak{border-color:var(--purple);color:var(--purple)}.c-vuln{border-color:var(--red);color:var(--red)}
+  .c-stun{border-color:var(--teal);color:var(--teal)}.c-guard{border-color:var(--blue);color:var(--blue)}
   .enemies-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:flex-end}
-  .enemy-cell{flex:1;min-width:120px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s}
+  .enemy-cell{flex:1;min-width:118px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s}
   .enemy-cell.target{border-color:var(--amber);background:#00000055}
-  .enemy-cell.dead{opacity:.28;filter:grayscale(1)}
+  .enemy-cell.dead{opacity:.25;filter:grayscale(1)}
   .enemy-cell pre.sprite{font-size:9px;color:var(--red)}
-  .tgt{width:100%;font-family:inherit;font-size:8px;cursor:pointer;color:var(--ink);
-    background:#000;border:2px solid var(--line);padding:4px;margin-top:4px}
-  .tgt.on{border-color:var(--amber);color:var(--amber)}
-  .tgt:hover{border-color:var(--amber)}
-  .log{background:#000;border:3px solid var(--line);padding:10px;height:108px;overflow:hidden;
-    font-size:9px;line-height:1.7;margin:12px 0;display:flex;flex-direction:column;justify-content:flex-end;}
-  .log div{opacity:.55}
-  .log div:last-child{opacity:1;color:#fff}
-  .log .dmg{color:var(--red)} .log .heal{color:var(--green)} .log .info{color:var(--amber)} .log .crit{color:var(--purple)}
-  .shake{animation:shake .3s}
-  @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(4px,-1px)}}
-  .flash{animation:flash .3s}
-  @keyframes flash{0%,100%{filter:none}50%{filter:brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(6)}}
-  .hitpop{animation:hitpop .25s}
-  @keyframes hitpop{0%{transform:scale(1)}50%{transform:scale(1.14)}100%{transform:scale(1)}}
-  .fade{animation:fade .4s}
-  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .enemy-cell.elite pre.sprite{color:var(--amber);text-shadow:0 0 8px rgba(255,207,77,.6)}
+  .tgt{width:100%;font-family:inherit;font-size:8px;cursor:pointer;color:var(--ink);background:#000;border:2px solid var(--line);padding:4px;margin-top:4px}
+  .tgt.on{border-color:var(--amber);color:var(--amber)}.tgt:hover{border-color:var(--amber)}
+  .log{background:#000;border:3px solid var(--line);padding:10px;height:112px;overflow:hidden;font-size:9px;line-height:1.7;margin:12px 0;display:flex;flex-direction:column;justify-content:flex-end;}
+  .log div{opacity:.5}.log div:last-child{opacity:1;color:#fff}
+  .log .dmg{color:var(--red)}.log .heal{color:var(--green)}.log .info{color:var(--amber)}.log .crit{color:var(--purple)}.log .lvl{color:var(--teal)}
+  .shake{animation:shake .3s}@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(4px,-1px)}}
+  .flash{animation:flash .3s}@keyframes flash{0%,100%{filter:none}50%{filter:brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(6)}}
+  .hitpop{animation:hitpop .25s}@keyframes hitpop{0%{transform:scale(1)}50%{transform:scale(1.14)}100%{transform:scale(1)}}
+  .fade{animation:fade .4s}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .floortag{text-align:center;font-size:9px;letter-spacing:1px;margin-bottom:10px}
+  .omentag{text-align:center;font-size:8px;color:var(--teal);margin-bottom:8px}
   .hr{border:none;border-top:2px dashed var(--line);margin:14px 0}
-  .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .menu-grid .btn{margin:0}
+  .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.menu-grid .btn{margin:0}
   .footer{text-align:center;color:var(--dim);font-size:8px;margin-top:8px}
-  a{color:var(--blue)}
+  .evtext{font-size:10px;line-height:2;color:#cfcbef;margin:10px 0}
   ::selection{background:var(--amber);color:#000}
 </style>
 </head>
@@ -100,179 +80,338 @@
 <script>
 "use strict";
 /* ============================================================
-   CRYPT OF THE CHAMPION — text roguelike (v2: zones, mobs, relics)
+   CRYPT OF THE CHAMPION  —  text roguelike  (v3)
+   zones · packs · relics · omens · events · statuses · levels
    ============================================================ */
-const $ = id => document.getElementById(id);
-const app = $('app');
-const rnd = n => Math.floor(Math.random()*n);
-const pick = arr => arr[rnd(arr.length)];
-const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
-const chance = p => Math.random()*100 < p;
-const RUN_LENGTH = 18;
-const BOSS_CHAMBERS = {6:'b1', 12:'b2', 18:'final'};
+const $=id=>document.getElementById(id);
+const app=$('app');
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const chance=p=>Math.random()*100<p;
+const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 
-const ZONES = [
-  {name:'THE CATACOMBS', color:'green'},
-  {name:'THE CAVERNS',   color:'blue'},
-  {name:'THE INFERNO',   color:'red'},
+const RUN_LENGTH=20;
+const BOSS_CHAMBERS={5:0,10:1,15:2,20:3};   // chamber -> zone index for boss pool
+const ZONES=[
+  {name:'THE CATACOMBS',color:'green'},
+  {name:'THE CAVERNS',  color:'blue'},
+  {name:'THE INFERNO',  color:'red'},
+  {name:'THE SUNLESS THRONE',color:'purple'},
 ];
-const zoneOf = d => d<=6?0 : d<=12?1 : 2;
+const zoneOf=d=>d<=5?0:d<=10?1:d<=15?2:3;
 
-/* ---------- classes ---------- */
-const CLASSES = {
-  mage: {
-    name:'MAGE', color:'purple', affinity:'ARCANE',
-    affinityText:'Spell power scales with MAX MANA. Mana also soaks incoming damage (Mana Shield), and refills fast.',
-    hp:70, mana:120, atk:5, def:0, dodge:0, crit:5, lifesteal:0, regen:14,
-    weapon:{name:'Apprentice Wand', dmg:5, type:'magic'},
+/* ============================================================
+   CLASSES
+   ============================================================ */
+const CLASSES={
+  mage:{name:'MAGE',color:'purple',affinity:'ARCANE',
+    affinityText:'Spell power scales with MAX MANA. Mana also soaks incoming damage (Mana Shield) and refills fast.',
+    hp:86,mana:120,atk:5,def:0,dodge:0,crit:5,lifesteal:0,regen:15,
+    weapon:{name:'Apprentice Wand',dmg:5,type:'magic'},
     sprite:"   /\\\n  (oo)\n <(  )>\n   ||\n  _||_",
     skills:[
-      {id:'bolt', name:'Arcane Bolt', cost:10, desc:'Single-target magic, scales w/ mana.'},
-      {id:'fire', name:'Fireball',    cost:24, aoe:true, desc:'Hits ALL foes + BURN.'},
-      {id:'frost',name:'Frost Nova',  cost:18, aoe:true, desc:'Dmg ALL + weaken their attacks.'},
-    ],
-  },
-  warrior: {
-    name:'WARRIOR', color:'red', affinity:'FURY',
+      {id:'bolt',name:'Arcane Bolt',cost:10,desc:'Single magic hit, scales w/ mana.'},
+      {id:'fire',name:'Fireball',cost:24,aoe:true,desc:'Hit ALL foes + BURN.'},
+      {id:'frost',name:'Frost Nova',cost:18,aoe:true,desc:'Dmg ALL + WEAKEN them.'},
+    ]},
+  warrior:{name:'WARRIOR',color:'red',affinity:'FURY',
     affinityText:'Brutal attacks. Build TANK (defense + Shield Wall) or LIFESTEAL (vampiric gear).',
-    hp:120, mana:30, atk:12, def:4, dodge:0, crit:8, lifesteal:0, regen:4,
-    weapon:{name:'Rusty Sword', dmg:8, type:'melee'},
+    hp:124,mana:30,atk:12,def:4,dodge:0,crit:8,lifesteal:0,regen:4,
+    weapon:{name:'Rusty Sword',dmg:8,type:'melee'},
     sprite:"  _____\n [_+_]\n  (oo)\n /|##|\\\n  d  b",
     skills:[
-      {id:'power', name:'Power Strike', cost:8,  desc:'Heavy single blow (x1.9).'},
-      {id:'shield',name:'Shield Wall',  cost:6,  desc:'Brace: take 65% less for 2 turns.'},
-      {id:'reck',  name:'Whirlwind',    cost:12, aoe:true, desc:'Hit ALL foes hard, but drop guard.'},
-    ],
-  },
-  ranger: {
-    name:'RANGER', color:'green', affinity:'WIND STEP',
+      {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.9).'},
+      {id:'shield',name:'Shield Wall',cost:6,desc:'Take 65% less for 2 turns.'},
+      {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'Hit ALL hard, drop guard.'},
+    ]},
+  ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
-    hp:120, mana:30, atk:10, def:2, dodge:25, crit:18, lifesteal:0, regen:5,
-    weapon:{name:'Short Bow', dmg:7, type:'ranged'},
+    hp:120,mana:30,atk:10,def:2,dodge:25,crit:18,lifesteal:0,regen:5,
+    weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
-      {id:'aim',  name:'Aimed Shot', cost:8,  desc:'Single shot, very high crit.'},
-      {id:'evade',name:'Evade',      cost:6,  desc:'+45% dodge for 2 turns.'},
-      {id:'volley',name:'Volley',    cost:12, aoe:true, desc:'3 arrows across the foes.'},
-    ],
-  },
+      {id:'aim',name:'Aimed Shot',cost:8,desc:'Single shot, very high crit + BLEED.'},
+      {id:'evade',name:'Evade',cost:6,desc:'+45% dodge for 2 turns.'},
+      {id:'volley',name:'Volley',cost:12,aoe:true,desc:'3 arrows across the foes.'},
+    ]},
 };
 
-/* ---------- enemies ---------- */
-const ENEMIES = [
-  {name:'Giant Rat',   hp:24, atk:7,  def:0, sprite:"  (\\_/)\n  (. .)\n  c(\")(\")"},
-  {name:'Goblin',      hp:32, atk:9,  def:1, sprite:"  ,_,\n (O,O)\n (   )>\n  \" \""},
-  {name:'Cave Bat',    hp:22, atk:8,  def:0, dodgy:true, sprite:" /\\   /\\\n( ^.^ )\n  \\v/"},
-  {name:'Slime',       hp:42, atk:7,  def:2, sprite:"  .--.\n (o  o)\n (~~~~)"},
-  {name:'Skeleton',    hp:36, atk:11, def:1, sprite:"  (.-.)\n /|||\\\n  | |"},
-  {name:'Imp',         hp:28, atk:12, def:0, caster:true, sprite:"  ^..^\n (>  <)\n  v  v"},
-  {name:'Ghoul',       hp:48, atk:11, def:1, sprite:"  (xx)\n /|--|\\\n  |  |"},
-  {name:'Orc Brute',   hp:60, atk:13, def:3, sprite:"  \\___/\n  (>.<)\n /|---|\\"},
-  {name:'Venomspitter',hp:40, atk:10, def:1, caster:true, sprite:"  (~~~)\n  (o o)\n  >vvv<"},
-  {name:'Dark Acolyte',hp:46, atk:12, def:1, caster:true, sprite:"   ^\n  /o\\\n (_|_)\n  | |"},
-  {name:'Wraith',      hp:50, atk:14, def:0, dodgy:true, sprite:"  .vvv.\n ( -- )\n  \\__/"},
-  {name:'Stone Golem', hp:80, atk:12, def:5, sprite:" [#####]\n [ o o ]\n [#####]\n  ]   ["},
+/* ============================================================
+   ENEMIES  (+ elite affixes)
+   ============================================================ */
+const ENEMIES=[
+  {name:'Giant Rat',hp:24,atk:7,def:0,xp:5,sprite:"  (\\_/)\n  (. .)\n  c(\")(\")"},
+  {name:'Goblin',hp:32,atk:9,def:1,xp:6,sprite:"  ,_,\n (O,O)\n (   )>\n  \" \""},
+  {name:'Cave Bat',hp:22,atk:8,def:0,dodgy:true,xp:6,sprite:" /\\   /\\\n( ^.^ )\n  \\v/"},
+  {name:'Slime',hp:44,atk:7,def:2,xp:7,sprite:"  .--.\n (o  o)\n (~~~~)"},
+  {name:'Skeleton',hp:36,atk:11,def:1,xp:7,sprite:"  (.-.)\n /|||\\\n  | |"},
+  {name:'Imp',hp:28,atk:12,def:0,caster:true,xp:8,sprite:"  ^..^\n (>  <)\n  v  v"},
+  {name:'Ghoul',hp:48,atk:11,def:1,xp:9,sprite:"  (xx)\n /|--|\\\n  |  |"},
+  {name:'Venomspitter',hp:40,atk:10,def:1,caster:true,poison:[4,3,55],xp:10,sprite:"  (~~~)\n  (o o)\n  >vvv<"},
+  {name:'Orc Brute',hp:62,atk:13,def:3,xp:11,sprite:"  \\___/\n  (>.<)\n /|---|\\"},
+  {name:'Dark Acolyte',hp:46,atk:13,def:1,caster:true,xp:11,sprite:"   ^\n  /o\\\n (_|_)\n  | |"},
+  {name:'Wraith',hp:52,atk:15,def:0,dodgy:true,xp:12,sprite:"  .vvv.\n ( -- )\n  \\__/"},
+  {name:'Stone Golem',hp:84,atk:12,def:6,xp:13,sprite:" [#####]\n [ o o ]\n [#####]\n  ]   ["},
+  {name:'Hellhound',hp:58,atk:16,def:1,burnAtk:[4,2,40],xp:14,sprite:"  /^--^\\\n ( >  < )\n  U    U"},
+  {name:'Cultist',hp:54,atk:14,def:2,caster:true,poison:[5,3,45],xp:14,sprite:"  ,-^-,\n ( o o )\n  )-+-(" },
 ];
-const BOSSES = {
-  b1:  {name:'OGRE WARLORD', hp:150, atk:16, def:4, boss:true,
-        sprite:"  .-\"\"\"-.\n /  o o  \\\n |  ___  |\n  \\ \\_/ /\n  /|   |\\\n  d|___|b"},
-  b2:  {name:'THE NECROMANCER', hp:210, atk:16, def:3, boss:true, caster:true,
-        adds:['Skeleton','Skeleton'],
-        sprite:"   ___\n  /   \\\n |() ()|\n  \\ ~ /\n  /| |\\\n  J | L"},
-  final:{name:'THE CRYPT DRAGON', hp:380, atk:24, def:7, boss:true,
-        sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ x   x /\n   ) ___ (\n  /_/   \\_\\\n (_)     (_)"},
-};
+const AFFIXES=[
+  {tag:'Armored',  hp:1.3,atk:1.0,def:6, note:'tough hide', desc:'+armor'},
+  {tag:'Frenzied', hp:1.2,atk:1.45,def:0, note:'savage', desc:'+damage'},
+  {tag:'Vampiric', hp:1.5,atk:1.15,def:1, leech:true, desc:'heals when it hits you'},
+  {tag:'Toxic',    hp:1.4,atk:1.1,def:1, poison:[6,3,70], desc:'poisons you'},
+  {tag:'Brutal',   hp:1.6,atk:1.3,def:2, desc:'huge & strong'},
+];
 
-/* ---------- loot ---------- */
-const WEAPONS = {
+/* ============================================================
+   BOSSES  (pools per zone, picked at random each run)
+   ============================================================ */
+const BOSSES={
+  ogre:  {name:'OGRE WARLORD',hp:140,atk:15,def:4,boss:true,xp:70,sprite:"  .-\"\"\"-.\n /  o o  \\\n |  ___  |\n  \\ \\_/ /\n  /|   |\\\n  d|___|b"},
+  gobking:{name:'GOBLIN KING',hp:120,atk:13,def:3,boss:true,xp:70,adds:['Goblin','Goblin'],sprite:"  _mWm_\n (O   O)\n ( --- )\n /|   |\\"},
+  spider:{name:'BROODMOTHER',hp:130,atk:13,def:3,boss:true,xp:70,poison:[6,3,55],sprite:"  /\\oo/\\\n (  ..  )\n /\\/\\/\\/\\\n  w    w"},
+  necro: {name:'THE NECROMANCER',hp:185,atk:16,def:3,boss:true,caster:true,xp:120,adds:['Skeleton','Skeleton'],sprite:"   ___\n  /   \\\n |() ()|\n  \\ ~ /\n  /| |\\\n  J | L"},
+  titan: {name:'STONE TITAN',hp:250,atk:16,def:8,boss:true,xp:120,sprite:" [#######]\n [ O   O ]\n [ #===# ]\n [#######]\n  ]|   |["},
+  tyrant:{name:'CAVE TYRANT',hp:210,atk:19,def:4,boss:true,xp:120,sprite:"  v_____v\n (  >.<  )\n  )  ~  (\n /|=====|\\"},
+  demon: {name:'DEMON LORD',hp:275,atk:20,def:5,boss:true,burnAtk:[6,3,45],xp:170,sprite:"  \\,,,,/\n  (X  X)\n  ( vv )\n /|^^^|\\\n  W   W"},
+  lich:  {name:'THE LICH',hp:250,atk:18,def:4,boss:true,caster:true,poison:[7,4,55],xp:170,adds:['Wraith'],sprite:"   .^.\n  (o o)\n  (_-_)\n  /| |\\\n  '| |'"},
+  flameknight:{name:'FLAME KNIGHT',hp:260,atk:20,def:7,boss:true,burnAtk:[6,3,55],xp:170,sprite:"  ,---,\n  |[o]|\n  |###|\n /|# #|\\\n  |___|"},
+  dragon:{name:'THE CRYPT DRAGON',hp:370,atk:23,def:8,boss:true,burnAtk:[7,3,50],xp:260,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ x   x /\n   ) ___ (\n  /_/   \\_\\\n (_)     (_)"},
+  king:  {name:'THE FORGOTTEN KING',hp:350,atk:22,def:7,boss:true,caster:true,poison:[8,4,55],xp:260,sprite:"   _mWm_\n  /=====\\\n  |o   o|\n  | --- |\n /|=====|\\\n  J|   |L"},
+};
+const BOSS_POOL=[['ogre','gobking','spider'],['necro','titan','tyrant'],['demon','lich','flameknight'],['dragon','king']];
+
+/* ============================================================
+   LOOT: weapons, upgrades, relics
+   ============================================================ */
+const WEAPONS={
   mage:[
-    {name:'Crystal Staff',  dmg:11, type:'magic', note:'+12 max mana', mana:12},
-    {name:'Flameheart Rod', dmg:14, type:'magic', note:'attacks may BURN', burn:true},
-    {name:'Frostbite Cane', dmg:13, type:'magic', note:'+8 regen', regen:8},
-    {name:'Void Scepter',   dmg:18, type:'magic', note:'+22 max mana', mana:22},
+    {name:'Crystal Staff',dmg:11,type:'magic',note:'+12 max mana',mana:12},
+    {name:'Flameheart Rod',dmg:14,type:'magic',note:'hits may BURN',proc:{burn:[5,3,45]}},
+    {name:'Frostbite Cane',dmg:13,type:'magic',note:'+8 regen',regen:8},
+    {name:'Plague Staff',dmg:14,type:'magic',note:'hits may POISON',proc:{poison:[5,3,50]}},
+    {name:'Void Scepter',dmg:19,type:'magic',note:'+22 max mana',mana:22},
+    {name:'Staff of the Archmage',dmg:17,type:'magic',note:'+15 mana, +5 regen',mana:15,regen:5},
   ],
   warrior:[
-    {name:'Iron Greatsword', dmg:15, type:'melee', note:'+2 atk', atk:2},
-    {name:'Vampiric Blade',  dmg:13, type:'melee', note:'+25% lifesteal', lifesteal:25},
-    {name:'Bulwark Axe',     dmg:14, type:'melee', note:'+3 def', def:3},
-    {name:'Berserker Maul',  dmg:22, type:'melee', note:'+4 atk, -2 def', atk:4, def:-2},
+    {name:'Iron Greatsword',dmg:15,type:'melee',note:'+2 atk',atk:2},
+    {name:'Vampiric Blade',dmg:14,type:'melee',note:'+25% lifesteal',lifesteal:25},
+    {name:'Bulwark Axe',dmg:14,type:'melee',note:'+3 def',def:3},
+    {name:'Cleaver of Sundering',dmg:15,type:'melee',note:'hits apply VULNERABLE',proc:{vuln:[2]}},
+    {name:'Berserker Maul',dmg:23,type:'melee',note:'+4 atk, -2 def',atk:4,def:-2},
+    {name:'Bloodthirster',dmg:18,type:'melee',note:'+18% lifesteal, +2 atk',lifesteal:18,atk:2},
   ],
   ranger:[
-    {name:'Hunter Longbow',  dmg:13, type:'ranged', note:'+10% crit', crit:10},
-    {name:'Windforce',       dmg:14, type:'ranged', note:'+10% dodge', dodge:10},
-    {name:'Venom Crossbow',  dmg:16, type:'ranged', note:'attacks may BURN', burn:true},
-    {name:'Stormpiercer',    dmg:18, type:'ranged', note:'+6% crit, +6% dodge', crit:6, dodge:6},
+    {name:'Hunter Longbow',dmg:13,type:'ranged',note:'+10% crit',crit:10},
+    {name:'Windforce',dmg:14,type:'ranged',note:'+10% dodge',dodge:10},
+    {name:'Toxic Recurve',dmg:15,type:'ranged',note:'hits may POISON',proc:{poison:[6,3,55]}},
+    {name:'Stormpiercer',dmg:18,type:'ranged',note:'+6% crit, +6% dodge',crit:6,dodge:6},
+    {name:'Dragonsbane',dmg:20,type:'ranged',note:'+12% crit',crit:12},
   ],
 };
-const UPGRADES = [
-  {name:'Vital Charm',  apply:p=>{p.maxHp+=22; heal(p,22);}, note:'+22 max HP, heal'},
-  {name:'Mana Crystal', apply:p=>{p.maxMana+=18; p.mana+=18;}, note:'+18 max mana'},
-  {name:'Whetstone',    apply:p=>{p.atk+=3;}, note:'+3 attack'},
-  {name:'Iron Plating', apply:p=>{p.def+=3;}, note:'+3 defense'},
-  {name:'Lucky Coin',   apply:p=>{p.crit+=10;}, note:'+10% crit'},
-  {name:'Shadow Cloak', apply:p=>{p.dodge+=10;}, note:'+10% dodge'},
-  {name:'Leech Rune',   apply:p=>{p.lifesteal+=15;}, note:'+15% lifesteal'},
-  {name:'Focus Idol',   apply:p=>{p.regen+=4;}, note:'+4 mana regen'},
+const UPGRADES=[
+  {name:'Vital Charm',apply:p=>{p.maxHp+=24;heal(p,24);},note:'+24 max HP, heal'},
+  {name:'Mana Crystal',apply:p=>{p.maxMana+=18;p.mana+=18;},note:'+18 max mana'},
+  {name:'Whetstone',apply:p=>{p.atk+=3;},note:'+3 attack'},
+  {name:'Iron Plating',apply:p=>{p.def+=3;},note:'+3 defense'},
+  {name:'Lucky Coin',apply:p=>{p.crit+=10;},note:'+10% crit'},
+  {name:'Shadow Cloak',apply:p=>{p.dodge+=10;},note:'+10% dodge'},
+  {name:'Leech Rune',apply:p=>{p.lifesteal+=15;},note:'+15% lifesteal'},
+  {name:'Focus Idol',apply:p=>{p.regen+=4;},note:'+4 mana regen'},
+  {name:'Giant Tonic',apply:p=>{p.maxHp+=14;heal(p,14);p.atk+=2;},note:'+14 HP, +2 atk'},
+  {name:'Sage Tome',apply:p=>{p.maxMana+=10;p.crit+=5;},note:'+10 mana, +5% crit'},
+];
+const RELICS=[
+  {id:'battery',name:'Arcane Battery',note:'+45 max mana, +6 regen',apply:p=>{p.maxMana+=45;p.mana+=45;p.regen+=6;}},
+  {id:'glass',name:'Glass Cannon',note:'+50% damage, -35% max HP',apply:p=>{p.flags.glassCannon=1;const c=Math.round(p.maxHp*0.35);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
+  {id:'stone',name:'Stone Skin',note:'+6 DEF, -20% damage dealt',apply:p=>{p.def+=6;p.flags.stoneSkin=1;}},
+  {id:'berserk',name:"Berserker's Heart",note:'up to +80% dmg the lower your HP',apply:p=>{p.flags.berserker=1;}},
+  {id:'exec',name:'Executioner',note:'x2 damage to foes below 30% HP',apply:p=>{p.flags.executioner=1;}},
+  {id:'thorns',name:'Thornmail',note:'+3 DEF, reflect 30% damage taken',apply:p=>{p.def+=3;p.flags.thorns=1;}},
+  {id:'vamp',name:'Vampiric Aura',note:'+20% lifesteal',apply:p=>{p.lifesteal+=20;}},
+  {id:'swift',name:'Swift Boots',note:'+15% dodge, +8% crit',apply:p=>{p.dodge+=15;p.crit+=8;}},
+  {id:'blood',name:'Blood Pact',note:'heal 8% max HP on every kill',apply:p=>{p.flags.bloodpact=1;}},
+  {id:'twin',name:'Twin Fang',note:'35% chance basic attacks strike twice',apply:p=>{p.flags.doubleStrike=1;}},
+  {id:'toxic',name:'Toxic Coating',note:'basic attacks POISON foes',apply:p=>{p.flags.toxic=1;}},
+  {id:'concuss',name:'Concussive Rounds',note:'18% chance basic hits STUN',apply:p=>{p.flags.concuss=1;}},
+  {id:'frostbrand',name:'Frostbrand',note:'basic attacks WEAKEN foes',apply:p=>{p.flags.frostbrand=1;}},
+  {id:'sunder',name:'Sunderer',note:'basic attacks apply VULNERABLE',apply:p=>{p.flags.sunder=1;}},
+  {id:'regenrelic',name:'Trollblood',note:'regenerate 4% HP each combat turn',apply:p=>{p.flags.combatRegen=1;}},
+  {id:'second',name:'Phoenix Feather',note:'survive a lethal blow once per battle',apply:p=>{p.flags.secondWind=1;}},
+  {id:'scholar',name:"Scholar's Lens",note:'+50% XP gained',apply:p=>{p.flags.scholar=1;}},
+  {id:'giant',name:'Giant Growth',note:'+30% max HP',apply:p=>{const g=Math.round(p.maxHp*0.3);p.maxHp+=g;heal(p,g);}},
+  {id:'crit',name:'Eagle Eye',note:'+18% crit, crits deal more',apply:p=>{p.crit+=18;p.flags.bigCrit=1;}},
+  {id:'mana2hp',name:'Soul Siphon',note:'spending mana heals you a little',apply:p=>{p.flags.soulSiphon=1;}},
 ];
 
-/* ---------- relics: permanent playstyle modifiers ---------- */
-const RELICS = [
-  {id:'battery', name:'Arcane Battery',    note:'+45 max mana, +6 regen', apply:p=>{p.maxMana+=45;p.mana+=45;p.regen+=6;}},
-  {id:'glass',   name:'Glass Cannon',      note:'+50% damage dealt, -35% max HP', apply:p=>{p.flags.glassCannon=true; const c=Math.round(p.maxHp*0.35); p.maxHp-=c; p.hp=clamp(p.hp,1,p.maxHp);}},
-  {id:'stone',   name:'Stone Skin',        note:'+6 DEF, but -20% damage dealt', apply:p=>{p.def+=6; p.flags.stoneSkin=true;}},
-  {id:'berserk', name:"Berserker's Heart",  note:'deal up to +80% dmg the lower your HP', apply:p=>{p.flags.berserker=true;}},
-  {id:'exec',    name:'Executioner',       note:'x2 damage to foes below 30% HP', apply:p=>{p.flags.executioner=true;}},
-  {id:'thorns',  name:'Thornmail',         note:'+3 DEF, reflect 30% of damage taken', apply:p=>{p.def+=3; p.flags.thorns=true;}},
-  {id:'vamp',    name:'Vampiric Aura',     note:'+20% lifesteal', apply:p=>{p.lifesteal+=20;}},
-  {id:'swift',   name:'Swift Boots',       note:'+15% dodge, +8% crit', apply:p=>{p.dodge+=15;p.crit+=8;}},
-  {id:'blood',   name:'Blood Pact',        note:'heal 8% max HP on every kill', apply:p=>{p.flags.bloodpact=true;}},
-  {id:'twin',    name:'Twin Fang',         note:'35% chance basic attacks strike twice', apply:p=>{p.flags.doubleStrike=true;}},
+/* ============================================================
+   OMENS  (run modifiers — pick 1 of 3 each run)
+   ============================================================ */
+const OMENS=[
+  {id:'none',name:'Calm Descent',note:'No modifier. A balanced run.',apply:()=>{}},
+  {id:'blood',name:'Bloodmoon',note:'Enemies deal +15% damage, but drop +60% gold.',apply:g=>{g.eDmg*=1.15;g.goldMul*=1.6;}},
+  {id:'arcane',name:'Arcane Surge',note:'All skills cost 35% less mana.',apply:g=>{g.skillCost=0.65;}},
+  {id:'brittle',name:'Brittle Bones',note:'Enemies have -22% HP, but you have -12% max HP.',apply:(g,p)=>{g.eHp*=0.78;const c=Math.round(p.maxHp*0.12);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
+  {id:'greedy',name:'Greedy Halls',note:'Far more chests & merchants; gold is plentiful.',apply:g=>{g.greedy=1;g.goldMul*=1.3;}},
+  {id:'veteran',name:"Veteran's Path",note:'Start at level 4, but enemies +12% HP.',apply:(g,p)=>{g.eHp*=1.12;for(let i=0;i<3;i++)levelUp(p,true);}},
+  {id:'glassworld',name:'Glass World',note:'EVERYONE deals +30% damage. Fast & deadly.',apply:g=>{g.eDmg*=1.3;g.pDmg*=1.3;}},
+  {id:'lucky',name:'Lucky Star',note:'+12% crit and richer rewards (extra choices).',apply:(g,p)=>{p.crit+=12;g.luck=1;}},
+  {id:'elites',name:'Cursed Riches',note:'Start with 90 gold, but elites prowl everywhere.',apply:(g,p)=>{p.gold+=90;g.eliteMul=2.4;}},
+  {id:'endless',name:'Endless Night',note:'Monsters relentless (+1 per pack), but you regen between rooms.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
+];
+
+/* ============================================================
+   EVENTS  (narrative encounters — data driven)
+   each option: {label, desc, run(p)-> outcome string | false(=battle started)}
+   ============================================================ */
+const EVENTS=[
+  {id:'knight',title:'THE WOUNDED KNIGHT',art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
+   text:'A dying knight slumps against the wall. "Please... mend me, and take my blade."',
+   options:[
+     {label:'Heal him (-12 HP)',desc:'He gives you his weapon',run:p=>{p.hp=clamp(p.hp-12,1,p.maxHp);const w=pick(WEAPONS[p.cls]);equip(p,w);return `You bind his wounds. He presses the ${w.name} into your hands and fades away.`;}},
+     {label:'Rob him',desc:'Take his gold, leave him',run:p=>{const g=25+rnd(30);p.gold+=g;return `You take ${g} gold from his pack. His eyes follow you into the dark.`;}},
+     {label:'Leave him be',desc:'Walk away',run:p=>`You leave the knight to his fate.`},
+   ]},
+  {id:'imp',title:'THE GAMBLING IMP',art:"  ^..^\n (?  ?)\n  )$$( ",
+   text:'A grinning imp rattles a cup of dice. "Double or nothing, champion?"',
+   options:[
+     {label:'Bet 30 gold',desc:'50/50: win 60 or lose 30',run:p=>{if(p.gold<30)return 'You jingle empty pockets. The imp cackles and vanishes.';p.gold-=30;if(chance(50)){p.gold+=60;return 'The dice come up sevens! You pocket 60 gold.';}return 'Snake eyes. The imp snatches your coins and giggles away.';}},
+     {label:'Bet everything',desc:'50/50: double all gold or lose it',run:p=>{if(p.gold<=0)return 'You have nothing to wager.';if(chance(48)){const g=p.gold;p.gold*=2;return `Fortune smiles! Your ${g} becomes ${p.gold} gold!`;}p.gold=0;return 'Disaster — you lose every coin to the cackling imp.';}},
+     {label:'Refuse',desc:'Keep your gold',run:p=>'You decline. The imp sulks and disappears.'},
+   ]},
+  {id:'mirror',title:'THE CURSED MIRROR',art:"  +----+\n  | ?? |\n  | () |\n  +----+",
+   text:'A tall mirror shows a warped reflection that moves a heartbeat too late.',
+   options:[
+     {label:'Gaze into it',desc:'Random boon or bane',run:p=>{const r=rnd(3);if(r===0){p.maxHp+=18;heal(p,18);return 'Your reflection grows stronger — +18 max HP!';}if(r===1){p.atk+=3;p.crit+=5;return 'It bares its teeth — +3 ATK, +5% crit!';}const c=Math.round(p.maxHp*0.12);p.hp=clamp(p.hp-c,1,p.maxHp);return `It lunges! You take ${c} damage from your own image.`;}},
+     {label:'Shatter it',desc:'Gold among the shards',run:p=>{const g=20+rnd(25);p.gold+=g;if(chance(30)){p.dodge+=8;return `Glass rains down — ${g} gold, and shards grant +8% dodge.`;}return `It shatters into ${g} gold worth of glittering shards.`;}},
+     {label:'Walk past',desc:'Trust nothing',run:p=>'You avert your eyes and move on.'},
+   ]},
+  {id:'altar',title:'THE BLOOD ALTAR',art:"   _____\n  |/+\\|\n  | V |\n  |___|",
+   text:'A stone altar, still slick. It hungers, and offers power for pain.',
+   options:[
+     {label:'Offer blood (-20 max HP)',desc:'Gain a relic',run:p=>{p.maxHp=Math.max(20,p.maxHp-20);p.hp=clamp(p.hp,1,p.maxHp);const r=grantRandomRelic(p);return r?`The altar drinks deep. A relic forms: ${r}.`:'The altar drinks deep, but you already hold every relic it knows.';}},
+     {label:'Offer gold (40)',desc:'Permanent +4 ATK',run:p=>{if(p.gold<40)return 'Not enough gold to satisfy the altar.';p.gold-=40;p.atk+=4;return 'Coins sizzle away. Strength floods your arms — +4 ATK.';}},
+     {label:'Pray quietly',desc:'Small heal, leave',run:p=>{heal(p,Math.round(p.maxHp*0.2));return 'You pray. A faint warmth mends you a little.';}},
+   ]},
+  {id:'campfire',title:'A DYING CAMPFIRE',art:"   (~)\n  ( ~ )\n  /\\_/\\\n  |fire|",
+   text:'Embers glow in an abandoned camp. You could rest, or pick through the gear.',
+   options:[
+     {label:'Rest by the fire',desc:'Heal 35% HP & mana',run:p=>{heal(p,Math.round(p.maxHp*0.35));p.mana=clamp(p.mana+Math.round(p.maxMana*0.35),0,p.maxMana);return 'You warm yourself and recover. (HP & mana restored)';}},
+     {label:'Scavenge',desc:'Gold, maybe a potion',run:p=>{const g=12+rnd(18);p.gold+=g;let extra='';if(chance(45)){p.potions++;extra=' and a health potion';}return `You find ${g} gold${extra} among the packs.`;}},
+     {label:'Douse it & move',desc:'Leave no trace',run:p=>'You scatter the embers and slip onward unseen.'},
+   ]},
+  {id:'spring',title:'THE ENCHANTED SPRING',art:"  .~~~.\n (~ + ~)\n  '~~~'",
+   text:'Crystal water hums with magic. You could temper your weapon in it.',
+   options:[
+     {label:'Temper weapon',desc:'+4 weapon damage',run:p=>{p.weapon.dmg+=4;return `Your ${p.weapon.name} glows — its damage rises by 4!`;}},
+     {label:'Drink deeply',desc:'Restore & +6 max mana',run:p=>{p.maxMana+=6;p.mana=p.maxMana;heal(p,Math.round(p.maxHp*0.25));return 'The waters refresh body and mind. (+6 max mana, restored)';}},
+     {label:'Fill a flask',desc:'Gain a potion',run:p=>{p.potions++;return 'You bottle the glowing water as a potion.';}},
+   ]},
+  {id:'library',title:'THE FORGOTTEN LIBRARY',art:"  [|||||]\n  [|||||]\n  [|||||]",
+   text:'Dust-choked shelves of forbidden tomes loom in the gloom.',
+   options:[
+     {label:'Study the tomes',desc:'+12 max mana, +4 regen',run:p=>{p.maxMana+=12;p.mana+=12;p.regen+=4;return 'Arcane knowledge seeps in — +12 max mana, +4 regen.';}},
+     {label:'Search for treasure',desc:'Gold, risk a paper cut curse',run:p=>{const g=18+rnd(22);p.gold+=g;if(chance(35)){const c=8+rnd(8);p.hp=clamp(p.hp-c,1,p.maxHp);return `You find ${g} gold, but a warded page bites for ${c} damage.`;}return `Tucked in a tome: ${g} gold.`;}},
+     {label:'Burn it down',desc:'+2 ATK from dark power',run:p=>{p.atk+=2;return 'You torch the cursed library. The flames whisper strength — +2 ATK.';}},
+   ]},
+  {id:'goblin',title:'THE TREASURE GOBLIN',art:"  ,$$,\n (>o o<)\n  )$$$(\n  d   b",
+   text:'A fat goblin lugging a bulging sack of gold spots you — and bolts!',
+   options:[
+     {label:'Chase it down!',desc:'Fight for a big purse',run:p=>{const gob=freshEnemy({name:'Treasure Goblin',sprite:"  ,$$,\n (>o o<)\n  )$$$(\n  d   b",hp:scaleHpVal(55),maxHp:scaleHpVal(55),atk:Math.round(8*depthFactor()),def:2,xp:20,goldBonus:90+rnd(60),dodgy:true});
+        G.room={type:'enemy',_enemies:[gob]};startBattle('You corner the treasure goblin!');return false;}},
+     {label:'Let it go',desc:'Not worth the risk',run:p=>'You watch the jingling sack vanish around the corner. A shame.'},
+   ]},
+  {id:'beggar',title:'THE HOODED BEGGAR',art:"  .-.\n ( o )\n /| |\\\n  | |",
+   text:'A frail beggar extends a trembling bowl. "Spare some coin, hero?"',
+   options:[
+     {label:'Give 25 gold',desc:'Kindness may be repaid',run:p=>{if(p.gold<25)return 'Your purse is too light to give.';p.gold-=25;const roll=rnd(3);if(roll===0){const r=grantRandomRelic(p);return r?`The beggar throws off the cloak — a spirit! It gifts you: ${r}.`:'The beggar smiles warmly and blesses your path.';}if(roll===1){p.maxHp+=16;heal(p,16);return 'A warm blessing settles on you — +16 max HP.';}return 'The beggar blesses you. You feel... luckier.';}},
+     {label:'Give everything',desc:'A true sacrifice',run:p=>{if(p.gold<=0)return 'You have nothing to give.';const g=p.gold;p.gold=0;p.maxHp+=Math.min(40,Math.round(g/2));heal(p,99);return `You give all ${g} gold. The beggar weeps — and your vitality blooms (+max HP, full heal).`;}},
+     {label:'Ignore',desc:'Move along',run:p=>'You step around the beggar without a word.'},
+   ]},
+  {id:'fork',title:'THE FORKING PATH',art:"  /   \\\n |  Y  |\n  \\   /",
+   text:'The passage splits. Scratched runes hint at what lies down each way.',
+   options:[
+     {label:'Left: "riches"',desc:'Likely gold',run:p=>{const g=30+rnd(35);p.gold+=g;return `The left path opens onto a coin-strewn alcove — ${g} gold!`;}},
+     {label:'Right: "power"',desc:'A stat boost',run:p=>{const r=rnd(3);if(r===0){p.atk+=3;return 'A weapon rack — you take the best piece. +3 ATK.';}if(r===1){p.def+=3;return 'Discarded armor plates — +3 DEF.';}p.maxMana+=14;p.mana+=14;return 'A humming font of mana — +14 max mana.';}},
+     {label:'Straight: "safety"',desc:'Heal & move on',run:p=>{heal(p,Math.round(p.maxHp*0.3));return 'The middle road is quiet. You rest and recover.';}},
+   ]},
+  {id:'shrine2',title:'THE TWIN STATUES',art:" [o]  [o]\n  |    |\n /_\\  /_\\",
+   text:'Two statues face each other — one of a warrior, one of a mage.',
+   options:[
+     {label:'Honor the Warrior',desc:'+3 ATK, +2 DEF',run:p=>{p.atk+=3;p.def+=2;return 'The warrior statue glows. +3 ATK, +2 DEF.';}},
+     {label:'Honor the Mage',desc:'+16 max mana, +4 regen',run:p=>{p.maxMana+=16;p.mana+=16;p.regen+=4;return 'The mage statue glows. +16 max mana, +4 regen.';}},
+     {label:'Topple both',desc:'Gold beneath them',run:p=>{const g=22+rnd(28);p.gold+=g;return `You shove the statues aside — ${g} gold hidden beneath.`;}},
+   ]},
+  {id:'trap',title:'THE TRAPPED CORRIDOR',art:"  /|||||\\\n  X X X X\n  \\|||||/",
+   text:'Blades and tripwires bristle across a narrow corridor.',
+   options:[
+     {label:'Disarm carefully',desc:'Dodge-based; reward if clean',run:p=>{const ok=chance(40+p.dodge);if(ok){const g=20+rnd(20);p.gold+=g;return `Nimble hands! You disarm it and loot ${g} gold from the mechanism.`;}const c=10+rnd(12);p.hp=clamp(p.hp-c,1,p.maxHp);return `A wire snaps — blades graze you for ${c} damage.`;}},
+     {label:'Sprint through',desc:'Take a hit, save time',run:p=>{const c=6+rnd(8);p.hp=clamp(p.hp-c,1,p.maxHp);return `You barrel through, taking ${c} damage but losing nothing.`;}},
+     {label:'Find another way',desc:'Safe, no reward',run:p=>'You backtrack and find a safer route around.'},
+   ]},
+  {id:'pit',title:'THE PIT OF COINS',art:"  \\_____/\n  |$ $ $|\n  |$ $ $|",
+   text:'A deep pit glitters with centuries of fallen coins.',
+   options:[
+     {label:'Dive in!',desc:'Lots of gold, some damage',run:p=>{const g=40+rnd(45);p.gold+=g;const c=8+rnd(10);p.hp=clamp(p.hp-c,1,p.maxHp);return `You scoop ${g} gold but bruise yourself badly (${c} damage).`;}},
+     {label:'Climb down slowly',desc:'Less gold, no harm',run:p=>{const g=18+rnd(18);p.gold+=g;return `Careful does it — ${g} gold, no scratches.`;}},
+     {label:'Leave it',desc:'Greed is a trap',run:p=>'You resist temptation and walk on.'},
+   ]},
+  {id:'witch',title:'THE WANDERING WITCH',art:"   /^\\\n  ( o )\n  /|~|\\\n   | |",
+   text:'A witch stirs a bubbling cauldron. "A brew for a price, dearie?"',
+   options:[
+     {label:'Buy a brew (35g)',desc:'Random powerful boon',run:p=>{if(p.gold<35)return 'The witch frowns at your thin purse and shoos you off.';p.gold-=35;const r=rnd(4);if(r===0){p.lifesteal+=15;return 'A crimson brew — +15% lifesteal!';}if(r===1){p.crit+=12;return 'A sparkling brew — +12% crit!';}if(r===2){p.dodge+=12;return 'A misty brew — +12% dodge!';}p.regen+=6;p.maxMana+=12;p.mana+=12;return 'A glowing brew — +12 max mana, +6 regen!';}},
+     {label:'Trade your blood (-15 HP)',desc:'Free relic from her shelf',run:p=>{p.hp=clamp(p.hp-15,1,p.maxHp);const r=grantRandomRelic(p);return r?`She draws your blood and hands you: ${r}.`:'She draws your blood but her shelves are bare of new relics.';}},
+     {label:'Decline politely',desc:'Move on',run:p=>'You thank the witch and continue down the hall.'},
+   ]},
 ];
 
 /* ============================================================
    STATE
    ============================================================ */
-let G = null;
-function newGame(){ G = {screen:'title', player:null, depth:0, doors:[], room:null, battle:null, pending:null, log:[]}; }
+let G=null;
+function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0}; }
+function newGame(){ G={screen:'title',player:null,depth:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[]}; }
 newGame();
 
 function makePlayer(key){
-  const c = CLASSES[key];
-  return {
-    cls:key, color:c.color, sprite:c.sprite, affinity:c.affinity,
-    hp:c.hp, maxHp:c.hp, mana:c.mana, maxMana:c.mana,
-    atk:c.atk, def:c.def, dodge:c.dodge, crit:c.crit, lifesteal:c.lifesteal, regen:c.regen,
-    weapon:{...c.weapon}, skills:c.skills.map(s=>({...s})),
-    potions:1, gold:0, kills:0, relics:[], flags:{},
-  };
+  const c=CLASSES[key];
+  return {cls:key,color:c.color,sprite:c.sprite,affinity:c.affinity,
+    hp:c.hp,maxHp:c.hp,mana:c.mana,maxMana:c.mana,
+    atk:c.atk,def:c.def,dodge:c.dodge,crit:c.crit,lifesteal:c.lifesteal,regen:c.regen,
+    weapon:{...c.weapon},skills:c.skills.map(s=>({...s})),
+    potions:1,gold:0,kills:0,relics:[],flags:{},level:1,xp:0};
 }
-function heal(p,n){ p.hp = clamp(p.hp+n, 0, p.maxHp); }
+function heal(p,n){ p.hp=clamp(p.hp+n,0,p.maxHp); }
+function xpNeeded(lvl){ return 18+lvl*14; }
+function gainXp(p,n){ if(p.flags.scholar) n=Math.round(n*1.5); p.xp+=n; let ups=0;
+  while(p.xp>=xpNeeded(p.level)){ p.xp-=xpNeeded(p.level); levelUp(p); ups++; } return ups; }
+function levelUp(p,silent){ p.level++; p.maxHp+=11; p.atk+=2; p.maxMana+=5; p.mana+=5; heal(p,14);
+  if(!silent && G.screen==='battle') blog(`LEVEL UP! You are now level ${p.level}.`,'lvl'); }
+function grantRandomRelic(p){ const avail=RELICS.filter(r=>!p.relics.includes(r.name)); if(!avail.length)return null; const r=pick(avail); r.apply(p); p.relics.push(r.name); return r.name; }
 function equip(p,w){
   const o=p.weapon;
-  if(o.atk)p.atk-=o.atk; if(o.def)p.def-=o.def; if(o.crit)p.crit-=o.crit;
-  if(o.dodge)p.dodge-=o.dodge; if(o.lifesteal)p.lifesteal-=o.lifesteal; if(o.regen)p.regen-=o.regen;
-  if(o.mana){p.maxMana-=o.mana; p.mana=clamp(p.mana,0,p.maxMana);}
+  if(o.atk)p.atk-=o.atk;if(o.def)p.def-=o.def;if(o.crit)p.crit-=o.crit;if(o.dodge)p.dodge-=o.dodge;if(o.lifesteal)p.lifesteal-=o.lifesteal;if(o.regen)p.regen-=o.regen;
+  if(o.mana){p.maxMana-=o.mana;p.mana=clamp(p.mana,0,p.maxMana);}
   p.weapon={...w};
-  if(w.atk)p.atk+=w.atk; if(w.def)p.def+=w.def; if(w.crit)p.crit+=w.crit;
-  if(w.dodge)p.dodge+=w.dodge; if(w.lifesteal)p.lifesteal+=w.lifesteal; if(w.regen)p.regen+=w.regen;
-  if(w.mana){p.maxMana+=w.mana; p.mana+=w.mana;}
+  if(w.atk)p.atk+=w.atk;if(w.def)p.def+=w.def;if(w.crit)p.crit+=w.crit;if(w.dodge)p.dodge+=w.dodge;if(w.lifesteal)p.lifesteal+=w.lifesteal;if(w.regen)p.regen+=w.regen;
+  if(w.mana){p.maxMana+=w.mana;p.mana+=w.mana;}
 }
 
 /* ============================================================
    RENDER ROUTER
    ============================================================ */
 function render(){
-  ({title:renderTitle, class:renderClassSelect, corridor:renderCorridor, room:renderRoom,
-    battle:renderBattle, reward:renderReward, merchant:renderMerchant, gameover:()=>renderEnd(false),
-    victory:()=>renderEnd(true)}[G.screen])();
+  ({title:renderTitle,class:renderClassSelect,omen:renderOmen,corridor:renderCorridor,room:renderRoom,
+    event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,
+    gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
 }
 function go(s){ G.screen=s; render(); }
 
 /* ---------- TITLE ---------- */
 function renderTitle(){
-  app.innerHTML = `
-    <h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
-    <div class="subtitle">an 8-bit text roguelike &middot; v2</div>
+  app.innerHTML=`<h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
+    <div class="subtitle">an 8-bit text roguelike &middot; v3</div>
     <div class="panel center fade">
       <pre class="sprite">    .-=========-.
     \\'-=======-'/
@@ -282,236 +421,254 @@ function renderTitle(){
      \\__ 'O' __/
        '-----'</pre>
       <p class="muted" style="font-size:9px;line-height:2">
-        Descend ${RUN_LENGTH} chambers through 3 zones.<br>
-        Face packs of monsters, claim relics that reshape<br>your build, and slay 3 bosses.
-      </p>
+        20 chambers &middot; 4 zones &middot; random Omens, relics<br>
+        &amp; narrative events make every run unique.<br>
+        Pick a champion, choose your curse, and descend.</p>
       <button class="btn center" onclick="go('class')"><span class="blink">&#9654;</span> PRESS START</button>
     </div>
     <div class="footer">number keys or click &middot; Enter = first option</div>`;
 }
-
-/* ---------- CLASS SELECT ---------- */
+/* ---------- CLASS ---------- */
 function renderClassSelect(){
-  const card = key=>{
-    const c=CLASSES[key];
-    return `<div class="panel tight">
-      <h3 class="${c.color}" style="font-size:13px;margin-bottom:8px">${c.name}</h3>
-      <pre class="sprite" style="font-size:9px;color:var(--${c.color})">${c.sprite}</pre>
-      <div class="stats" style="margin-top:8px">
-        <b class="red">HP</b> ${c.hp} &nbsp; <b class="blue">MP</b> ${c.mana}<br>
-        <b>ATK</b> ${c.atk} &nbsp; <b>DEF</b> ${c.def} &nbsp; <b>DODGE</b> ${c.dodge}%
-      </div>
-      <div class="chip ${c.color}">${c.affinity}</div>
-      <div class="muted" style="font-size:8px;line-height:1.8">${c.affinityText}</div>
-      <button class="btn center" onclick="chooseClass('${key}')">CHOOSE</button>
-    </div>`;
-  };
-  app.innerHTML = `<h1 class="title" style="font-size:16px">CHOOSE YOUR CHAMPION</h1>
+  const card=key=>{const c=CLASSES[key];return `<div class="panel tight">
+    <h3 class="${c.color}" style="font-size:13px;margin-bottom:8px">${c.name}</h3>
+    <pre class="sprite" style="font-size:9px;color:var(--${c.color})">${c.sprite}</pre>
+    <div class="stats" style="margin-top:8px"><b class="red">HP</b> ${c.hp} &nbsp; <b class="blue">MP</b> ${c.mana}<br>
+      <b>ATK</b> ${c.atk} &nbsp; <b>DEF</b> ${c.def} &nbsp; <b>DODGE</b> ${c.dodge}%</div>
+    <div class="chip ${c.color}">${c.affinity}</div>
+    <div class="muted" style="font-size:8px;line-height:1.8">${c.affinityText}</div>
+    <button class="btn center" onclick="chooseClass('${key}')">CHOOSE</button></div>`;};
+  app.innerHTML=`<h1 class="title" style="font-size:16px">CHOOSE YOUR CHAMPION</h1>
     <div class="subtitle">All wield mana &amp; health — each in their own way</div>
     <div class="grid3 fade">${card('mage')}${card('warrior')}${card('ranger')}</div>`;
 }
-function chooseClass(key){ G.player=makePlayer(key); G.depth=0; nextCorridor(); G.screen='corridor'; render(); }
+function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods();
+  G.omenChoices=shuffle(OMENS.filter(o=>o.id!=='none')).slice(0,2); G.omenChoices.unshift(OMENS[0]); G.omenChoices=shuffle(G.omenChoices);
+  G.screen='omen'; render(); }
+/* ---------- OMEN ---------- */
+function renderOmen(){
+  const cards=G.omenChoices.map((o,i)=>`<button class="btn" onclick="chooseOmen(${i})">
+    <span class="k teal">&#10022;</span>${o.name}<small>${o.note}</small></button>`).join('');
+  app.innerHTML=`<h1 class="title" style="font-size:15px">READ THE OMENS</h1>
+    <div class="subtitle">A force that will shape this entire run</div>
+    <div class="panel fade">
+      <pre class="sprite teal">   * . *\n  . (@) .\n   * . *</pre>
+      <p class="muted center" style="font-size:9px">Choose one fate:</p>${cards}</div>`;
+}
+function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.player); nextCorridor(); G.screen='corridor'; render(); }
 
 /* ============================================================
-   DUNGEON / CORRIDOR
+   DUNGEON GENERATION
    ============================================================ */
+function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.105; }
+function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
+function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 
 function makeGroup(depth){
   let count=1;
-  if(depth>=11){ const r=rnd(100); count = r<38?1 : r<78?2 : 3; }
-  else if(depth>=5){ count = rnd(100)<58?1:2; }
-  return Array.from({length:count}, ()=>pick(ENEMIES));
+  if(depth>=12){ const r=rnd(100); count=r<34?1:r<74?2:3; }
+  else if(depth>=6){ count=rnd(100)<55?1:2; }
+  else if(depth>=3){ count=rnd(100)<78?1:2; }
+  count+=G.mods.packBonus; count=clamp(count,1,4);
+  return Array.from({length:count},()=>({base:pick(ENEMIES),affix:rollAffix(depth)}));
+}
+function rollAffix(depth){
+  let p=4+depth*1.1; p*=G.mods.eliteMul;
+  return chance(p)?pick(AFFIXES):null;
 }
 function makeRoom(depth){
-  if(BOSS_CHAMBERS[depth]) return {type:'enemy', boss:BOSS_CHAMBERS[depth],
-    peek: depth===RUN_LENGTH?'A monstrous roar shakes dust from the ceiling...':'Something powerful stirs beyond this door.'};
+  if(BOSS_CHAMBERS[depth]!==undefined){ const key=pick(BOSS_POOL[BOSS_CHAMBERS[depth]]);
+    return {type:'enemy',boss:key,peek:depth===RUN_LENGTH?'A world-ending roar shakes the crypt...':'Something powerful stirs beyond this door.'}; }
+  const greedy=G.mods.greedy;
   const r=rnd(100);
-  if(r<42){ const g=makeGroup(depth); return {type:'enemy', group:g, peek:groupPeek(g)}; }
-  if(r<60) return {type:'chest',    peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A latched strongbox waits.'])};
-  if(r<70) return {type:'relic',    peek:'An ancient pedestal hums with power.'};
-  if(r<80) return {type:'merchant', peek:'A hooded figure beckons from the shadows.'};
-  if(r<88) return {type:'shrine',   peek:'A faint glow pulses from a cracked altar.'};
-  if(r<95) return {type:'fountain', peek:'A strange, shimmering fountain bubbles here.'};
-  return {type:'empty', peek:'Cold, empty stone. A moment to breathe.'};
+  if(r<(greedy?34:40)){ const g=makeGroup(depth); return {type:'enemy',group:g,peek:groupPeek(g)}; }
+  if(r<(greedy?60:54)) return {type:'chest',peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A latched strongbox waits.'])};
+  if(r<70) return {type:'event',ev:pickEvent(),peek:'You hear something unusual ahead.'};
+  if(r<78) return {type:'relic',peek:'An ancient pedestal hums with power.'};
+  if(r<(greedy?92:86)) return {type:'merchant',peek:'A hooded figure beckons from the shadows.'};
+  if(r<92) return {type:'shrine',peek:'A faint glow pulses from a cracked altar.'};
+  if(r<97) return {type:'fountain',peek:'A strange, shimmering fountain bubbles here.'};
+  return {type:'empty',peek:'Cold, empty stone. A moment to breathe.'};
 }
-function groupPeek(g){
-  if(g.length===1) return `A ${g[0].name.toLowerCase()} lurks within.`;
-  const counts={}; g.forEach(e=>counts[e.name]=(counts[e.name]||0)+1);
-  const txt=Object.entries(counts).map(([n,c])=>c>1?`${c} ${n}s`:`a ${n}`).join(' and ');
-  return `A pack: ${txt}.`;
+function pickEvent(){
+  let avail=EVENTS.filter(e=>!G.seenEvents.includes(e.id));
+  if(!avail.length){ G.seenEvents=[]; avail=EVENTS; }
+  const e=pick(avail); G.seenEvents.push(e.id); return e;
 }
-function doorHint(room){
-  return {enemy: room.boss?'DANGER — overwhelming presence':'You sense hostile creatures',
-    chest:'Smells of dust and... treasure?', relic:'A humming, ancient power',
-    merchant:'Coins clink in the dark', shrine:'A faint, calming glow',
-    fountain:'Glittering, sweet-smelling water', empty:'Quiet. Probably safe.'}[room.type];
-}
-function nextCorridor(){
-  G.depth++;
-  if(BOSS_CHAMBERS[G.depth]) G.doors=[makeRoom(G.depth)];
-  else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); }
-}
+function groupPeek(g){ if(g.length===1){const u=g[0];return `A ${u.affix?u.affix.tag+' ':''}${u.base.name.toLowerCase()} lurks within.`;}
+  return `A pack of ${g.length} creatures stirs in the dark${g.some(u=>u.affix)?', one of them gleaming with power':''}.`; }
+function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presence':'You sense hostile creatures',
+  chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
+  merchant:'Coins clink in the dark',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
+function nextCorridor(){ G.depth++;
+  if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
+  else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); } }
 function renderCorridor(){
-  const isBoss=G.doors.length===1 && G.doors[0].boss;
+  const isBoss=G.doors.length===1&&G.doors[0].boss;
   const doors=G.doors.map((d,i)=>`<button class="btn" onclick="openDoor(${i})">
-      <span class="k">${isBoss?'&#9760;':'['+(i+1)+']'}</span>${isBoss?'THE FINAL DOOR':'Door '+(i+1)}
-      <small>${doorHint(d)}</small></button>`).join('');
-  app.innerHTML = `<div class="floortag">${depthLabel()}</div>${playerBar(G.player)}
-    <div class="panel fade">
-      <p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>
-      ${doors}
-    </div>${statusFooter()}`;
+    <span class="k">${isBoss?'&#9760;':'['+(i+1)+']'}</span>${isBoss?'THE BOSS DOOR':'Door '+(i+1)}<small>${doorHint(d)}</small></button>`).join('');
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(G.player)}
+    <div class="panel fade"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}</div>${statusFooter()}`;
 }
-function statusFooter(){ const p=G.player;
-  return `<div class="footer">HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; ${p.gold}g &middot; ${p.relics.length} relic(s)</div>`; }
-function openDoor(i){ G.room=G.doors[i]; G.screen='room'; render(); }
+function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; ${p.gold}g &middot; ${p.relics.length} relic(s)</div>`; }
+function openDoor(i){ G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); }
 
 /* ============================================================
-   SCALING / PREVIEW
+   ENEMY BUILD / SCALING
    ============================================================ */
-function freshEnemy(o){ return {...o, burn:0, burnTurns:0, weak:0, weakTurns:0, _dead:false}; }
-function scaleEnemy(base, depth){
-  const f = 1 + Math.max(0,depth-1)*0.15;
-  return freshEnemy({
-    name:base.name, sprite:base.sprite,
-    hp:Math.round(base.hp*f), maxHp:Math.round(base.hp*f),
-    atk:Math.round(base.atk*f), def:base.def||0,
-    dodgy:base.dodgy, caster:base.caster, boss:false,
-  });
+function newStatus(){ return {burn:0,burnT:0,poison:0,poisonT:0,weak:0,weakT:0,vuln:0,vulnT:0,stunT:0,regen:0,regenT:0}; }
+function freshEnemy(o){ return Object.assign({st:newStatus(),_dead:false},o); }
+function applyAffix(e,affix){
+  if(!affix) return e;
+  e.name=affix.tag+' '+e.name; e.elite=true;
+  e.maxHp=Math.round(e.maxHp*affix.hp); e.hp=e.maxHp;
+  e.atk=Math.round(e.atk*affix.atk); e.def=(e.def||0)+(affix.def||0);
+  if(affix.leech)e.leech=true; if(affix.poison)e.poison=affix.poison;
+  e.xp=(e.xp||6)+12; e.goldBonus=(e.goldBonus||0)+10;
+  return e;
 }
-function cloneBoss(key){ const b=BOSSES[key]; return freshEnemy({...b, maxHp:b.hp}); }
-function findBase(name){ return ENEMIES.find(e=>e.name===name); }
+function scaleEnemy(unit,depth){
+  const b=unit.base||unit; const f=depthFactor();
+  let e=freshEnemy({name:b.name,sprite:b.sprite,hp:Math.round(b.hp*f*G.mods.eHp),maxHp:Math.round(b.hp*f*G.mods.eHp),
+    atk:Math.round(b.atk*f),def:b.def||0,dodgy:b.dodgy,caster:b.caster,poison:b.poison,burnAtk:b.burnAtk,xp:b.xp||6,boss:false});
+  if(unit.affix) applyAffix(e,unit.affix);
+  return e;
+}
+function cloneBoss(key){ const b=BOSSES[key]; const f=1+Math.max(0,G.depth-5)*0.04;
+  return freshEnemy({...b,hp:Math.round(b.hp*f),maxHp:Math.round(b.hp*f),atk:Math.round(b.atk*f)}); }
+function findBase(n){ return ENEMIES.find(e=>e.name===n); }
 function buildEnemies(room){
-  if(room.boss){
-    const list=[cloneBoss(room.boss)];
-    (BOSSES[room.boss].adds||[]).forEach(n=>list.push(scaleEnemy(findBase(n), Math.max(1,G.depth-3))));
-    return list;
-  }
-  return room.group.map(b=>scaleEnemy(b, G.depth));
+  if(room.boss){ const list=[cloneBoss(room.boss)];
+    (BOSSES[room.boss].adds||[]).forEach(n=>list.push(scaleEnemy({base:findBase(n)},Math.max(1,G.depth-3)))); return list; }
+  return room.group.map(u=>scaleEnemy(u,G.depth));
 }
 
 /* ============================================================
    ROOM RESOLUTION
    ============================================================ */
 function renderRoom(){
-  const r=G.room, p=G.player; let body='';
+  const r=G.room,p=G.player; let body='';
   if(r.type==='enemy'){
-    const list = buildEnemies(r);
-    const cells = list.map(e=>`<div class="enemy-cell">
-        <pre class="sprite red">${e.sprite}</pre>
-        <div class="center" style="font-size:9px;margin-top:4px">${e.name}${e.boss?' <span class="red">[BOSS]</span>':''}</div>
-        <div class="center stats">HP ~${e.maxHp} &middot; ATK ~${e.atk}</div>
-      </div>`).join('');
-    body = `<div class="enemies-row">${cells}</div>
+    const list=buildEnemies(r);
+    const cells=list.map(e=>`<div class="enemy-cell ${e.elite?'elite':''}">
+      <pre class="sprite red">${e.sprite}</pre>
+      <div class="center" style="font-size:8px;margin-top:4px">${e.name}${e.boss?' <span class="red">[BOSS]</span>':e.elite?' <span class="amber">&#9733;</span>':''}</div>
+      <div class="center stats">HP ~${e.maxHp} &middot; ATK ~${e.atk}</div></div>`).join('');
+    body=`<div class="enemies-row">${cells}</div>
       <p class="muted center" style="font-size:9px;margin-top:10px">${r.peek}</p>
       <div class="row" style="margin-top:12px">
         <button class="btn center red" onclick="startBattle()"><span class="k">&#9876;</span>FIGHT</button>
-        ${r.boss?'':`<button class="btn center" onclick="avoidRoom()"><span class="k">&#10551;</span>SNEAK PAST</button>`}
-      </div>`;
+        ${r.boss?'':`<button class="btn center" onclick="avoidRoom()"><span class="k">&#10551;</span>SNEAK PAST</button>`}</div>`;
   } else if(r.type==='chest'){
-    body = `<pre class="sprite amber">  ______\n /      \\\n |[]##[]|\n |  __  |\n \\______/</pre>
-      <h3 class="center amber" style="margin:8px 0">A CHEST</h3>
-      <p class="muted center" style="font-size:9px">${r.peek}</p>
+    body=`<pre class="sprite amber">  ______\n /      \\\n |[]##[]|\n |  __  |\n \\______/</pre>
+      <h3 class="center amber" style="margin:8px 0">A CHEST</h3><p class="muted center" style="font-size:9px">${r.peek}</p>
       <div class="row" style="margin-top:12px">
         <button class="btn center amber" onclick="openChest()"><span class="k">&#128273;</span>OPEN IT</button>
-        <button class="btn center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE IT</button>
-      </div>`;
+        <button class="btn center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE IT</button></div>`;
   } else if(r.type==='relic'){
-    if(!r.options){ r.options=[...RELICS].sort(()=>Math.random()-.5).slice(0,3); }
+    if(!r.options) r.options=shuffle(RELICS).slice(0,3);
     const owned=new Set(p.relics);
-    const cards=r.options.map((rl,i)=>{
-      const have=owned.has(rl.name);
-      return `<button class="btn" ${have?'disabled':''} onclick="takeRelic(${i})">
-        <span class="k purple">&#9670;</span>${rl.name}${have?' (owned)':''}<small>${rl.note}</small></button>`;
-    }).join('');
-    body = `<pre class="sprite purple">  __||__\n |[####]|\n |[ &#9670; ]|\n |[####]|\n  \\____/</pre>
+    const cards=r.options.map((rl,i)=>{const have=owned.has(rl.name);
+      return `<button class="btn" ${have?'disabled':''} onclick="takeRelic(${i})"><span class="k purple">&#9670;</span>${rl.name}${have?' (owned)':''}<small>${rl.note}</small></button>`;}).join('');
+    body=`<pre class="sprite purple">  __||__\n |[####]|\n |[ &#9670; ]|\n |[####]|\n  \\____/</pre>
       <h3 class="center purple" style="margin:8px 0">PEDESTAL OF POWER</h3>
-      <p class="muted center" style="font-size:9px">Claim ONE relic. It will reshape how you fight.</p>
-      ${cards}
+      <p class="muted center" style="font-size:9px">Claim ONE relic. It will reshape how you fight.</p>${cards}
       <button class="btn muted center" onclick="leaveRoom()">Touch nothing, move on</button>`;
   } else if(r.type==='merchant'){ return renderMerchant();
   } else if(r.type==='shrine'){
-    body = `<pre class="sprite purple">   _/\\_\n  /    \\\n |  *   |\n |______|</pre>
+    body=`<pre class="sprite purple">   _/\\_\n  /    \\\n |  *   |\n |______|</pre>
       <h3 class="center purple" style="margin:8px 0">CRACKED ALTAR</h3>
       <p class="muted center" style="font-size:9px">Offer your strength to mend, or your blood for power.</p>
       <button class="btn" onclick="shrine('heal')"><span class="k">&#10010;</span>Pray — restore 45% HP &amp; MP</button>
       <button class="btn" onclick="shrine('power')"><span class="k">&#9876;</span>Blood pact — +4 ATK, lose 12 HP</button>
-      <button class="btn" onclick="shrine('ward')"><span class="k">&#128737;</span>Ward — +3 DEF &amp; +6 max HP</button>`;
+      <button class="btn" onclick="shrine('ward')"><span class="k">&#128737;</span>Ward — +3 DEF &amp; +8 max HP</button>`;
   } else if(r.type==='fountain'){
-    body = `<pre class="sprite blue">  .-~~~-.\n (~ ~ ~ ~)\n  \\~~~~~/\n   |   |\n  /_____\\</pre>
+    body=`<pre class="sprite blue">  .-~~~-.\n (~ ~ ~ ~)\n  \\~~~~~/\n   |   |\n  /_____\\</pre>
       <h3 class="center blue" style="margin:8px 0">SHIMMERING FOUNTAIN</h3>
       <p class="muted center" style="font-size:9px">The water glows. It could heal you greatly... or curse you. A gamble.</p>
       <div class="row" style="margin-top:12px">
         <button class="btn center blue" onclick="drinkFountain()"><span class="k">&#9760;</span>DRINK</button>
-        <button class="btn center" onclick="leaveRoom()"><span class="k">&#10551;</span>WALK AWAY</button>
-      </div>`;
+        <button class="btn center" onclick="leaveRoom()"><span class="k">&#10551;</span>WALK AWAY</button></div>`;
   } else {
-    body = `<pre class="sprite muted">  . . . .\n .       .\n  empty\n .       .\n  . . . .</pre>
+    body=`<pre class="sprite muted">  . . . .\n .       .\n  empty\n .       .\n  . . . .</pre>
       <h3 class="center muted" style="margin:8px 0">EMPTY CHAMBER</h3>
-      <p class="muted center" style="font-size:9px">${r.peek} You catch your breath. (+10 HP, +8 MP)</p>
+      <p class="muted center" style="font-size:9px">${r.peek} You catch your breath. (+12 HP, +8 MP)</p>
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
-  app.innerHTML = `<div class="floortag">${depthLabel()}</div>${playerBar(p)}<div class="panel fade">${body}</div>`;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}<div class="panel fade">${body}</div>`;
 }
-
-function avoidRoom(){
-  const p=G.player, extra=(G.room.group?G.room.group.length-1:0);
-  const base = p.cls==='ranger'?88:60;
-  if(chance(base - extra*8)){ proceed('You slip past unseen.'); }
-  else { const dmg=6+rnd(8)+G.depth; p.hp=clamp(p.hp-dmg,0,p.maxHp);
-    if(p.hp<=0){ G.screen='gameover'; return render(); }
-    proceed(`Caught! You take ${dmg} escaping.`); }
-}
+function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
+  const base=p.cls==='ranger'?88:60;
+  if(chance(base-extra*8)){ proceed('You slip past unseen.'); }
+  else { const dmg=6+rnd(8)+G.depth; p.hp=clamp(p.hp-dmg,0,p.maxHp); if(p.hp<=0){G.screen='gameover';return render();} proceed(`Caught! You take ${dmg} escaping.`); } }
 function leaveRoom(){ proceed('You move on.'); }
-function restEmpty(){ heal(G.player,10); G.player.mana=clamp(G.player.mana+8,0,G.player.maxMana); proceed(); }
+function restEmpty(){ heal(G.player,12); G.player.mana=clamp(G.player.mana+8,0,G.player.maxMana); proceed(); }
 function shrine(k){ const p=G.player;
   if(k==='heal'){ heal(p,Math.round(p.maxHp*0.45)); p.mana=clamp(p.mana+Math.round(p.maxMana*0.45),0,p.maxMana); }
   if(k==='power'){ p.atk+=4; p.hp=clamp(p.hp-12,1,p.maxHp); }
-  if(k==='ward'){ p.def+=3; p.maxHp+=6; heal(p,6); }
+  if(k==='ward'){ p.def+=3; p.maxHp+=8; heal(p,8); }
   proceed(); }
-function takeRelic(i){ const p=G.player, rl=G.room.options[i];
-  if(p.relics.includes(rl.name)) return;
-  rl.apply(p); p.relics.push(rl.name); proceed(`Relic claimed: ${rl.name}!`); }
-function drinkFountain(){ const p=G.player;
-  const roll=rnd(100);
+function takeRelic(i){ const p=G.player,rl=G.room.options[i]; if(p.relics.includes(rl.name))return; rl.apply(p); p.relics.push(rl.name); proceed(`Relic claimed: ${rl.name}!`); }
+function drinkFountain(){ const p=G.player,roll=rnd(100);
   if(roll<55){ const h=Math.round(p.maxHp*0.45); heal(p,h); p.mana=clamp(p.mana+Math.round(p.maxMana*0.4),0,p.maxMana); proceed(`Blessed water! +${h} HP and mana restored.`); }
   else if(roll<80){ const c=Math.round(p.maxHp*0.18); p.hp=clamp(p.hp-c,1,p.maxHp); proceed(`Cursed! The water burns for ${c}.`); }
-  else { p.maxHp+=10; heal(p,10); p.atk+=2; proceed('A surge of vigor! +10 max HP, +2 ATK.'); }
+  else { p.maxHp+=12; heal(p,12); p.atk+=2; proceed('A surge of vigor! +12 max HP, +2 ATK.'); } }
+
+/* ---------- EVENTS ---------- */
+function renderEvent(){
+  const r=G.room,ev=r.ev,p=G.player;
+  if(r.outcome){
+    app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+      <div class="panel fade"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
+        <pre class="sprite teal">${ev.art}</pre>
+        <p class="evtext center">${r.outcome}</p>
+        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
+    return;
+  }
+  const opts=ev.options.map((o,i)=>`<button class="btn" onclick="chooseEvent(${i})"><span class="k teal">[${i+1}]</span>${o.label}<small>${o.desc}</small></button>`).join('');
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+    <div class="panel fade"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
+      <pre class="sprite teal">${ev.art}</pre>
+      <p class="evtext center">${ev.text}</p>${opts}</div>`;
 }
+function chooseEvent(i){ const r=G.room,res=r.ev.options[i].run(G.player);
+  if(res===false) return;            // a battle was started
+  r.outcome=res; render(); }
 
 /* ---------- CHEST ---------- */
 function openChest(){
-  if(rnd(100)<15){
-    const m=freshEnemy({name:'MIMIC', sprite:"  ______\n /<><><>\\\n | (oo) |\n  \\vvvv/", hp:50+G.depth*5, maxHp:50+G.depth*5, atk:11+G.depth, def:1});
-    G.room={type:'enemy', _enemies:[m]};
-    startBattle('The chest was a MIMIC!'); return;
-  }
+  if(chance(15)){ const m=freshEnemy({name:'MIMIC',sprite:"  ______\n /<><><>\\\n | (oo) |\n  \\vvvv/",hp:scaleHpVal(52),maxHp:scaleHpVal(52),atk:Math.round(11*depthFactor()),def:1,xp:14});
+    G.room={type:'enemy',_enemies:[m]}; startBattle('The chest was a MIMIC!'); return; }
   G.pending={source:'chest'}; G.screen='reward'; buildRewards(); render();
 }
 
 /* ---------- MERCHANT ---------- */
 function renderMerchant(){
   const p=G.player;
-  const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}">
-    <span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
-  app.innerHTML = `<div class="floortag">${depthLabel()}</div>${playerBar(p)}
-    <div class="panel fade">
-      <pre class="sprite amber">  ,---.\n  (o o)\n /|MERCH|\\\n  |   |</pre>
+  if(!G.room.stock) G.room.stock={relic:pick(RELICS.filter(r=>!p.relics.includes(r.name))||RELICS)||null, weapon:pick(WEAPONS[p.cls].filter(w=>w.name!==p.weapon.name))};
+  const st=G.room.stock;
+  const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
+  const relicBtn=st.relic && !p.relics.includes(st.relic.name)?item('Relic: '+st.relic.name,70,st.relic.note,"buy('relic')",p.gold>=70):'';
+  const wpnBtn=st.weapon?item('Weapon: '+st.weapon.name,55,`${st.weapon.dmg} dmg${st.weapon.note?' &middot; '+st.weapon.note:''}`,"buy('weapon')",p.gold>=55):'';
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+    <div class="panel fade"><pre class="sprite amber">  ,---.\n  (o o)\n /|MERCH|\\\n  |   |</pre>
       <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
       <p class="muted center" style="font-size:9px">"Coin for comfort, traveler." &middot; You have ${p.gold}g</p>
-      ${item('Health Potion', 25, '+1 potion (heals 40% in battle)', "buy('potion')", p.gold>=25)}
-      ${item('Healing Draught', 18, 'restore 50% HP now', "buy('heal')", p.gold>=18)}
-      ${item('Mana Tonic', 14, 'fully restore mana now', "buy('mana')", p.gold>=14)}
-      ${item('Mystery Upgrade', 40, 'a random permanent upgrade', "buy('upgrade')", p.gold>=40)}
-      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button>
-    </div>${statusFooter()}`;
+      ${item('Health Potion',25,'+1 potion (heals 40% in battle)',"buy('potion')",p.gold>=25)}
+      ${item('Healing Draught',18,'restore 50% HP now',"buy('heal')",p.gold>=18)}
+      ${item('Mana Tonic',14,'fully restore mana now',"buy('mana')",p.gold>=14)}
+      ${item('Mystery Upgrade',40,'a random permanent upgrade',"buy('upgrade')",p.gold>=40)}
+      ${wpnBtn}${relicBtn}
+      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>${statusFooter()}`;
 }
-function buy(kind){ const p=G.player;
-  if(kind==='potion'&&p.gold>=25){ p.gold-=25; p.potions++; }
-  if(kind==='heal'&&p.gold>=18){ p.gold-=18; heal(p,Math.round(p.maxHp*0.5)); }
-  if(kind==='mana'&&p.gold>=14){ p.gold-=14; p.mana=p.maxMana; }
-  if(kind==='upgrade'&&p.gold>=40){ p.gold-=40; pick(UPGRADES).apply(p); }
+function buy(kind){ const p=G.player,st=G.room.stock;
+  if(kind==='potion'&&p.gold>=25){p.gold-=25;p.potions++;}
+  else if(kind==='heal'&&p.gold>=18){p.gold-=18;heal(p,Math.round(p.maxHp*0.5));}
+  else if(kind==='mana'&&p.gold>=14){p.gold-=14;p.mana=p.maxMana;}
+  else if(kind==='upgrade'&&p.gold>=40){p.gold-=40;pick(UPGRADES).apply(p);}
+  else if(kind==='weapon'&&p.gold>=55&&st.weapon){p.gold-=55;equip(p,st.weapon);st.weapon=null;}
+  else if(kind==='relic'&&p.gold>=70&&st.relic){p.gold-=70;st.relic.apply(p);p.relics.push(st.relic.name);st.relic=null;}
   renderMerchant();
 }
 
@@ -519,249 +676,248 @@ function buy(kind){ const p=G.player;
    BATTLE
    ============================================================ */
 function startBattle(intro){
-  const r=G.room;
-  const enemies = r._enemies ? r._enemies : buildEnemies(r);
-  G.battle = { enemies, target:0, pdef:0, pdefTurns:0, evade:0, evadeTurns:0, guardDown:0,
-    over:false, anim:'', animIdx:-1, hadBoss:enemies.some(e=>e.boss), isFinal:enemies.some(e=>e.name===BOSSES.final.name) };
+  const r=G.room; const enemies=r._enemies?r._enemies:buildEnemies(r);
+  G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,
+    over:false,anim:'',animIdx:-1,usedSecond:false,
+    pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
+  if(G.player.flags.combatRegen){ G.battle.pst.regen=Math.max(2,Math.round(G.player.maxHp*0.04)); G.battle.pst.regenT=999; }
   G.log=[];
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
   G.screen='battle'; render();
 }
-function blog(t,c=''){ G.log.push({text:t,cls:c}); if(G.log.length>30) G.log.shift(); }
+function blog(t,c=''){ G.log.push({text:t,cls:c}); if(G.log.length>40)G.log.shift(); }
 function living(){ return G.battle.enemies.filter(e=>e.hp>0); }
 function allDead(){ return G.battle.enemies.every(e=>e.hp<=0); }
 function ensureTarget(){ const b=G.battle; if(!b.enemies[b.target]||b.enemies[b.target].hp<=0){ const i=b.enemies.findIndex(e=>e.hp>0); b.target=i<0?0:i; } }
 function setTarget(i){ if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }
-
+function stChips(st){ let c='';
+  if(st.burnT>0)c+=`<span class="chip c-burn">BURN ${st.burnT}</span>`;
+  if(st.poisonT>0)c+=`<span class="chip c-pois">PSN ${st.poisonT}</span>`;
+  if(st.weakT>0)c+=`<span class="chip c-weak">WEAK ${st.weakT}</span>`;
+  if(st.vulnT>0)c+=`<span class="chip c-vuln">VULN ${st.vulnT}</span>`;
+  if(st.stunT>0)c+=`<span class="chip c-stun">STUN</span>`;
+  return c; }
 function renderBattle(){
-  const p=G.player, b=G.battle; ensureTarget();
-  const multi = b.enemies.length>1;
-  const cells = b.enemies.map((e,i)=>{
-    const dead=e.hp<=0;
-    const st = (e.burnTurns>0?'<span class="chip amber">BURN</span>':'')+(e.weakTurns>0?'<span class="chip purple">WEAK</span>':'');
-    return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''}">
-      <div class="bar mini"><div class="lbl"><span class="red">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
+  const p=G.player,b=G.battle; ensureTarget();
+  const multi=b.enemies.length>1;
+  const cells=b.enemies.map((e,i)=>{ const dead=e.hp<=0;
+    return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''}">
+      <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
       <pre class="sprite red ${b.animIdx===i?'hitpop':''}">${e.sprite}</pre>
-      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':st}</div>
-      ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}
-    </div>`;
+      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':stChips(e.st)}</div>
+      ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}</div>`;
   }).join('');
   const logHtml=G.log.slice(-6).map(l=>`<div class="${l.cls}">${l.text}</div>`).join('');
-  const pStatus=(b.pdefTurns>0?`<span class="chip blue">GUARD ${b.pdefTurns}</span>`:'')
-    +(b.evadeTurns>0?`<span class="chip green">EVADE ${b.evadeTurns}</span>`:'')
-    +(b.guardDown>0?`<span class="chip red">EXPOSED</span>`:'');
-  const skills=p.skills.map(s=>`<button class="btn" ${p.mana<s.cost?'disabled':''} onclick="playerSkill('${s.id}')">
-      <span class="k blue">${s.cost}MP</span>${s.name}${s.aoe?' <span class="amber">(AOE)</span>':''}<small>${s.desc}</small></button>`).join('');
-  app.innerHTML = `<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>
+  const pStatus=(b.pdefTurns>0?`<span class="chip c-guard">GUARD ${b.pdefTurns}</span>`:'')
+    +(b.evadeTurns>0?`<span class="chip c-pois">EVADE ${b.evadeTurns}</span>`:'')
+    +(b.guardDown>0?`<span class="chip c-vuln">EXPOSED</span>`:'')+stChips(b.pst);
+  const cm=G.mods.skillCost;
+  const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm));
+    return `<button class="btn" ${p.mana<cost?'disabled':''} onclick="playerSkill('${s.id}')"><span class="k blue">${cost}MP</span>${s.name}${s.aoe?' <span class="amber">(AOE)</span>':''}<small>${s.desc}</small></button>`;}).join('');
+  app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>
     <div class="panel ${b.anim}" id="scene">
       <div class="enemies-row">${cells}</div>
       <div class="log">${logHtml}</div>
       <pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>
-      <div class="center">${pStatus}</div>
-      ${playerBar(p,true)}
-    </div>
-    ${b.over?'':`<div class="panel tight">
-      <div class="menu-grid">
+      <div class="center">${pStatus}</div>${playerBar(p,true)}</div>
+    ${b.over?'':`<div class="panel tight"><div class="menu-grid">
         <button class="btn" onclick="playerAttack()"><span class="k">&#9876;</span>ATTACK<small>${p.weapon.name} (${p.atk+p.weapon.dmg} pow)</small></button>
-        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 40%</small></button>
-      </div>
+        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 40%</small></button></div>
       <hr class="hr">${skills}
-      <button class="btn muted" onclick="fleeBattle()"><span class="k">&#10551;</span>FLEE<small>${b.hadBoss?'cannot flee a boss!':'risky — foes may strike'}</small></button>
-    </div>`}`;
+      <button class="btn muted" onclick="fleeBattle()"><span class="k">&#10551;</span>FLEE<small>${b.hadBoss?'cannot flee a boss!':'risky — foes may strike'}</small></button></div>`}`;
 }
-
-/* ----- damage helpers ----- */
-function playerDamageMult(e){
-  const p=G.player, f=p.flags; let m=1;
-  if(f.glassCannon) m*=1.5;
-  if(f.stoneSkin)  m*=0.8;
-  if(f.berserker)  m*= 1 + (1-p.hp/p.maxHp)*0.8;
-  if(f.executioner && e.hp<=e.maxHp*0.3) m*=2;
-  return m;
-}
+/* ----- status application ----- */
+function addBurn(st,a,t){ st.burn=Math.max(st.burn,a); st.burnT=Math.max(st.burnT,t); }
+function addPoison(st,a,t){ st.poison=Math.max(st.poison,a); st.poisonT=Math.max(st.poisonT,t); }
+function addWeak(st,t){ st.weak=0.4; st.weakT=Math.max(st.weakT,t); }
+function addVuln(st,t){ st.vuln=0.25; st.vulnT=Math.max(st.vulnT,t); }
+function addStun(st,t){ st.stunT=Math.max(st.stunT,t); }
+/* ----- damage ----- */
+function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
+  if(f.glassCannon)m*=1.5; if(f.stoneSkin)m*=0.8;
+  if(f.berserker)m*=1+(1-p.hp/p.maxHp)*0.8;
+  if(f.executioner&&e.hp<=e.maxHp*0.3)m*=2;
+  if(e.st.vulnT>0)m*=1.25;
+  return m; }
 function rollCrit(){ return chance(G.player.crit); }
-function onEnemyDeath(e){
-  if(e._dead) return; e._dead=true;
+function critMult(){ return G.player.flags.bigCrit?2.1:1.8; }
+function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   blog(`${e.name} is defeated!`,'info');
-  G.player.kills++;
-  if(G.player.flags.bloodpact){ const h=Math.round(G.player.maxHp*0.08); heal(G.player,h); blog(`Blood Pact heals ${h}.`,'heal'); }
-}
-function dealToEnemy(idx, dmg, label, crit){
-  const b=G.battle, e=b.enemies[idx], p=G.player;
-  if(!e||e.hp<=0) return;
-  dmg = Math.max(1, Math.round(dmg*playerDamageMult(e) - (e.def||0)));
-  e.hp=clamp(e.hp-dmg,0,e.maxHp);
-  b.animIdx=idx;
-  const tag=b.enemies.length>1?` [${e.name}]`:'';
-  blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${tag}`, crit?'crit':'dmg');
+  p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
+  if(p.flags.bloodpact){ const h=Math.round(p.maxHp*0.08); heal(p,h); blog(`Blood Pact heals ${h}.`,'heal'); } }
+function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.player; if(!e||e.hp<=0)return;
+  dmg=Math.max(1,Math.round(dmg*playerDamageMult(e)-(e.def||0)));
+  e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx;
+  blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${b.enemies.length>1?` [${e.name}]`:''}`,crit?'crit':'dmg');
   if(p.lifesteal>0){ const ls=Math.max(1,Math.round(dmg*p.lifesteal/100)); heal(p,ls); blog(`You drain ${ls} HP.`,'heal'); }
-  if(e.hp<=0) onEnemyDeath(e);
-}
-function applyBurn(idx,n){ const e=G.battle.enemies[idx]; if(e&&e.hp>0){ e.burn=n; e.burnTurns=3; blog(`${e.name} is set ABLAZE!`,'info'); } }
-
-function basicHit(idx){
-  const p=G.player; let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(c)d*=1.8;
+  if(e.hp<=0) onEnemyDeath(e); }
+function basicHit(idx){ const p=G.player,b=G.battle; let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(c)d*=critMult();
   dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
-  if(p.weapon.burn && chance(45)) applyBurn(idx,4);
-}
-function playerAttack(){
-  const p=G.player,b=G.battle; if(b.over)return;
-  ensureTarget(); basicHit(b.target);
-  if(p.flags.doubleStrike && chance(35) && living().length){ ensureTarget(); blog('Twin Fang! A second strike!','info'); basicHit(b.target); }
-  afterPlayer();
-}
+  const e=b.enemies[idx]; if(!e||e.hp<=0)return;
+  const pr=p.weapon.proc;
+  if(pr){ if(pr.burn&&chance(pr.burn[2])){addBurn(e.st,pr.burn[0],pr.burn[1]);blog(`${e.name} is BURNING!`,'info');}
+    if(pr.poison&&chance(pr.poison[2])){addPoison(e.st,pr.poison[0],pr.poison[1]);blog(`${e.name} is POISONED!`,'info');}
+    if(pr.vuln){addVuln(e.st,pr.vuln[0]);blog(`${e.name} is VULNERABLE!`,'info');} }
+  if(p.flags.toxic){addPoison(e.st,4,3);}
+  if(p.flags.frostbrand){addWeak(e.st,2);}
+  if(p.flags.sunder){addVuln(e.st,2);}
+  if(p.flags.concuss&&chance(18)){addStun(e.st,1);blog(`${e.name} is STUNNED!`,'info');} }
+function playerAttack(){ const p=G.player,b=G.battle; if(b.over)return; ensureTarget(); basicHit(b.target);
+  if(p.flags.doubleStrike&&chance(35)&&living().length){ ensureTarget(); blog('Twin Fang — a second strike!','info'); basicHit(b.target); }
+  afterPlayer(); }
 function aoeHit(fn){ G.battle.enemies.forEach((e,i)=>{ if(e.hp>0) fn(i); }); }
-
-function playerSkill(id){
-  const p=G.player,b=G.battle; const s=p.skills.find(x=>x.id===id);
-  if(!s||p.mana<s.cost||b.over) return; p.mana-=s.cost; ensureTarget();
+function spendMana(cost){ const p=G.player; p.mana-=cost; if(p.flags.soulSiphon){ const h=Math.max(1,Math.round(cost*0.5)); heal(p,h); } }
+function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>x.id===id); if(!s||b.over)return;
+  const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; spendMana(cost); ensureTarget();
   const mm=p.maxMana;
   switch(id){
-    case 'bolt':{ let d=10+Math.round(mm*0.16)+p.weapon.dmg; let c=rollCrit(); if(c)d*=1.8; dealToEnemy(b.target,d,'Arcane Bolt blasts',c); break; }
-    case 'fire':{ blog('Fireball erupts across the foes!','info'); aoeHit(i=>{ let d=14+Math.round(mm*0.11)+p.weapon.dmg; dealToEnemy(i,d,'Flames engulf'); }); aoeHit(i=>applyBurn(i,5)); break; }
-    case 'frost':{ blog('Frost Nova chills the room!','info'); aoeHit(i=>{ let d=7+Math.round(mm*0.07); dealToEnemy(i,d,'Frost bites'); const e=b.enemies[i]; if(e.hp>0){e.weak=0.4;e.weakTurns=2;} }); blog('Enemies are WEAKENED!','info'); break; }
-    case 'power':{ let d=(p.atk+p.weapon.dmg)*1.9+rnd(4); let c=rollCrit(); if(c)d*=1.7; dealToEnemy(b.target,d,'Power Strike crushes',c); break; }
-    case 'shield':{ b.pdef=0.65; b.pdefTurns=2; blog('You raise your guard! (65% block, 2 turns)','info'); break; }
-    case 'reck':{ blog('You spin into a whirlwind!','info'); aoeHit(i=>{ let d=(p.atk+p.weapon.dmg)*1.5+rnd(5); let c=rollCrit(); if(c)d*=1.5; dealToEnemy(i,d,'Whirlwind rends',c); }); b.guardDown=1; blog('...but you are left EXPOSED!','info'); break; }
-    case 'aim':{ let d=(p.atk+p.weapon.dmg)*1.6; let c=chance(p.crit+30); if(c)d*=2; dealToEnemy(b.target,d,'Aimed Shot pierces',c); break; }
-    case 'evade':{ b.evade=45; b.evadeTurns=2; blog('Wind Step! Dodge greatly increased.','info'); break; }
-    case 'volley':{ blog('You loose a volley of arrows!','info'); for(let k=0;k<3;k++){ const liv=living(); if(!liv.length)break; const e=pick(liv); const idx=b.enemies.indexOf(e); let d=(p.atk*0.6+p.weapon.dmg)+rnd(3); let c=rollCrit(); if(c)d*=1.8; dealToEnemy(idx,d,'Arrow hits',c); } break; }
+    case 'bolt':{let d=12+Math.round(mm*0.18)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
+    case 'fire':{blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=15+Math.round(mm*0.13)+p.weapon.dmg;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,6,3);});break;}
+    case 'frost':{blog('Frost Nova chills the room!','info');aoeHit(i=>{let d=7+Math.round(mm*0.07);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
+    case 'power':{let d=(p.atk+p.weapon.dmg)*1.9+rnd(4);let c=rollCrit();if(c)d*=1.7;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
+    case 'shield':{b.pdef=0.65;b.pdefTurns=2;blog('You raise your guard! (65% block, 2 turns)','info');break;}
+    case 'reck':{blog('You spin into a whirlwind!','info');aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.5+rnd(5);let c=rollCrit();if(c)d*=1.5;dealToEnemy(i,d,'Whirlwind rends',c);});b.guardDown=1;blog('...but you are left EXPOSED!','info');break;}
+    case 'aim':{let d=(p.atk+p.weapon.dmg)*1.6;let c=chance(p.crit+30);if(c)d*=2;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,4,2);break;}
+    case 'evade':{b.evade=45;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
+    case 'volley':{blog('You loose a volley of arrows!','info');for(let k=0;k<3;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.8;dealToEnemy(idx,d,'Arrow hits',c);} break;}
   }
-  afterPlayer();
-}
+  afterPlayer(); }
 function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.4); heal(p,h); blog(`You quaff a potion. +${h} HP.`,'heal'); afterPlayer(); }
 function fleeBattle(){ const p=G.player,b=G.battle;
   if(b.hadBoss){ blog('There is no escape from this foe!','info'); return render(); }
   if(p.cls==='ranger'?chance(85):chance(55)){ blog('You break away and flee!','info'); b.over=true; render(); setTimeout(()=>proceed('You escaped — no loot.'),700); }
-  else { blog('You failed to flee!','info'); enemyTurn(); }
-}
+  else { blog('You failed to flee!','info'); enemyTurn(); } }
 
-function afterPlayer(){
-  const b=G.battle;
-  b.enemies.forEach(e=>{ if(e.hp>0 && e.burnTurns>0){ e.hp=clamp(e.hp-e.burn,0,e.maxHp); blog(`Burn sears ${e.name} for ${e.burn}.`,'dmg'); e.burnTurns--; if(e.hp<=0)onEnemyDeath(e); } });
-  if(allDead()){ winBattle(); return; }
-  render(); setTimeout(enemyTurn,600);
+function tickDoT(entity,st,name){ // returns false if entity died
+  if(st.burnT>0){ entity.hp=clamp(entity.hp-st.burn,0,entity.maxHp||entity.hp+st.burn); blog(`Burn sears ${name} for ${st.burn}.`,'dmg'); st.burnT--; }
+  if(st.poisonT>0){ entity.hp=clamp(entity.hp-st.poison,0,entity.maxHp||entity.hp+st.poison); blog(`Poison wracks ${name} for ${st.poison}.`,'dmg'); st.poisonT--; }
+  if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
+  return entity.hp>0;
 }
-function enemyTurn(){
-  const p=G.player,b=G.battle; if(b.over)return;
+function afterPlayer(){ const b=G.battle;
+  b.enemies.forEach(e=>{ if(e.hp>0){ tickDoT(e,e.st,e.name); if(e.hp<=0)onEnemyDeath(e); } });
+  if(allDead()){ winBattle(); return; }
+  render(); setTimeout(enemyTurn,560); }
+function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   for(const e of b.enemies){
-    if(e.hp<=0) continue; if(p.hp<=0) break;
-    let dmg=e.atk+rnd(5), label=`${e.name} attacks`;
-    if(e.caster&&chance(40)){ dmg=Math.round(e.atk*1.4); label=`${e.name} casts dark magic`; }
-    if(e.boss&&chance(35)){ dmg=Math.round(e.atk*1.6); label=`${e.name} unleashes a savage blow`; }
-    if(e.weakTurns>0) dmg=Math.round(dmg*(1-e.weak));
+    if(e.hp<=0)continue; if(p.hp<=0)break;
+    if(e.st.stunT>0){ blog(`${e.name} is stunned and cannot act!`,'info'); e.st.stunT--; continue; }
+    let dmg=e.atk+rnd(5),label=`${e.name} attacks`;
+    if(e.caster&&chance(40)){dmg=Math.round(e.atk*1.4);label=`${e.name} casts dark magic`;}
+    if(e.boss&&chance(35)){dmg=Math.round(e.atk*1.6);label=`${e.name} unleashes a savage blow`;}
+    if(e.boss&&e.hp<=e.maxHp*0.3){dmg=Math.round(dmg*1.3);}            // enrage
+    if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
+    dmg=Math.round(dmg*G.mods.eDmg);
     const dodgeChance=p.dodge+(b.evadeTurns>0?b.evade:0);
     if(chance(dodgeChance)){ blog(`You dance aside — ${e.name} misses!`,'info'); continue; }
     let red=(b.pdefTurns>0?b.pdef:0);
-    dmg=Math.max(1, Math.round(dmg*(1-red))-p.def);
-    if(b.guardDown>0) dmg=Math.round(dmg*1.3);
-    if(p.cls==='mage'&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.5)); if(ab>0){ p.mana-=ab; dmg-=ab; blog(`Mana Shield soaks ${ab}.`,'info'); } }
-    p.hp=clamp(p.hp-dmg,0,p.maxHp);
-    blog(`${label} for ${dmg}!`,'dmg');
-    if(p.flags.thorns && e.hp>0){ const rf=Math.max(1,Math.round(dmg*0.3)); e.hp=clamp(e.hp-rf,0,e.maxHp); blog(`Thorns reflect ${rf} to ${e.name}.`,'heal'); if(e.hp<=0)onEnemyDeath(e); }
+    dmg=Math.max(1,Math.round(dmg*(1-red))-p.def);
+    if(b.guardDown>0)dmg=Math.round(dmg*1.3);
+    if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
+    if(p.cls==='mage'&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info');} }
+    let lethal=p.hp-dmg<=0;
+    if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
+    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); blog(`${label} for ${dmg}!`,'dmg'); }
+    if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
+    if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
+    if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
+    if(p.flags.thorns&&e.hp>0){ const rf=Math.max(1,Math.round(dmg*0.3)); e.hp=clamp(e.hp-rf,0,e.maxHp); blog(`Thorns reflect ${rf} to ${e.name}.`,'heal'); if(e.hp<=0)onEnemyDeath(e); }
+    if(p.hp<=0)break;
   }
-  b.enemies.forEach(e=>{ if(e.weakTurns>0)e.weakTurns--; });
+  // player DoT + regen tick
+  tickDoT(p,b.pst,'you');
+  b.enemies.forEach(e=>{ if(e.st.weakT>0)e.st.weakT--; if(e.st.vulnT>0)e.st.vulnT--; });
+  if(b.pst.vulnT>0)b.pst.vulnT--;
   if(b.pdefTurns>0)b.pdefTurns--; if(b.evadeTurns>0)b.evadeTurns--; if(b.guardDown>0)b.guardDown--;
   p.mana=clamp(p.mana+p.regen,0,p.maxMana);
   flash('playerHit');
   if(p.hp<=0){ b.over=true; render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
   if(allDead()){ winBattle(); return; }
-  render();
-}
-function flash(kind){
-  const scene=$('scene');
+  render(); }
+function flash(kind){ const scene=$('scene');
   if(kind==='enemyHit'){ G.battle.anim=''; }
-  else { G.battle.anim='shake flash'; if(scene){ scene.classList.remove('shake','flash'); void scene.offsetWidth; scene.classList.add('shake','flash'); } }
-  setTimeout(()=>{ if(G.battle){ G.battle.anim=''; G.battle.animIdx=-1; } },300);
-}
-function winBattle(){
-  const b=G.battle,p=G.player; b.over=true;
-  const gold=(8+rnd(12))+G.depth*2+(b.enemies.length-1)*6; p.gold+=gold;
+  else { G.battle.anim='shake flash'; if(scene){scene.classList.remove('shake','flash');void scene.offsetWidth;scene.classList.add('shake','flash');} }
+  setTimeout(()=>{ if(G.battle){G.battle.anim='';G.battle.animIdx=-1;} },300); }
+function winBattle(){ const b=G.battle,p=G.player; b.over=true;
+  let gold=(8+rnd(12))+G.depth*2+(b.enemies.length-1)*6;
+  b.enemies.forEach(e=>{ if(e.goldBonus)gold+=e.goldBonus; });
+  gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
   blog('The chamber is clear!','info'); render();
   setTimeout(()=>{ if(b.isFinal){ G.screen='victory'; return render(); }
-    G.pending={source:'battle', boss:b.hadBoss, gold}; G.screen='reward'; buildRewards(); render(); },900);
-}
+    G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); },900); }
 
 /* ============================================================
    REWARDS
    ============================================================ */
-function buildRewards(){
-  const p=G.player, isBoss=G.pending&&G.pending.boss;
-  const wpool=WEAPONS[p.cls].filter(w=>w.name!==p.weapon.name);
-  const opts=[];
-  if(wpool.length) opts.push({kind:'weapon', data: isBoss?wpool.reduce((a,b)=>b.dmg>a.dmg?b:a):pick(wpool)});
-  const ups=[...UPGRADES].sort(()=>Math.random()-.5);
-  opts.push({kind:'upgrade', data:ups[0]}); opts.push({kind:'upgrade', data:ups[1]});
-  G.pending.options=opts.sort(()=>Math.random()-.5).slice(0,3);
-}
-function renderReward(){
-  const p=G.player, pd=G.pending;
+function buildRewards(){ const p=G.player,isBoss=G.pending&&G.pending.boss;
+  const wpool=WEAPONS[p.cls].filter(w=>w.name!==p.weapon.name); const opts=[];
+  if(wpool.length) opts.push({kind:'weapon',data:isBoss?wpool.reduce((a,b)=>b.dmg>a.dmg?b:a):pick(wpool)});
+  const ups=shuffle(UPGRADES); opts.push({kind:'upgrade',data:ups[0]}); opts.push({kind:'upgrade',data:ups[1]});
+  if(isBoss && RELICS.some(r=>!p.relics.includes(r.name))){ opts.push({kind:'relic',data:pick(RELICS.filter(r=>!p.relics.includes(r.name)))}); }
+  let n=3; if(G.mods.luck)n=4;
+  G.pending.options=shuffle(opts).slice(0,Math.min(n,opts.length)); }
+function renderReward(){ const p=G.player,pd=G.pending;
   const src=pd.source==='chest'?'THE CHEST CONTAINS':'SPOILS OF BATTLE';
   const gold=pd.gold?`<p class="center amber" style="font-size:9px">+${pd.gold} gold &middot; ${p.gold}g total</p>`:'';
-  const cards=pd.options.map((o,i)=>o.kind==='weapon'
-    ? `<button class="btn" onclick="takeReward(${i})"><span class="k amber">&#9876;</span>${o.data.name}<small>${o.data.dmg} dmg &middot; ${o.data.type}${o.data.note?' &middot; '+o.data.note:''}</small></button>`
-    : `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}</small></button>`).join('');
-  app.innerHTML = `<div class="floortag">${depthLabel()}</div>${playerBar(p)}
-    <div class="panel fade">
-      <h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
+  const cards=pd.options.map((o,i)=>{
+    if(o.kind==='weapon')return `<button class="btn" onclick="takeReward(${i})"><span class="k amber">&#9876;</span>${o.data.name}<small>${o.data.dmg} dmg &middot; ${o.data.type}${o.data.note?' &middot; '+o.data.note:''}</small></button>`;
+    if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}</small></button>`;
+    return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}</small></button>`;}).join('');
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+    <div class="panel fade"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px">Choose one reward:</p>${cards}
-      ${pd.source==='chest'?`<button class="btn muted center" onclick="takeReward(-1)">Leave it all</button>`:''}
-    </div>`;
+      ${pd.source==='chest'?`<button class="btn muted center" onclick="takeReward(-1)">Leave it all</button>`:''}</div>`;
 }
-function takeReward(i){ const p=G.player, pd=G.pending;
-  if(i>=0){ const o=pd.options[i]; if(o.kind==='weapon') equip(p,o.data); else o.data.apply(p); }
-  if(pd.boss) p.potions++;
-  G.pending=null; proceed();
-}
+function takeReward(i){ const p=G.player,pd=G.pending;
+  if(i>=0){ const o=pd.options[i];
+    if(o.kind==='weapon')equip(p,o.data);
+    else if(o.kind==='relic'){ if(!p.relics.includes(o.data.name)){o.data.apply(p);p.relics.push(o.data.name);} }
+    else o.data.apply(p); }
+  if(pd.boss)p.potions++;
+  G.pending=null; proceed(); }
 
 /* ============================================================
    FLOW / END
    ============================================================ */
 function proceed(msg){
   if(G.depth>=RUN_LENGTH){ G.screen='victory'; return render(); }
+  if(G.mods.roamRegen){ heal(G.player,Math.round(G.player.maxHp*0.05)); }
   nextCorridor(); G.screen='corridor'; render();
-  if(msg){ const f=document.querySelector('.footer'); if(f) f.innerHTML=`<span class="amber">${msg}</span>`; }
+  if(msg){ const f=document.querySelector('.footer'); if(f)f.innerHTML=`<span class="amber">${msg}</span>`; }
 }
-function renderEnd(win){
-  const p=G.player;
-  app.innerHTML = `<h1 class="title" style="color:var(--${win?'green':'red'})">${win?'VICTORY!':'YOU DIED'}</h1>
-    <div class="panel center fade">
-      <pre class="sprite ${win?'green':'red'}">${win?"  \\o/   \\o/\n   |     |\n  / \\   / \\\n THE DRAGON FALLS":"   _____\n  /     \\\n | x   x |\n  \\  _  /\n   |||||\n   R.I.P"}</pre>
+function renderEnd(win){ const p=G.player;
+  app.innerHTML=`<h1 class="title" style="color:var(--${win?'green':'red'})">${win?'VICTORY!':'YOU DIED'}</h1>
+    <div class="panel center fade"><pre class="sprite ${win?'green':'red'}">${win?"  \\o/   \\o/\n   |     |\n  / \\   / \\\n THE THRONE IS YOURS":"   _____\n  /     \\\n | x   x |\n  \\  _  /\n   |||||\n   R.I.P"}</pre>
       <p style="font-size:10px;line-height:2">
         ${win?'You conquered the Crypt of the Champion!':'Your journey ends in the dark.'}<br>
-        <span class="muted">Class:</span> ${CLASSES[p.cls].name}<br>
-        <span class="muted">Chamber reached:</span> ${G.depth}/${RUN_LENGTH}<br>
-        <span class="muted">Enemies slain:</span> ${p.kills}<br>
-        <span class="muted">Gold gathered:</span> ${p.gold}<br>
-        <span class="muted">Relics:</span> ${p.relics.length?p.relics.join(', '):'none'}
-      </p>
-      <button class="btn center" onclick="restart()"><span class="k">&#8635;</span>PLAY AGAIN</button>
-    </div>`;
+        <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level}<br>
+        <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
+        <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills}<br>
+        <span class="muted">Gold:</span> ${p.gold}<br>
+        <span class="muted">Relics:</span> ${p.relics.length?p.relics.join(', '):'none'}</p>
+      <button class="btn center" onclick="restart()"><span class="k">&#8635;</span>PLAY AGAIN</button></div>`;
 }
 function restart(){ newGame(); render(); }
 
 /* ---------- shared UI ---------- */
-function playerBar(p, full){
+function playerBar(p,full){
   const relics=p.relics.length?`<div class="relics">${p.relics.map(r=>`<span class="chip">&#9670; ${r}</span>`).join('')}</div>`:'';
+  const xpPct=clamp(p.xp/xpNeeded(p.level)*100,0,100);
   return `<div class="panel tight">
-    <div class="bar"><div class="lbl"><span class="green">HP ${CLASSES[p.cls].name}</span><span>${p.hp}/${p.maxHp}</span></div>
+    <div class="bar"><div class="lbl"><span class="green">HP ${CLASSES[p.cls].name} &middot; LV${p.level}</span><span>${p.hp}/${p.maxHp}</span></div>
       <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div></div>
     <div class="bar"><div class="lbl"><span class="blue">MP</span><span>${p.mana}/${p.maxMana}</span></div>
       <div class="track"><div class="fill mp" style="width:${p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0}%"></div></div></div>
-    ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${p.dodge}%</b> &middot; CRIT <b>${p.crit}%</b>${p.lifesteal?' &middot; LIFESTEAL <b>'+p.lifesteal+'%</b>':''}</div>`:''}
-    ${full?relics:''}
-  </div>`;
+    <div class="bar xp"><div class="track"><div class="fill xpf" style="width:${xpPct}%"></div></div></div>
+    ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${p.dodge}%</b> &middot; CRIT <b>${p.crit}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''}</div>`:''}
+    ${full?relics:''}</div>`;
 }
-
 /* ---------- keyboard ---------- */
-document.addEventListener('keydown', e=>{
-  const btns=[...document.querySelectorAll('.btn:not([disabled])')];
-  const n=parseInt(e.key,10);
-  if(!isNaN(n)&&n>=1&&n<=btns.length){ btns[n-1].click(); return; }
-  if(e.key==='Enter'&&btns.length) btns[0].click();
-});
+document.addEventListener('keydown',e=>{ const btns=[...document.querySelectorAll('.btn:not([disabled])')];
+  const n=parseInt(e.key,10); if(!isNaN(n)&&n>=1&&n<=btns.length){btns[n-1].click();return;}
+  if(e.key==='Enter'&&btns.length)btns[0].click(); });
 
 render();
 </script>
