@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRYPT OF THE CHAMPION</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0c1d; --panel:#16142b; --panel2:#1f1c3a; --ink:#e8e6f5;
+    --green:#5cff8f; --amber:#ffcf4d; --red:#ff5c6a; --blue:#6cb8ff;
+    --purple:#c06cff; --dim:#6f6a9a; --line:#3a356b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Press Start 2P',monospace;
+    font-size:12px;
+    line-height:1.8;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:18px 10px 40px;
+    image-rendering:pixelated;
+    -webkit-font-smoothing:none;
+  }
+  #app{width:100%;max-width:640px}
+  h1,h2,h3{margin:0;font-weight:400}
+  .title{
+    text-align:center;color:var(--amber);font-size:22px;line-height:1.5;
+    text-shadow:3px 3px 0 #000, 0 0 14px rgba(255,207,77,.35);
+    margin:14px 0 6px;
+  }
+  .subtitle{text-align:center;color:var(--dim);font-size:9px;margin-bottom:22px}
+  .blink{animation:blink 1s steps(2,start) infinite}
+  @keyframes blink{to{visibility:hidden}}
+  .panel{
+    background:var(--panel);border:3px solid var(--line);
+    box-shadow:0 0 0 3px #000, 6px 6px 0 rgba(0,0,0,.5);
+    padding:16px;margin-bottom:14px;
+  }
+  .panel.tight{padding:12px}
+  .center{text-align:center}
+  .muted{color:var(--dim)}
+  .green{color:var(--green)} .amber{color:var(--amber)} .red{color:var(--red)}
+  .blue{color:var(--blue)} .purple{color:var(--purple)}
+  pre.sprite{
+    margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;
+    font-size:11px;white-space:pre;text-align:center;color:var(--green);
+    text-shadow:0 0 6px rgba(92,255,143,.4);
+  }
+  .btn{
+    display:block;width:100%;text-align:left;cursor:pointer;
+    font-family:inherit;font-size:11px;color:var(--ink);
+    background:var(--panel2);border:3px solid var(--line);
+    padding:12px 14px;margin:8px 0;line-height:1.5;
+    transition:transform .05s, background .1s, border-color .1s;
+  }
+  .btn:hover{background:#2a265080;border-color:var(--amber);color:#fff}
+  .btn:active{transform:translate(2px,2px)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn .k{color:var(--amber);margin-right:8px}
+  .btn small{display:block;color:var(--dim);font-size:9px;margin-top:6px;line-height:1.6}
+  .btn:hover small{color:#b9b4e6}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row .btn{flex:1;min-width:120px}
+  .grid3{display:flex;gap:10px;flex-wrap:wrap}
+  .grid3 .card{flex:1;min-width:150px}
+  /* stat bars */
+  .bar{margin:6px 0}
+  .bar .lbl{font-size:9px;display:flex;justify-content:space-between;margin-bottom:3px}
+  .bar .track{background:#000;border:2px solid var(--line);height:14px;padding:1px}
+  .bar .fill{height:100%;transition:width .35s ease}
+  .fill.hp{background:linear-gradient(var(--green),#2faf5a)}
+  .fill.mp{background:linear-gradient(var(--blue),#356fbf)}
+  .fill.boss{background:linear-gradient(var(--red),#a82f3a)}
+  .stats{font-size:9px;line-height:2;color:var(--dim)}
+  .stats b{color:var(--ink)}
+  .chip{display:inline-block;background:#000;border:2px solid var(--line);padding:3px 7px;margin:3px 3px 3px 0;font-size:8px}
+  /* battle */
+  .battle-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .enemy-box{flex:1}
+  .log{
+    background:#000;border:3px solid var(--line);padding:10px;
+    height:108px;overflow:hidden;font-size:9px;line-height:1.7;margin:12px 0;
+    display:flex;flex-direction:column;justify-content:flex-end;
+  }
+  .log div{opacity:.55}
+  .log div:last-child{opacity:1;color:#fff}
+  .log .dmg{color:var(--red)} .log .heal{color:var(--green)}
+  .log .info{color:var(--amber)} .log .crit{color:var(--purple)}
+  .shake{animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(4px,-1px)}}
+  .flash{animation:flash .3s}
+  @keyframes flash{0%,100%{filter:none}50%{filter:brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(6)}}
+  .hitpop{animation:hitpop .25s}
+  @keyframes hitpop{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+  .fade{animation:fade .4s}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .floortag{text-align:center;color:var(--purple);font-size:9px;letter-spacing:1px;margin-bottom:10px}
+  .hr{border:none;border-top:2px dashed var(--line);margin:14px 0}
+  .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .menu-grid .btn{margin:0}
+  .footer{text-align:center;color:var(--dim);font-size:8px;margin-top:8px}
+  a{color:var(--blue)}
+  ::selection{background:var(--amber);color:#000}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   CRYPT OF THE CHAMPION — a tiny text roguelike
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+const app = $('app');
+const rnd = n => Math.floor(Math.random()*n);
+const pick = arr => arr[rnd(arr.length)];
+const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
+const chance = p => Math.random()*100 < p;
+const RUN_LENGTH = 12;            // rooms until the run is won
+const MIDBOSS_AT = 6;
+
+/* ---------- class blueprints ---------- */
+const CLASSES = {
+  mage: {
+    name:'MAGE', color:'purple', affinity:'ARCANE',
+    affinityText:'Spell power scales with MAX MANA. Mana also soaks incoming damage (Mana Shield), and refills fast.',
+    hp:70, mana:120, atk:5, def:0, dodge:0, crit:5, lifesteal:0, regen:14,
+    weapon:{name:'Apprentice Wand', dmg:5, type:'magic'},
+    sprite:
+`   /\\
+  (oo)
+ <(  )>
+   ||
+  _||_`,
+    skills:[
+      {id:'bolt', name:'Arcane Bolt', cost:10, desc:'Magic dmg, scales w/ max mana.'},
+      {id:'fire', name:'Fireball',    cost:24, desc:'Big hit + BURN (3 turns).'},
+      {id:'frost',name:'Frost Nova',  cost:18, desc:'Dmg + weaken enemy attack.'},
+    ],
+  },
+  warrior: {
+    name:'WARRIOR', color:'red', affinity:'FURY',
+    affinityText:'Brutal attacks. Build TANK (defense + Shield Wall) or LIFESTEAL (vampiric gear).',
+    hp:120, mana:30, atk:12, def:4, dodge:0, crit:8, lifesteal:0, regen:4,
+    weapon:{name:'Rusty Sword', dmg:8, type:'melee'},
+    sprite:
+`  _____
+ [_+_]
+  (oo)
+ /|##|\\
+  d  b`,
+    skills:[
+      {id:'power', name:'Power Strike', cost:8,  desc:'Heavy weapon blow (x1.9).'},
+      {id:'shield',name:'Shield Wall',  cost:6,  desc:'Brace: take 65% less for 2 turns.'},
+      {id:'reck',  name:'Reckless Hew', cost:12, desc:'Huge dmg, but lower your guard.'},
+    ],
+  },
+  ranger: {
+    name:'RANGER', color:'green', affinity:'WIND STEP',
+    affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
+    hp:120, mana:30, atk:10, def:2, dodge:25, crit:18, lifesteal:0, regen:5,
+    weapon:{name:'Short Bow', dmg:7, type:'ranged'},
+    sprite:
+`   o
+  /|)
+  /|
+  ( )
+  d b`,
+    skills:[
+      {id:'aim',  name:'Aimed Shot', cost:8,  desc:'Precise shot, high crit.'},
+      {id:'evade',name:'Evade',      cost:6,  desc:'+45% dodge for 2 turns.'},
+      {id:'volley',name:'Volley',    cost:12, desc:'3 quick arrows, each can crit.'},
+    ],
+  },
+};
+
+/* ---------- enemies (scaled by depth) ---------- */
+const ENEMIES = [
+  {name:'Giant Rat',  hp:26, atk:7,  def:0, sprite:`  (\\_/)\n  (. .)\n  c(")(")`},
+  {name:'Goblin',     hp:34, atk:9,  def:1, sprite:`  ,_,\n (O,O)\n (   )>\n  " "`},
+  {name:'Cave Bat',   hp:24, atk:8,  def:0, dodgy:true, sprite:` /\\   /\\\n( ^.^ )\n  \\v/`},
+  {name:'Slime',      hp:44, atk:7,  def:2, sprite:`  .--.\n (o  o)\n (~~~~)`},
+  {name:'Skeleton',   hp:38, atk:11, def:1, sprite:`  (.-.)\n /|||\\\n  | |`},
+  {name:'Orc Brute',  hp:60, atk:13, def:3, sprite:`  \\___/\n  (>.<)\n /|---|\\`},
+  {name:'Dark Acolyte',hp:46,atk:12, def:1, caster:true, sprite:`   ^\n  /o\\\n (_|_)\n  | |`},
+  {name:'Wraith',     hp:50, atk:14, def:0, dodgy:true, sprite:`  .vvv.\n ( -- )\n  \\__/`},
+];
+const BOSSES = {
+  mid:  {name:'OGRE WARLORD', hp:150, atk:16, def:4, boss:true, sprite:`  .-\"\"\"-.\n /  o o  \\\n |  ___  |\n  \\ \\_/ /\n  /|   |\\\n  d|___|b`},
+  final:{name:'THE CRYPT DRAGON', hp:300, atk:22, def:6, boss:true, sprite:`   /\\   /\\\n  /  \\_/  \\\n  \\ x   x /\n   ) ___ (\n  /_/   \\_\\\n (_)     (_)`},
+};
+
+/* ---------- loot ---------- */
+const WEAPONS = {
+  mage:[
+    {name:'Crystal Staff',  dmg:11, type:'magic', note:'+12 max mana', mana:12},
+    {name:'Flameheart Rod', dmg:14, type:'magic', note:'attacks may BURN', burn:true},
+    {name:'Void Scepter',   dmg:18, type:'magic', note:'+20 max mana', mana:20},
+  ],
+  warrior:[
+    {name:'Iron Greatsword', dmg:15, type:'melee', note:'+2 atk', atk:2},
+    {name:'Vampiric Blade',  dmg:13, type:'melee', note:'+25% lifesteal', lifesteal:25},
+    {name:'Bulwark Axe',     dmg:14, type:'melee', note:'+3 def', def:3},
+    {name:'Berserker Maul',  dmg:22, type:'melee', note:'+4 atk, -2 def', atk:4, def:-2},
+  ],
+  ranger:[
+    {name:'Hunter Longbow',  dmg:13, type:'ranged', note:'+10% crit', crit:10},
+    {name:'Windforce',       dmg:14, type:'ranged', note:'+10% dodge', dodge:10},
+    {name:'Venom Crossbow',  dmg:16, type:'ranged', note:'attacks may BURN', burn:true},
+  ],
+};
+const UPGRADES = [
+  {name:'Vital Charm',    apply:p=>{p.maxHp+=22; heal(p,22);},        note:'+22 max HP, heal'},
+  {name:'Mana Crystal',   apply:p=>{p.maxMana+=18; p.mana+=18;},       note:'+18 max mana'},
+  {name:'Whetstone',      apply:p=>{p.atk+=3;},                        note:'+3 attack'},
+  {name:'Iron Plating',   apply:p=>{p.def+=3;},                        note:'+3 defense'},
+  {name:'Lucky Coin',     apply:p=>{p.crit+=10;},                      note:'+10% crit'},
+  {name:'Shadow Cloak',   apply:p=>{p.dodge+=10;},                     note:'+10% dodge'},
+  {name:'Leech Rune',     apply:p=>{p.lifesteal+=15;},                 note:'+15% lifesteal'},
+  {name:'Focus Idol',     apply:p=>{p.regen+=4;},                      note:'+4 mana regen'},
+];
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+let G = null;
+function newGame(){ G = { screen:'title', player:null, depth:0, doors:[], room:null, battle:null, pending:null, log:[] }; }
+newGame();
+
+/* ---------- player helpers ---------- */
+function makePlayer(clsKey){
+  const c = CLASSES[clsKey];
+  return {
+    cls:clsKey, color:c.color, sprite:c.sprite, affinity:c.affinity,
+    hp:c.hp, maxHp:c.hp, mana:c.mana, maxMana:c.mana,
+    atk:c.atk, def:c.def, dodge:c.dodge, crit:c.crit, lifesteal:c.lifesteal, regen:c.regen,
+    weapon:{...c.weapon}, skills:c.skills.map(s=>({...s})),
+    potions:1, gold:0, kills:0,
+  };
+}
+function heal(p,n){ p.hp = clamp(p.hp+n, 0, p.maxHp); }
+function weaponBonuses(p){
+  // re-derive flat bonuses already folded into stats when equipped; here for clarity
+}
+function equip(p,w){
+  // remove old flat weapon-stat mods, apply new ones
+  const old = p.weapon;
+  if(old.atk) p.atk-=old.atk; if(old.def) p.def-=old.def;
+  if(old.mana){ p.maxMana-=old.mana; p.mana=clamp(p.mana,0,p.maxMana); }
+  if(old.crit) p.crit-=old.crit; if(old.dodge) p.dodge-=old.dodge;
+  if(old.lifesteal) p.lifesteal-=old.lifesteal;
+  p.weapon = {...w};
+  if(w.atk) p.atk+=w.atk; if(w.def) p.def+=w.def;
+  if(w.mana){ p.maxMana+=w.mana; p.mana+=w.mana; }
+  if(w.crit) p.crit+=w.crit; if(w.dodge) p.dodge+=w.dodge;
+  if(w.lifesteal) p.lifesteal+=w.lifesteal;
+}
+
+/* ============================================================
+   RENDER ROUTER
+   ============================================================ */
+function render(){
+  switch(G.screen){
+    case 'title':    return renderTitle();
+    case 'class':    return renderClassSelect();
+    case 'corridor': return renderCorridor();
+    case 'room':     return renderRoom();
+    case 'battle':   return renderBattle();
+    case 'reward':   return renderReward();
+    case 'gameover': return renderEnd(false);
+    case 'victory':  return renderEnd(true);
+  }
+}
+
+/* ---------- TITLE ---------- */
+function renderTitle(){
+  app.innerHTML = `
+    <h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
+    <div class="subtitle">an 8-bit text roguelike</div>
+    <div class="panel center fade">
+      <pre class="sprite">    .-=========-.
+    \\'-=======-'/
+    _|   .=.   |_
+   ((|  (o)  |))
+    \\|   /|\\   |/
+     \\__ 'O' __/
+       '-----'</pre>
+      <p class="muted" style="font-size:9px;line-height:2">
+        Descend ${RUN_LENGTH} chambers. Choose your doors.<br>
+        Fight, sneak, and loot your way to the Dragon.
+      </p>
+      <button class="btn center" onclick="go('class')">
+        <span class="blink">&#9654;</span> PRESS START
+      </button>
+    </div>
+    <div class="footer">made for fun &middot; keyboard or click</div>
+  `;
+}
+
+/* ---------- CLASS SELECT ---------- */
+function renderClassSelect(){
+  const card = (key)=>{
+    const c = CLASSES[key];
+    return `
+      <div class="panel tight">
+        <h3 class="${c.color}" style="font-size:13px;margin-bottom:8px">${c.name}</h3>
+        <pre class="sprite" style="font-size:9px;color:var(--${c.color})">${c.sprite}</pre>
+        <div class="stats" style="margin-top:8px">
+          <b class="red">HP</b> ${c.hp} &nbsp; <b class="blue">MP</b> ${c.mana}<br>
+          <b>ATK</b> ${c.atk} &nbsp; <b>DEF</b> ${c.def} &nbsp; <b>DODGE</b> ${c.dodge}%
+        </div>
+        <div class="chip ${c.color}">${c.affinity}</div>
+        <div class="muted" style="font-size:8px;line-height:1.8">${c.affinityText}</div>
+        <button class="btn center" onclick="chooseClass('${key}')">CHOOSE</button>
+      </div>`;
+  };
+  app.innerHTML = `
+    <h1 class="title" style="font-size:16px">CHOOSE YOUR CHAMPION</h1>
+    <div class="subtitle">All wield mana &amp; health — each in their own way</div>
+    <div class="grid3 fade">
+      ${card('mage')}${card('warrior')}${card('ranger')}
+    </div>
+  `;
+}
+function chooseClass(key){
+  G.player = makePlayer(key);
+  G.depth = 0;
+  G.screen = 'corridor';
+  nextCorridor();
+  render();
+}
+
+/* ============================================================
+   DUNGEON / CORRIDOR
+   ============================================================ */
+function depthLabel(){ return `CHAMBER ${G.depth} / ${RUN_LENGTH}`; }
+
+function makeRoom(depthFor){
+  // forced bosses
+  if(depthFor===RUN_LENGTH) return {type:'enemy', boss:'final', peek:'A monstrous roar shakes the dust from the ceiling...'};
+  if(depthFor===MIDBOSS_AT) return {type:'enemy', boss:'mid', peek:'Heavy footfalls. Something huge waits beyond.'};
+  const roll = rnd(100);
+  if(roll<48){
+    const e = pick(ENEMIES);
+    return {type:'enemy', enemyBase:e, peek:enemyPeek(e)};
+  } else if(roll<78){
+    return {type:'chest', peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A reinforced strongbox, latched shut.'])};
+  } else if(roll<92){
+    return {type:'shrine', peek:'A faint glow pulses from a cracked altar.'};
+  }
+  return {type:'empty', peek:'Cold, empty stone. A moment to breathe.'};
+}
+function enemyPeek(e){
+  return pick([`You hear ${e.name.toLowerCase()} stirring in the dark.`,
+               `A ${e.name.toLowerCase()} blocks the path ahead.`,
+               `Eyes gleam — a ${e.name.toLowerCase()} lurks within.`]);
+}
+function doorHint(room){
+  switch(room.type){
+    case 'enemy':  return room.boss ? 'DANGER — overwhelming presence' : 'You sense a hostile creature';
+    case 'chest':  return 'Smells of dust and... treasure?';
+    case 'shrine': return 'A faint, calming glow';
+    case 'empty':  return 'Quiet. Probably safe.';
+  }
+}
+
+function nextCorridor(){
+  G.depth++;
+  if(G.depth===MIDBOSS_AT || G.depth===RUN_LENGTH){
+    G.doors = [ makeRoom(G.depth) ];   // boss: single ominous door
+  } else {
+    const n = 2 + rnd(2); // 2-3 doors
+    G.doors = Array.from({length:n}, ()=>makeRoom(G.depth));
+  }
+}
+
+function renderCorridor(){
+  const p = G.player;
+  const isBoss = G.doors.length===1 && G.doors[0].boss;
+  const doorBtns = G.doors.map((d,i)=>`
+      <button class="btn" onclick="openDoor(${i})">
+        <span class="k">${isBoss?'&#9760;':'['+(i+1)+']'}</span>${isBoss?'THE FINAL DOOR':'Door '+(i+1)}
+        <small>${doorHint(d)}</small>
+      </button>`).join('');
+  app.innerHTML = `
+    <div class="floortag">${depthLabel()}</div>
+    ${playerBar(p)}
+    <div class="panel fade">
+      <p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. There is no turning back.':'You reach a junction. Which way?'}</p>
+      ${doorBtns}
+    </div>
+    ${restButton()}
+  `;
+}
+function restButton(){
+  return `<div class="footer">HP ${G.player.hp}/${G.player.maxHp} &middot; MP ${G.player.mana}/${G.player.maxMana} &middot; ${G.player.potions} potion(s) &middot; ${G.player.gold}g</div>`;
+}
+
+function openDoor(i){
+  G.room = G.doors[i];
+  G.screen = 'room';
+  render();
+}
+
+/* ============================================================
+   ROOM RESOLUTION
+   ============================================================ */
+function renderRoom(){
+  const r = G.room, p = G.player;
+  let body = '';
+  if(r.type==='enemy'){
+    if(!r.enemy) r.enemy = r.boss ? cloneBoss(r.boss) : scaleEnemy(r.enemyBase, G.depth);
+    const tag = r.boss ? '<span class="red">— BOSS —</span>' : '';
+    body = `
+      <pre class="sprite red">${r.enemy.sprite}</pre>
+      <h3 class="center red" style="font-size:13px;margin:8px 0">${r.enemy.name} ${tag}</h3>
+      <div class="center stats">HP ~${r.enemy.maxHp} &middot; ATK ~${r.enemy.atk}${r.enemy.def?' &middot; DEF '+r.enemy.def:''}</div>
+      <p class="muted center" style="font-size:9px">${r.peek}</p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn center red" onclick="startBattle()"><span class="k">&#9876;</span>FIGHT</button>
+        ${r.boss ? '' : `<button class="btn center" onclick="avoidRoom()"><span class="k">&#10551;</span>SNEAK PAST</button>`}
+      </div>`;
+  } else if(r.type==='chest'){
+    body = `
+      <pre class="sprite amber">  ______
+ /      \\
+ |[]##[]|
+ |  ${' '}__  |
+ \\______/</pre>
+      <h3 class="center amber" style="margin:8px 0">A CHEST</h3>
+      <p class="muted center" style="font-size:9px">${r.peek}</p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn center amber" onclick="openChest()"><span class="k">&#128273;</span>OPEN IT</button>
+        <button class="btn center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE IT</button>
+      </div>`;
+  } else if(r.type==='shrine'){
+    body = `
+      <pre class="sprite purple">   _∆_
+  /   \\
+ | ${' '}*${' '} |
+ |_____|</pre>
+      <h3 class="center purple" style="margin:8px 0">CRACKED ALTAR</h3>
+      <p class="muted center" style="font-size:9px">Offer your strength to mend, or your blood for power.</p>
+      <button class="btn" onclick="shrine('heal')"><span class="k">&#10010;</span>Pray — restore 45% HP &amp; MP</button>
+      <button class="btn" onclick="shrine('power')"><span class="k">&#9876;</span>Blood pact — +4 ATK, lose 12 HP</button>
+      <button class="btn" onclick="shrine('ward')"><span class="k">&#128737;</span>Ward — +3 DEF &amp; +6 max HP</button>`;
+  } else {
+    body = `
+      <pre class="sprite muted">  . . . .
+ .       .
+  empty
+ .       .
+  . . . .</pre>
+      <h3 class="center muted" style="margin:8px 0">EMPTY CHAMBER</h3>
+      <p class="muted center" style="font-size:9px">${r.peek} You catch your breath. (+8 HP, +6 MP)</p>
+      <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
+  }
+  app.innerHTML = `<div class="floortag">${depthLabel()}</div>${playerBar(p)}<div class="panel fade">${body}</div>`;
+}
+
+function cloneBoss(key){
+  const b = BOSSES[key];
+  return {...b, maxHp:b.hp};
+}
+function scaleEnemy(base, depth){
+  const f = 1 + (depth-1)*0.16;
+  return {
+    name:base.name, sprite:base.sprite,
+    hp: Math.round(base.hp*f), maxHp: Math.round(base.hp*f),
+    atk: Math.round(base.atk*f), def: base.def||0,
+    dodgy:base.dodgy, caster:base.caster, boss:false,
+  };
+}
+function avoidRoom(){
+  const p = G.player;
+  // ranger almost always slips by; others risk a parting blow
+  const success = p.cls==='ranger' ? chance(90) : chance(65);
+  if(success){ proceed(`You slip past unseen.`); }
+  else {
+    const dmg = 6 + rnd(8) + G.depth;
+    p.hp = clamp(p.hp-dmg,0,p.maxHp);
+    if(p.hp<=0){ G.screen='gameover'; return render(); }
+    proceedAlert(`Caught! The creature lands a blow for ${dmg} before you escape.`);
+  }
+}
+function leaveRoom(){ proceed('You leave it untouched and move on.'); }
+function restEmpty(){ heal(G.player,8); G.player.mana=clamp(G.player.mana+6,0,G.player.maxMana); proceed(); }
+
+function shrine(kind){
+  const p = G.player;
+  if(kind==='heal'){ heal(p, Math.round(p.maxHp*0.45)); p.mana=clamp(p.mana+Math.round(p.maxMana*0.45),0,p.maxMana); }
+  if(kind==='power'){ p.atk+=4; p.hp=clamp(p.hp-12,1,p.maxHp); }
+  if(kind==='ward'){ p.def+=3; p.maxHp+=6; heal(p,6); }
+  proceed();
+}
+
+/* ---------- CHEST ---------- */
+function openChest(){
+  const r = G.room, p = G.player;
+  const roll = rnd(100);
+  if(roll<15){
+    // mimic!
+    const mimic = {name:'MIMIC', sprite:`  ______\n /<><><>\\\n | (oo) |\n  \\vvvv/`, hp:50+G.depth*6, maxHp:50+G.depth*6, atk:11+G.depth, def:1, mimic:true};
+    G.room = {type:'enemy', enemy:mimic, peek:'The chest sprouts teeth!'};
+    startBattle('The chest was a MIMIC!');
+    return;
+  }
+  // genuine loot: offer reward choices
+  G.pending = {source:'chest'};
+  G.screen = 'reward';
+  buildRewards();
+  render();
+}
+
+/* ============================================================
+   BATTLE  (turn-based, Pokemon-style)
+   ============================================================ */
+function startBattle(introMsg){
+  const p = G.player;
+  G.battle = {
+    enemy: G.room.enemy,
+    pdef:0, pdefTurns:0, evade:0, evadeTurns:0, guardDown:0,
+    eburn:0, eburnTurns:0, eweak:0, eweakTurns:0,
+    turn:'player', over:false, anim:'',
+  };
+  G.log = [];
+  if(introMsg) blog(introMsg,'info');
+  blog(`A ${G.battle.enemy.name} appears!`,'info');
+  G.screen='battle';
+  render();
+}
+
+function blog(text, cls=''){ G.log.push({text,cls}); if(G.log.length>30) G.log.shift(); }
+
+function renderBattle(){
+  const p = G.player, b = G.battle, e = b.enemy;
+  const logHtml = G.log.slice(-6).map(l=>`<div class="${l.cls}">${l.text}</div>`).join('');
+  const skillBtns = p.skills.map(s=>{
+    const dis = p.mana < s.cost ? 'disabled' : '';
+    return `<button class="btn" ${dis} onclick="playerSkill('${s.id}')">
+      <span class="k blue">${s.cost}MP</span>${s.name}<small>${s.desc}</small></button>`;
+  }).join('');
+  const statusChips = battleStatusChips();
+  app.innerHTML = `
+    <div class="floortag">${e.boss?'BOSS BATTLE':depthLabel()}</div>
+    <div class="panel ${b.anim}" id="scene">
+      <div class="battle-top">
+        <div class="enemy-box">
+          <div class="bar"><div class="lbl"><span class="red">${e.name}</span><span>${e.hp}/${e.maxHp}</span></div>
+            <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${e.hp/e.maxHp*100}%"></div></div></div>
+        </div>
+      </div>
+      <pre class="sprite red ${b.anim==='enemyHit'?'hitpop':''}" style="margin:10px 0">${e.sprite}</pre>
+      ${statusChips}
+      <div class="log">${logHtml}</div>
+      <pre class="sprite ${'var(--'+p.color+')'}" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>
+      ${playerBar(p,true)}
+    </div>
+    ${b.over ? '' : `
+    <div class="panel tight">
+      <div class="menu-grid">
+        <button class="btn" onclick="playerAttack()"><span class="k">&#9876;</span>ATTACK<small>${p.weapon.name} (${p.atk+p.weapon.dmg} pow)</small></button>
+        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 40%</small></button>
+      </div>
+      <hr class="hr">
+      ${skillBtns}
+      <button class="btn muted" onclick="fleeBattle()"><span class="k">&#10551;</span>FLEE<small>${e.boss?'cannot flee a boss!':'risky — enemy may strike'}</small></button>
+    </div>`}
+  `;
+}
+function battleStatusChips(){
+  const b=G.battle; let c='';
+  if(b.pdefTurns>0) c+=`<span class="chip blue">GUARD ${b.pdefTurns}</span>`;
+  if(b.evadeTurns>0) c+=`<span class="chip green">EVADE ${b.evadeTurns}</span>`;
+  if(b.guardDown>0) c+=`<span class="chip red">EXPOSED</span>`;
+  if(b.eburnTurns>0) c+=`<span class="chip amber">BURN ${b.eburnTurns}</span>`;
+  if(b.eweakTurns>0) c+=`<span class="chip purple">WEAKENED ${b.eweakTurns}</span>`;
+  return c?`<div class="center">${c}</div>`:'';
+}
+
+/* ----- player actions ----- */
+function dealToEnemy(dmg, label, critFlag){
+  const b=G.battle, e=b.enemy, p=G.player;
+  dmg = Math.max(1, Math.round(dmg - (e.def||0)));
+  e.hp = clamp(e.hp-dmg,0,e.maxHp);
+  blog(`${label} for ${dmg}${critFlag?' (CRIT!)':''}!`, critFlag?'crit':'dmg');
+  if(p.lifesteal>0){
+    const ls=Math.max(1,Math.round(dmg*p.lifesteal/100));
+    heal(p,ls); blog(`You drain ${ls} HP.`,'heal');
+  }
+  flash('enemyHit');
+}
+function rollCrit(){ return chance(G.player.crit); }
+
+function playerAttack(){
+  if(G.battle.over) return;
+  const p=G.player, b=G.battle;
+  let base = p.atk + p.weapon.dmg + rnd(4);
+  let crit = rollCrit(); if(crit) base*=1.8;
+  dealToEnemy(base, `You strike with ${p.weapon.name}`, crit);
+  if(p.weapon.burn && chance(45)) applyBurn(4);
+  afterPlayer();
+}
+function playerSkill(id){
+  const p=G.player, b=G.battle, e=b.enemy;
+  const s=p.skills.find(x=>x.id===id); if(!s||p.mana<s.cost||b.over) return;
+  p.mana-=s.cost;
+  switch(id){
+    case 'bolt':{ let d=10+Math.round(p.maxMana*0.16)+p.weapon.dmg; let c=rollCrit(); if(c)d*=1.8; dealToEnemy(d,'Arcane Bolt blasts',c); break; }
+    case 'fire':{ let d=16+Math.round(p.maxMana*0.12)+p.weapon.dmg; dealToEnemy(d,'Fireball erupts'); applyBurn(6); break; }
+    case 'frost':{ let d=8+Math.round(p.maxMana*0.08); dealToEnemy(d,'Frost Nova chills'); b.eweak=0.4; b.eweakTurns=2; blog('The enemy is WEAKENED!','info'); break; }
+    case 'power':{ let d=(p.atk+p.weapon.dmg)*1.9+rnd(4); let c=rollCrit(); if(c)d*=1.7; dealToEnemy(d,'Power Strike crushes',c); break; }
+    case 'shield':{ b.pdef=0.65; b.pdefTurns=2; blog('You raise your guard! (65% block, 2 turns)','info'); break; }
+    case 'reck':{ let d=(p.atk+p.weapon.dmg)*2.4+rnd(6); dealToEnemy(d,'Reckless Hew devastates'); b.guardDown=1; blog('...but you are left EXPOSED!','info'); break; }
+    case 'aim':{ let d=(p.atk+p.weapon.dmg)*1.6; let c=chance(p.crit+30); if(c)d*=2; dealToEnemy(d,'Aimed Shot pierces',c); break; }
+    case 'evade':{ b.evade=45; b.evadeTurns=2; blog('Wind Step! Dodge greatly increased.','info'); break; }
+    case 'volley':{ for(let i=0;i<3;i++){ if(e.hp<=0)break; let d=(p.atk*0.6+p.weapon.dmg)+rnd(3); let c=rollCrit(); if(c)d*=1.8; dealToEnemy(d,`Arrow ${i+1} hits`,c);} break; }
+  }
+  afterPlayer();
+}
+function applyBurn(n){ G.battle.eburn=n; G.battle.eburnTurns=3; blog('The enemy is set ABLAZE!','info'); }
+
+function useItem(){
+  const p=G.player, b=G.battle;
+  if(!p.potions||b.over) return;
+  p.potions--; const h=Math.round(p.maxHp*0.4); heal(p,h);
+  blog(`You quaff a potion. +${h} HP.`,'heal');
+  afterPlayer();
+}
+function fleeBattle(){
+  const p=G.player, b=G.battle;
+  if(b.enemy.boss){ blog('There is no escape from this foe!','info'); return render(); }
+  if(p.cls==='ranger'?chance(85):chance(55)){
+    blog('You break away and flee the room!','info');
+    b.over=true; render();
+    setTimeout(()=>proceed('You escaped — no loot gained.'), 700);
+  } else {
+    blog('You failed to flee!','info');
+    enemyTurn();
+  }
+}
+
+function afterPlayer(){
+  const b=G.battle, e=b.enemy;
+  // tick enemy burn
+  if(b.eburnTurns>0){ e.hp=clamp(e.hp-b.eburn,0,e.maxHp); blog(`Burn sears for ${b.eburn}.`,'dmg'); b.eburnTurns--; }
+  if(e.hp<=0){ winBattle(); return; }
+  render();
+  setTimeout(enemyTurn, 650);
+}
+
+/* ----- enemy turn ----- */
+function enemyTurn(){
+  const p=G.player, b=G.battle, e=b.enemy;
+  if(b.over) return;
+  // enemy chooses
+  let dmg = e.atk + rnd(5);
+  let label = `${e.name} attacks`;
+  if(e.caster && chance(40)){ dmg = Math.round(e.atk*1.4); label=`${e.name} hurls dark magic`; }
+  if(e.boss && chance(35)){ dmg = Math.round(e.atk*1.6); label=`${e.name} unleashes a savage blow`; }
+  if(b.eweakTurns>0){ dmg=Math.round(dmg*(1-b.eweak)); }
+  // dodge?
+  let dodgeChance = p.dodge + (b.evadeTurns>0?b.evade:0);
+  if(chance(dodgeChance)){
+    blog(`You dance aside — ${e.name}'s attack misses!`,'info');
+  } else {
+    let red = (b.pdefTurns>0? b.pdef:0);
+    dmg = Math.max(1, Math.round(dmg*(1-red)) - p.def);
+    if(b.guardDown>0) dmg=Math.round(dmg*1.3);
+    // Mage affinity: Mana Shield soaks part of the blow while mana remains
+    if(p.cls==='mage' && p.mana>0 && dmg>0){
+      const absorb=Math.min(p.mana, Math.ceil(dmg*0.5));
+      if(absorb>0){ p.mana-=absorb; dmg-=absorb; blog(`Mana Shield soaks ${absorb}.`,'info'); }
+    }
+    p.hp=clamp(p.hp-dmg,0,p.maxHp);
+    blog(`${label} for ${dmg}!`,'dmg');
+    flash('playerHit');
+  }
+  // tick player buffs
+  if(b.pdefTurns>0) b.pdefTurns--;
+  if(b.evadeTurns>0) b.evadeTurns--;
+  if(b.guardDown>0) b.guardDown--;
+  if(b.eweakTurns>0) b.eweakTurns--;
+  // mana regen
+  p.mana=clamp(p.mana+p.regen,0,p.maxMana);
+
+  if(p.hp<=0){ b.over=true; render(); setTimeout(()=>{G.screen='gameover';render();}, 800); return; }
+  b.turn='player';
+  render();
+}
+
+function flash(kind){
+  G.battle.anim = kind==='enemyHit'?'enemyHit':'shake flash';
+  const scene=$('scene'); if(scene){ scene.classList.remove('shake','flash'); void scene.offsetWidth;
+    if(kind!=='enemyHit'){ scene.classList.add('shake','flash'); } }
+  setTimeout(()=>{ if(G.battle) G.battle.anim=''; },300);
+}
+
+function winBattle(){
+  const p=G.player, e=G.battle.enemy;
+  G.battle.over=true; p.kills++;
+  blog(`${e.name} is defeated!`,'info');
+  const gold = 8 + rnd(12) + G.depth*2;
+  p.gold += gold;
+  render();
+  setTimeout(()=>{
+    if(e.boss && e.name===BOSSES.final.name){ G.screen='victory'; return render(); }
+    G.pending = {source:'battle', boss:e.boss, gold};
+    G.screen='reward'; buildRewards(); render();
+  }, 900);
+}
+
+/* ============================================================
+   REWARDS
+   ============================================================ */
+function buildRewards(){
+  const p=G.player;
+  const isBoss = G.pending && G.pending.boss;
+  const wpool = WEAPONS[p.cls].filter(w=>w.name!==p.weapon.name);
+  const opts=[];
+  // 1 weapon
+  if(wpool.length) opts.push({kind:'weapon', data:pick(wpool)});
+  // 2 upgrades
+  const ups=[...UPGRADES].sort(()=>Math.random()-0.5);
+  opts.push({kind:'upgrade', data:ups[0]});
+  opts.push({kind:'upgrade', data:ups[1]});
+  // boss bonus: a potion + bigger choice already; add a guaranteed strong weapon
+  if(isBoss && wpool.length>1){ opts[0]={kind:'weapon', data:wpool.reduce((a,b)=>b.dmg>a.dmg?b:a)}; }
+  G.pending.options = opts.sort(()=>Math.random()-0.5).slice(0,3);
+}
+
+function renderReward(){
+  const p=G.player, pend=G.pending;
+  const src = pend.source==='chest' ? 'THE CHEST CONTAINS' : 'SPOILS OF BATTLE';
+  const goldLine = pend.gold ? `<p class="center amber" style="font-size:9px">+${pend.gold} gold &middot; ${p.gold}g total</p>`:'';
+  const cards = pend.options.map((o,i)=>{
+    if(o.kind==='weapon'){
+      const w=o.data;
+      return `<button class="btn" onclick="takeReward(${i})">
+        <span class="k amber">&#9876;</span>${w.name}
+        <small>${w.dmg} dmg &middot; ${w.type}${w.note?' &middot; '+w.note:''}</small></button>`;
+    } else {
+      const u=o.data;
+      return `<button class="btn" onclick="takeReward(${i})">
+        <span class="k green">&#9650;</span>${u.name}<small>${u.note}</small></button>`;
+    }
+  }).join('');
+  app.innerHTML = `
+    <div class="floortag">${depthLabel()}</div>
+    ${playerBar(p)}
+    <div class="panel fade">
+      <h3 class="center amber" style="margin-bottom:6px">${src}</h3>
+      ${goldLine}
+      <p class="muted center" style="font-size:9px">Choose one reward:</p>
+      ${cards}
+      ${pend.source==='chest'?`<button class="btn muted center" onclick="takeReward(-1)">Leave it all</button>`:''}
+    </div>
+  `;
+}
+function takeReward(i){
+  const p=G.player, pend=G.pending;
+  if(i>=0){
+    const o=pend.options[i];
+    if(o.kind==='weapon') equip(p,o.data);
+    else o.data.apply(p);
+  }
+  // boss kills also grant a potion
+  if(pend.boss) p.potions++;
+  G.pending=null;
+  proceed();
+}
+
+/* ============================================================
+   PROCEED / FLOW
+   ============================================================ */
+function proceed(msg){
+  if(G.depth>=RUN_LENGTH){ G.screen='victory'; return render(); }
+  G.screen='corridor';
+  nextCorridor();
+  render();
+  if(msg) toast(msg);
+}
+function proceedAlert(msg){ proceed(); toast(msg); }
+function toast(msg){
+  // lightweight transient line under corridor
+  const f=document.querySelector('.footer');
+  if(f){ f.innerHTML = `<span class="amber">${msg}</span>`; }
+}
+
+/* ============================================================
+   END SCREENS
+   ============================================================ */
+function renderEnd(win){
+  const p=G.player;
+  app.innerHTML = `
+    <h1 class="title" style="color:var(--${win?'green':'red'})">${win?'VICTORY!':'YOU DIED'}</h1>
+    <div class="panel center fade">
+      <pre class="sprite ${win?'green':'red'}">${win?
+`  \\o/   \\o/
+   |     |
+  / \\   / \\
+  THE DRAGON FALLS`:
+`   _____
+  /     \\
+ | x   x |
+  \\  _  /
+   |||||
+   R.I.P`}</pre>
+      <p style="font-size:10px;line-height:2">
+        ${win?'You conquered the Crypt of the Champion!':'Your journey ends in the dark.'}<br>
+        <span class="muted">Class:</span> ${CLASSES[p.cls].name}<br>
+        <span class="muted">Chamber reached:</span> ${G.depth}/${RUN_LENGTH}<br>
+        <span class="muted">Enemies slain:</span> ${p.kills}<br>
+        <span class="muted">Gold gathered:</span> ${p.gold}
+      </p>
+      <button class="btn center" onclick="restart()"><span class="k">&#8635;</span>PLAY AGAIN</button>
+    </div>
+  `;
+}
+function restart(){ newGame(); render(); }
+
+/* ============================================================
+   SHARED UI
+   ============================================================ */
+function playerBar(p, full){
+  return `
+    <div class="panel tight">
+      <div class="bar"><div class="lbl"><span class="green">HP ${CLASSES[p.cls].name}</span><span>${p.hp}/${p.maxHp}</span></div>
+        <div class="track"><div class="fill hp" style="width:${p.hp/p.maxHp*100}%"></div></div></div>
+      <div class="bar"><div class="lbl"><span class="blue">MP</span><span>${p.mana}/${p.maxMana}</span></div>
+        <div class="track"><div class="fill mp" style="width:${p.maxMana? p.mana/p.maxMana*100:0}%"></div></div></div>
+      ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${p.dodge}%</b> &middot; CRIT <b>${p.crit}%</b>${p.lifesteal?' &middot; LIFESTEAL <b>'+p.lifesteal+'%</b>':''}</div>`:''}
+    </div>`;
+}
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+document.addEventListener('keydown', e=>{
+  const btns=[...document.querySelectorAll('.btn:not([disabled])')];
+  const n=parseInt(e.key,10);
+  if(!isNaN(n) && n>=1 && n<=btns.length){ btns[n-1].click(); return; }
+  if(e.key==='Enter' && btns.length){ btns[0].click(); }
+});
+
+/* ---------- go ---------- */
+function go(s){ G.screen=s; render(); }
+
+/* boot */
+render();
+</script>
+</body>
+</html>
