@@ -48,6 +48,8 @@
   .stats{font-size:9px;line-height:2;color:var(--dim)}.stats b{color:var(--ink)}
   .chip{display:inline-block;background:#000;border:2px solid var(--line);padding:3px 7px;margin:3px 3px 3px 0;font-size:8px}
   .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
+  .r-com{color:#cfcbef}.r-unc{color:var(--green)}.r-rare{color:var(--blue)}.r-epic{color:var(--purple)}.r-leg{color:var(--amber)}
+  .slot{border:2px solid var(--line);background:#00000055;padding:8px 10px;margin:6px 0;font-size:10px;text-align:left;line-height:1.7}
   .c-burn{border-color:var(--amber);color:var(--amber)}.c-pois{border-color:var(--green);color:var(--green)}
   .c-weak{border-color:var(--purple);color:var(--purple)}.c-vuln{border-color:var(--red);color:var(--red)}
   .c-stun{border-color:var(--teal);color:var(--teal)}.c-guard{border-color:var(--blue);color:var(--blue)}
@@ -183,33 +185,77 @@ const BOSSES={
 const BOSS_POOL=[['ogre','gobking','spider'],['necro','titan','tyrant'],['demon','lich','flameknight'],['dragon','king']];
 
 /* ============================================================
-   LOOT: weapons, upgrades, relics
+   LOOT: equipment (rarity + item level + passives + sets), upgrades, relics
    ============================================================ */
-const WEAPONS={
-  mage:[
-    {name:'Crystal Staff',dmg:11,type:'magic',note:'+12 max mana',mana:12},
-    {name:'Flameheart Rod',dmg:14,type:'magic',note:'hits may BURN',proc:{burn:[5,3,45]}},
-    {name:'Frostbite Cane',dmg:13,type:'magic',note:'+8 regen',regen:8},
-    {name:'Plague Staff',dmg:14,type:'magic',note:'hits may POISON',proc:{poison:[5,3,50]}},
-    {name:'Void Scepter',dmg:19,type:'magic',note:'+22 max mana',mana:22},
-    {name:'Staff of the Archmage',dmg:17,type:'magic',note:'+15 mana, +5 regen',mana:15,regen:5},
+const RARITY=[
+  {name:'Common',cls:'r-com',mult:1.00,passive:false},
+  {name:'Uncommon',cls:'r-unc',mult:1.20,passive:false},
+  {name:'Rare',cls:'r-rare',mult:1.42,passive:true},
+  {name:'Epic',cls:'r-epic',mult:1.68,passive:true},
+  {name:'Legendary',cls:'r-leg',mult:2.0,passive:true},
+];
+/* base item templates. stats scale with item level & rarity. */
+const WEAPON_BASES={
+  mage:[{name:'Wand',type:'magic',stats:{dmg:7},aff:{v:1}},{name:'Staff',type:'magic',stats:{dmg:9},aff:{v:1}},
+        {name:'Rod',type:'magic',stats:{dmg:8},aff:{g:1}},{name:'Scepter',type:'magic',stats:{dmg:10},aff:{w:1}}],
+  warrior:[{name:'Sword',type:'melee',stats:{dmg:10},aff:{w:1}},{name:'Axe',type:'melee',stats:{dmg:11},aff:{w:1}},
+        {name:'Warhammer',type:'melee',stats:{dmg:9},aff:{v:1}},{name:'Greatblade',type:'melee',stats:{dmg:13},aff:{w:1}}],
+  ranger:[{name:'Bow',type:'ranged',stats:{dmg:9},aff:{g:1}},{name:'Longbow',type:'ranged',stats:{dmg:10},aff:{g:1}},
+        {name:'Crossbow',type:'ranged',stats:{dmg:12},aff:{w:1}},{name:'Recurve',type:'ranged',stats:{dmg:9},aff:{g:1}}],
+};
+const ARMOR_BASES=[
+  {name:'Leather Armor',stats:{def:3,maxHp:14},aff:{g:1}},
+  {name:'Chainmail',stats:{def:5,maxHp:20},aff:{v:1}},
+  {name:'Plate Armor',stats:{def:8,maxHp:30},aff:{v:1}},
+  {name:'Mystic Robes',stats:{def:2,maxHp:10,maxMana:16},aff:{v:1}},
+  {name:'Scale Mail',stats:{def:6,maxHp:18,dodge:4},aff:{g:1}},
+];
+const TRINKET_BASES=[
+  {name:'Ring',stats:{crit:6}},{name:'Amulet',stats:{maxMana:12,regen:2}},
+  {name:'Cloak',stats:{dodge:7}},{name:'Pendant',stats:{maxHp:14,lifesteal:6}},
+  {name:'Sigil',stats:{atk:2,crit:4}},
+];
+/* passives unlocked at Rare+. weapon procs are applied to the weapon item. */
+const PASSIVES={
+  weapon:[
+    {id:'flaming',prefix:'Flaming ',proc:{burn:[6,3,45]},desc:'hits may BURN'},
+    {id:'venom',prefix:'Venomous ',proc:{poison:[6,3,50]},desc:'hits may POISON'},
+    {id:'sunderp',prefix:'Sundering ',proc:{vuln:[2]},desc:'hits apply VULNERABLE'},
+    {id:'keen',prefix:'Keen ',stat:{crit:12},desc:'+12% crit'},
+    {id:'vampw',prefix:'Vampiric ',stat:{lifesteal:16},desc:'+16% lifesteal'},
+    {id:'savage',prefix:'Savage ',stat:{atk:4},desc:'+4 attack'},
+    {id:'twinw',prefix:'Twinned ',flag:'doubleStrike',desc:'35% double strike'},
   ],
-  warrior:[
-    {name:'Iron Greatsword',dmg:15,type:'melee',note:'+2 atk',atk:2},
-    {name:'Vampiric Blade',dmg:14,type:'melee',note:'+25% lifesteal',lifesteal:25},
-    {name:'Bulwark Axe',dmg:14,type:'melee',note:'+3 def',def:3},
-    {name:'Cleaver of Sundering',dmg:15,type:'melee',note:'hits apply VULNERABLE',proc:{vuln:[2]}},
-    {name:'Berserker Maul',dmg:23,type:'melee',note:'+4 atk, -2 def',atk:4,def:-2},
-    {name:'Bloodthirster',dmg:18,type:'melee',note:'+18% lifesteal, +2 atk',lifesteal:18,atk:2},
+  armor:[
+    {id:'thorned',prefix:'Thorned ',flag:'thorns',stat:{def:2},desc:'reflect 30% dmg taken'},
+    {id:'evasive',prefix:'Evasive ',stat:{dodge:12},desc:'+12% dodge'},
+    {id:'bulwark',prefix:'Bulwark ',stat:{def:4,maxHp:22},desc:'+4 def, +22 HP'},
+    {id:'living',prefix:'Living ',flag:'combatRegen',desc:'regenerate HP in combat'},
+    {id:'warded',prefix:'Warded ',flag:'gearBarrier',desc:'barrier each battle'},
   ],
-  ranger:[
-    {name:'Hunter Longbow',dmg:13,type:'ranged',note:'+10% crit',crit:10},
-    {name:'Windforce',dmg:14,type:'ranged',note:'+10% dodge',dodge:10},
-    {name:'Toxic Recurve',dmg:15,type:'ranged',note:'hits may POISON',proc:{poison:[6,3,55]}},
-    {name:'Stormpiercer',dmg:18,type:'ranged',note:'+6% crit, +6% dodge',crit:6,dodge:6},
-    {name:'Dragonsbane',dmg:20,type:'ranged',note:'+12% crit',crit:12},
+  trinket:[
+    {id:'focus',suffix:' of Focus',stat:{maxMana:22,regen:4},desc:'+22 mana, +4 regen'},
+    {id:'precision',suffix:' of Precision',stat:{crit:12},desc:'+12% crit'},
+    {id:'cat',suffix:' of the Cat',stat:{dodge:12},desc:'+12% dodge'},
+    {id:'execution',suffix:' of Execution',flag:'executioner',desc:'x2 dmg vs low HP'},
+    {id:'fury',suffix:' of Fury',flag:'berserker',desc:'+dmg the more hurt you are'},
+    {id:'leech',suffix:' of Leeching',stat:{lifesteal:14},desc:'+14% lifesteal'},
   ],
 };
+/* SETS: collect both pieces (armor + trinket) to unlock a build-defining bonus */
+const SETS={
+  Shadowdancer:{name:'Shadowdancer',pieces:2,desc:'2pc: +15% dodge; a dodge guarantees your next hit CRITS',stats:{dodge:15},flags:['shadowDodge']},
+  Archmage:{name:'Archmage',pieces:2,desc:'2pc: gain a Mana Shield (any class); when it fully blocks a hit, STUN the attacker',stats:{maxMana:25},flags:['gearManaShield','aegisStun']},
+  Bloodforged:{name:'Bloodforged',pieces:2,desc:'2pc: +14% lifesteal, +3 ATK; kills heal you',stats:{lifesteal:14,atk:3},flags:['bloodKill']},
+};
+const SET_ITEMS=[
+  {slot:'armor',set:'Shadowdancer',name:'Shadowweave Cloak',stats:{def:3,dodge:8},aff:{g:1}},
+  {slot:'trinket',set:'Shadowdancer',name:'Shadowdancer Band',stats:{dodge:8,crit:6}},
+  {slot:'armor',set:'Archmage',name:'Archmage Robes',stats:{def:3,maxHp:14,maxMana:20},aff:{v:1}},
+  {slot:'trinket',set:'Archmage',name:'Orb of the Archmage',stats:{maxMana:24,regen:4}},
+  {slot:'armor',set:'Bloodforged',name:'Bloodforged Plate',stats:{def:6,maxHp:24},aff:{w:1}},
+  {slot:'trinket',set:'Bloodforged',name:'Sanguine Pendant',stats:{maxHp:14,lifesteal:8}},
+];
 const UPGRADES=[
   {name:'Vital Charm',aff:{v:1},apply:p=>{p.maxHp+=24;heal(p,24);},note:'+24 max HP, heal'},
   {name:'Mana Crystal',aff:{v:1},apply:p=>{p.maxMana+=18;p.mana+=18;},note:'+18 max mana'},
@@ -224,25 +270,29 @@ const UPGRADES=[
 ];
 const RELICS=[
   {id:'battery',name:'Arcane Battery',aff:{v:2},note:'+45 max mana, +6 regen',apply:p=>{p.maxMana+=45;p.mana+=45;p.regen+=6;}},
-  {id:'glass',name:'Glass Cannon',aff:{w:2},note:'+50% damage, -35% max HP',apply:p=>{p.flags.glassCannon=1;const c=Math.round(p.maxHp*0.35);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
-  {id:'stone',name:'Stone Skin',aff:{v:2},note:'+6 DEF, -20% damage dealt',apply:p=>{p.def+=6;p.flags.stoneSkin=1;}},
-  {id:'berserk',name:"Berserker's Heart",aff:{w:2},note:'up to +80% dmg the lower your HP',apply:p=>{p.flags.berserker=1;}},
-  {id:'exec',name:'Executioner',aff:{w:2},note:'x2 damage to foes below 30% HP',apply:p=>{p.flags.executioner=1;}},
-  {id:'thorns',name:'Thornmail',aff:{v:2},note:'+3 DEF, reflect 30% damage taken',apply:p=>{p.def+=3;p.flags.thorns=1;}},
+  {id:'glass',name:'Glass Cannon',aff:{w:2},note:'+50% damage, -35% max HP',apply:p=>{addFlag(p,'glassCannon');const c=Math.round(p.maxHp*0.35);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
+  {id:'stone',name:'Stone Skin',aff:{v:2},note:'+6 DEF, -20% damage dealt',apply:p=>{p.def+=6;addFlag(p,'stoneSkin');}},
+  {id:'berserk',name:"Berserker's Heart",aff:{w:2},note:'up to +80% dmg the lower your HP',apply:p=>{addFlag(p,'berserker');}},
+  {id:'exec',name:'Executioner',aff:{w:2},note:'x2 damage to foes below 30% HP',apply:p=>{addFlag(p,'executioner');}},
+  {id:'thorns',name:'Thornmail',aff:{v:2},note:'+3 DEF, reflect 30% damage taken',apply:p=>{p.def+=3;addFlag(p,'thorns');}},
   {id:'vamp',name:'Vampiric Aura',aff:{w:1,v:1},note:'+20% lifesteal',apply:p=>{p.lifesteal+=20;}},
   {id:'swift',name:'Swift Boots',aff:{g:2},note:'+15% dodge, +8% crit',apply:p=>{p.dodge+=15;p.crit+=8;}},
-  {id:'blood',name:'Blood Pact',aff:{v:2},note:'heal 8% max HP on every kill',apply:p=>{p.flags.bloodpact=1;}},
-  {id:'twin',name:'Twin Fang',aff:{g:2},note:'35% chance basic attacks strike twice',apply:p=>{p.flags.doubleStrike=1;}},
-  {id:'toxic',name:'Toxic Coating',aff:{g:2},note:'basic attacks POISON foes',apply:p=>{p.flags.toxic=1;}},
-  {id:'concuss',name:'Concussive Rounds',aff:{g:2},note:'18% chance basic hits STUN',apply:p=>{p.flags.concuss=1;}},
-  {id:'frostbrand',name:'Frostbrand',aff:{g:2},note:'basic attacks WEAKEN foes',apply:p=>{p.flags.frostbrand=1;}},
-  {id:'sunder',name:'Sunderer',aff:{w:1,g:1},note:'basic attacks apply VULNERABLE',apply:p=>{p.flags.sunder=1;}},
-  {id:'regenrelic',name:'Trollblood',aff:{v:2},note:'regenerate 4% HP each combat turn',apply:p=>{p.flags.combatRegen=1;}},
-  {id:'second',name:'Phoenix Feather',aff:{v:2},note:'survive a lethal blow once per battle',apply:p=>{p.flags.secondWind=1;}},
-  {id:'scholar',name:"Scholar's Lens",aff:{g:1,v:1},note:'+50% XP gained',apply:p=>{p.flags.scholar=1;}},
+  {id:'blood',name:'Blood Pact',aff:{v:2},note:'heal 8% max HP on every kill',apply:p=>{addFlag(p,'bloodpact');}},
+  {id:'twin',name:'Twin Fang',aff:{g:2},note:'35% chance basic attacks strike twice',apply:p=>{addFlag(p,'doubleStrike');}},
+  {id:'toxic',name:'Toxic Coating',aff:{g:2},note:'basic attacks POISON foes',apply:p=>{addFlag(p,'toxic');}},
+  {id:'concuss',name:'Concussive Rounds',aff:{g:2},note:'18% chance basic hits STUN',apply:p=>{addFlag(p,'concuss');}},
+  {id:'frostbrand',name:'Frostbrand',aff:{g:2},note:'basic attacks WEAKEN foes',apply:p=>{addFlag(p,'frostbrand');}},
+  {id:'sunder',name:'Sunderer',aff:{w:1,g:1},note:'basic attacks apply VULNERABLE',apply:p=>{addFlag(p,'sunder');}},
+  {id:'regenrelic',name:'Trollblood',aff:{v:2},note:'regenerate 4% HP each combat turn',apply:p=>{addFlag(p,'combatRegen');}},
+  {id:'second',name:'Phoenix Feather',aff:{v:2},note:'survive a lethal blow once per battle',apply:p=>{addFlag(p,'secondWind');}},
+  {id:'scholar',name:"Scholar's Lens",aff:{g:1,v:1},note:'+50% XP gained',apply:p=>{addFlag(p,'scholar');}},
   {id:'giant',name:'Giant Growth',aff:{v:2},note:'+30% max HP',apply:p=>{const g=Math.round(p.maxHp*0.3);p.maxHp+=g;heal(p,g);}},
-  {id:'crit',name:'Eagle Eye',aff:{g:2},note:'+18% crit, crits deal more',apply:p=>{p.crit+=18;p.flags.bigCrit=1;}},
-  {id:'mana2hp',name:'Soul Siphon',aff:{v:2},note:'spending mana heals you a little',apply:p=>{p.flags.soulSiphon=1;}},
+  {id:'crit',name:'Eagle Eye',aff:{g:2},note:'+18% crit, crits deal more',apply:p=>{p.crit+=18;addFlag(p,'bigCrit');}},
+  {id:'mana2hp',name:'Soul Siphon',aff:{v:2},note:'spending mana heals you a little',apply:p=>{addFlag(p,'soulSiphon');}},
+  // ---- KEYSTONES: class-transforming legendaries (only offered to their class) ----
+  {id:'kbeam',name:'Singularity Lens',cls:'mage',keystone:true,aff:{v:2,w:1},note:'KEYSTONE: Fireball becomes a single-target CHANNELED BEAM (huge dmg + heavy burn)',apply:p=>{addFlag(p,'kBeam');}},
+  {id:'kwhirl',name:'Eternal Cyclone',cls:'warrior',keystone:true,aff:{w:2,v:1},note:'KEYSTONE: Whirlwind hits all, no longer drops your guard, and heals you',apply:p=>{addFlag(p,'kWhirl');}},
+  {id:'ksplit',name:'Thousand Arrows',cls:'ranger',keystone:true,aff:{g:2,w:1},note:'KEYSTONE: Aimed Shot strikes EVERY enemy',apply:p=>{addFlag(p,'kSplit');}},
 ];
 /* ---------- affinity paths (escalating build identities) ---------- */
 const AFF_THRESH=[3,6,9];
@@ -286,7 +336,7 @@ const EVENTS=[
   {id:'knight',title:'THE WOUNDED KNIGHT',art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
    text:'A dying knight slumps against the wall. "Please... mend me, and take my blade."',
    options:[
-     {label:'Heal him (-12 HP)',desc:'He gives you his weapon',run:p=>{p.hp=clamp(p.hp-12,1,p.maxHp);const w=pick(WEAPONS[p.cls]);equip(p,w);return `You bind his wounds. He presses the ${w.name} into your hands and fades away.`;}},
+     {label:'Heal him (-12 HP)',desc:'He gives you his weapon',run:p=>{p.hp=clamp(p.hp-12,1,p.maxHp);const w=makeItem('weapon',p.cls,G.depth+2);equipItem(p,w);return `You bind his wounds. He presses a ${w.name} (Lv${w.ilvl}) into your hands and fades away.`;}},
      {label:'Rob him',desc:'Take his gold, leave him',run:p=>{const g=25+rnd(30);p.gold+=g;return `You take ${g} gold from his pack. His eyes follow you into the dark.`;}},
      {label:'Leave him be',desc:'Walk away',run:p=>`You leave the knight to his fate.`},
    ]},
@@ -321,7 +371,7 @@ const EVENTS=[
   {id:'spring',title:'THE ENCHANTED SPRING',art:"  .~~~.\n (~ + ~)\n  '~~~'",
    text:'Crystal water hums with magic. You could temper your weapon in it.',
    options:[
-     {label:'Temper weapon',desc:'+4 weapon damage',run:p=>{p.weapon.dmg+=4;return `Your ${p.weapon.name} glows — its damage rises by 4!`;}},
+     {label:'Temper weapon',desc:'+5 weapon damage',run:p=>{p.weapon.dmg+=5;p.weapon.stats.dmg=(p.weapon.stats.dmg||0)+5;return `Your ${p.weapon.name} glows — its damage rises by 5!`;}},
      {label:'Drink deeply',desc:'Restore & +6 max mana',run:p=>{p.maxMana+=6;p.mana=p.maxMana;heal(p,Math.round(p.maxHp*0.25));return 'The waters refresh body and mind. (+6 max mana, restored)';}},
      {label:'Fill a flask',desc:'Gain a potion',run:p=>{p.potions++;return 'You bottle the glowing water as a potion.';}},
    ]},
@@ -393,14 +443,23 @@ newGame();
 
 function makePlayer(key){
   const c=CLASSES[key];
+  const sw={slot:'weapon',name:c.weapon.name,type:c.weapon.type,rarity:0,ilvl:1,stats:{dmg:c.weapon.dmg},dmg:c.weapon.dmg,aff:null,set:null};
   return {cls:key,color:c.color,sprite:c.sprite,affinity:c.affinity,
     hp:c.hp,maxHp:c.hp,mana:c.mana,maxMana:c.mana,
     atk:c.atk,def:c.def,dodge:c.dodge,crit:c.crit,lifesteal:c.lifesteal,regen:c.regen,
-    weapon:{...c.weapon},skills:c.skills.map(s=>({...s})),
-    potions:1,gold:0,kills:0,relics:[],flags:{},level:1,xp:0,
-    aff:{w:0,g:0,v:0},affTier:{w:0,g:0,v:0},synergies:[]};
+    weapon:sw,equip:{weapon:sw,armor:null,trinket:null},skills:c.skills.map(s=>({...s})),
+    potions:1,gold:0,kills:0,relics:[],flags:{},flagRefs:{},_setApplied:{},sets:[],level:1,xp:0,
+    affBase:{w:0,g:0,v:0},aff:{w:0,g:0,v:0},affTier:{w:0,g:0,v:0},synergies:[]};
 }
-function addAffinity(p,aff){ if(!aff)return; if(aff.w)p.aff.w+=aff.w; if(aff.g)p.aff.g+=aff.g; if(aff.v)p.aff.v+=aff.v; checkAffinityTiers(p); }
+/* ---- refcounted flags (so relics + gear + sets can share a flag safely) ---- */
+function addFlag(p,f){ p.flagRefs[f]=(p.flagRefs[f]||0)+1; p.flags[f]=1; }
+function removeFlag(p,f){ if(!p.flagRefs[f])return; p.flagRefs[f]--; if(p.flagRefs[f]<=0){ delete p.flagRefs[f]; delete p.flags[f]; } }
+function addAffinity(p,aff){ if(aff){ if(aff.w)p.affBase.w+=aff.w; if(aff.g)p.affBase.g+=aff.g; if(aff.v)p.affBase.v+=aff.v; } recomputeAffinity(p); }
+function recomputeAffinity(p){
+  p.aff={w:p.affBase.w,g:p.affBase.g,v:p.affBase.v};
+  ['weapon','armor','trinket'].forEach(s=>{ const it=p.equip[s]; if(it&&it.aff){ if(it.aff.w)p.aff.w+=it.aff.w; if(it.aff.g)p.aff.g+=it.aff.g; if(it.aff.v)p.aff.v+=it.aff.v; } });
+  checkAffinityTiers(p);
+}
 function affTagText(aff){ if(!aff)return''; const t=[]; if(aff.w)t.push('Wrath +'+aff.w); if(aff.g)t.push('Guile +'+aff.g); if(aff.v)t.push('Veil +'+aff.v); return t.join(', '); }
 function checkAffinityTiers(p){ ['w','g','v'].forEach(k=>{ while(p.affTier[k]<3 && p.aff[k]>=AFF_THRESH[p.affTier[k]]){ p.affTier[k]++; unlockAffinity(p,k,p.affTier[k]); } }); }
 function unlockAffinity(p,k,t){
@@ -410,7 +469,7 @@ function unlockAffinity(p,k,t){
 }
 function recomputeSynergies(p){ p.synergies=[];
   SYNERGIES.forEach(s=>{ if(s.need.every(n=>p.relics.includes(n))){ p.synergies.push(s.name);
-    if(!p.flags[s.flag]){ p.flags[s.flag]=1; if(s.onForm)s.onForm(p);
+    if(!p.flags[s.flag]){ addFlag(p,s.flag); if(s.onForm)s.onForm(p);
       if(G.screen==='battle') blog(`SYNERGY: ${s.name}!`,'lvl'); else G._affMsg=`Synergy unlocked: ${s.name} — ${s.desc}`; } } }); }
 function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.apply(p); p.relics.push(rl.name); addAffinity(p,rl.aff); recomputeSynergies(p); return true; }
 function gainUpgrade(p,up){ up.apply(p); addAffinity(p,up.aff); }
@@ -425,22 +484,64 @@ function gainXp(p,n){ if(p.flags.scholar) n=Math.round(n*1.5); p.xp+=n; let ups=
   while(p.xp>=xpNeeded(p.level)){ p.xp-=xpNeeded(p.level); levelUp(p); ups++; } return ups; }
 function levelUp(p,silent){ p.level++; p.maxHp+=11; p.atk+=2; p.maxMana+=5; p.mana+=5; heal(p,14);
   if(!silent && G.screen==='battle') blog(`LEVEL UP! You are now level ${p.level}.`,'lvl'); }
-function grantRandomRelic(p){ const avail=RELICS.filter(r=>!p.relics.includes(r.name)); if(!avail.length)return null; const r=pick(avail); gainRelic(p,r); return r.name; }
-function equip(p,w){
-  const o=p.weapon;
-  if(o.atk)p.atk-=o.atk;if(o.def)p.def-=o.def;if(o.crit)p.crit-=o.crit;if(o.dodge)p.dodge-=o.dodge;if(o.lifesteal)p.lifesteal-=o.lifesteal;if(o.regen)p.regen-=o.regen;
-  if(o.mana){p.maxMana-=o.mana;p.mana=clamp(p.mana,0,p.maxMana);}
-  p.weapon={...w};
-  if(w.atk)p.atk+=w.atk;if(w.def)p.def+=w.def;if(w.crit)p.crit+=w.crit;if(w.dodge)p.dodge+=w.dodge;if(w.lifesteal)p.lifesteal+=w.lifesteal;if(w.regen)p.regen+=w.regen;
-  if(w.mana){p.maxMana+=w.mana;p.mana+=w.mana;}
+function relicPool(p){ return RELICS.filter(r=>(!r.cls||r.cls===p.cls)&&!p.relics.includes(r.name)); }
+function grantRandomRelic(p){ const avail=relicPool(p); if(!avail.length)return null; const r=pick(avail); gainRelic(p,r); return r.name; }
+/* ---- equipment engine ---- */
+function applyItemStats(p,item,sign){ if(!item||!item.stats)return;
+  for(const k in item.stats){ if(k==='dmg')continue; p[k]=(p[k]||0)+sign*item.stats[k]; }
+  p.hp=clamp(p.hp,0,p.maxHp); p.mana=clamp(p.mana,0,p.maxMana); }
+function equipItem(p,item){ const slot=item.slot; const old=p.equip[slot];
+  if(old){ applyItemStats(p,old,-1); if(old.passiveFlag)removeFlag(p,old.passiveFlag); }
+  p.equip[slot]=item; applyItemStats(p,item,+1); if(item.passiveFlag)addFlag(p,item.passiveFlag);
+  if(slot==='weapon')p.weapon=item;
+  recomputeSets(p); recomputeAffinity(p); }
+function recomputeSets(p){
+  for(const sn in p._setApplied){ const ap=p._setApplied[sn]; for(const k in ap.stats)p[k]-=ap.stats[k]; ap.flags.forEach(f=>removeFlag(p,f)); }
+  p._setApplied={};
+  const counts={}; ['weapon','armor','trinket'].forEach(s=>{ const it=p.equip[s]; if(it&&it.set)counts[it.set]=(counts[it.set]||0)+1; });
+  p.sets=[];
+  for(const sn in counts){ const set=SETS[sn]; if(set&&counts[sn]>=set.pieces){ p.sets.push(sn);
+    const stats=set.stats||{}; for(const k in stats)p[k]=(p[k]||0)+stats[k]; (set.flags||[]).forEach(f=>addFlag(p,f));
+    p._setApplied[sn]={stats:{...stats},flags:[...(set.flags||[])]}; } }
+  p.hp=clamp(p.hp,0,p.maxHp); p.mana=clamp(p.mana,0,p.maxMana);
 }
+/* ---- item generation ---- */
+function rollRarity(depth){ let w=[Math.max(3,42-depth*2.2),30,13+depth*0.7,4+depth*0.6,Math.max(0,depth*0.45-1)];
+  if(G.mods&&G.mods.luck)w=w.map((x,i)=>i>=2?x*1.8:x*0.7);
+  let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<5;i++){ if(r<w[i])return i; r-=w[i]; } return 0; }
+function rollIlvl(depth){ return clamp(depth+rnd(3)-1,1,30); }
+function makeItem(slot,cls,depth,opts){ opts=opts||{};
+  let rarity=opts.rarity!=null?opts.rarity:rollRarity(depth);
+  const ilvl=opts.ilvl!=null?opts.ilvl:rollIlvl(depth);
+  let base,set=null;
+  if(slot!=='weapon'&&rarity>=3&&chance(50)){ const sp=pick(SET_ITEMS.filter(si=>si.slot===slot)); base=sp; set=sp.set; }
+  else base=slot==='weapon'?pick(WEAPON_BASES[cls]):slot==='armor'?pick(ARMOR_BASES):pick(TRINKET_BASES);
+  const rk=RARITY[rarity],im=1+(ilvl-1)*0.10,stats={};
+  for(const k in base.stats)stats[k]=Math.max(1,Math.round(base.stats[k]*im*rk.mult));
+  let passive=null,name=base.name;
+  if(rk.passive&&!set&&PASSIVES[slot]){ passive=pick(PASSIVES[slot]);
+    if(passive.stat)for(const k in passive.stat)stats[k]=(stats[k]||0)+passive.stat[k];
+    name=(passive.prefix||'')+name+(passive.suffix||''); }
+  const item={slot,name,type:base.type,rarity,ilvl,stats,aff:base.aff||null,set:set||base.set||null};
+  if(slot==='weapon'){ item.dmg=stats.dmg||0; if(passive&&passive.proc)item.proc=passive.proc; }
+  if(passive&&passive.flag)item.passiveFlag=passive.flag;
+  if(passive)item.passiveDesc=passive.desc;
+  return item;
+}
+function itemLabel(it){ return `<span class="${RARITY[it.rarity].cls}">${it.name}</span> <span class="muted">Lv${it.ilvl}</span>`; }
+function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT%',dodge:'DODGE%',lifesteal:'LS%',regen:'RGN'};
+  for(const k in it.stats){ parts.push(`+${it.stats[k]} ${lbl[k]||k}`); }
+  let s=parts.join(', ');
+  if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`;
+  if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`;
+  return s; }
 
 /* ============================================================
    RENDER ROUTER
    ============================================================ */
 function render(){
   ({title:renderTitle,class:renderClassSelect,omen:renderOmen,corridor:renderCorridor,room:renderRoom,
-    event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,
+    event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
 }
 function go(s){ G.screen=s; render(); }
@@ -497,7 +598,7 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.105; }
+function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.145; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
@@ -548,7 +649,29 @@ function renderCorridor(){
   const banner=G._affMsg?`<div class="panel tight center teal fade" style="font-size:9px">&#10022; ${G._affMsg}</div>`:'';
   G._affMsg=null;
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${banner}${playerBar(G.player)}
-    <div class="panel fade"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}</div>${statusFooter()}`;
+    <div class="panel fade"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
+}
+let _invReturn='corridor';
+function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
+function closeInventory(){ G.screen=_invReturn; render(); }
+function renderInventory(){ const p=G.player;
+  const slot=s=>{ const it=p.equip[s]; if(!it)return `<div class="slot muted">${s.toUpperCase()}: — empty —</div>`;
+    return `<div class="slot"><span class="muted">${s.toUpperCase()}</span> &nbsp; ${itemLabel(it)}<br><span style="font-size:8px">${itemStatsText(it)}</span></div>`; };
+  const setProg=Object.keys(SETS).map(sn=>{ const set=SETS[sn]; const have=['weapon','armor','trinket'].filter(s=>p.equip[s]&&p.equip[s].set===sn).length;
+    const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
+  const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
+    return `<div class="slot"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
+  const relics=p.relics.length?p.relics.map(r=>`<span class="chip" style="border-color:var(--purple);color:var(--purple)">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
+  const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip" style="border-color:var(--teal);color:var(--teal)">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
+  app.innerHTML=`<div class="floortag">INVENTORY &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
+    <div class="panel fade">
+      <h3 class="amber" style="font-size:11px;margin-bottom:4px">EQUIPMENT</h3>${slot('weapon')}${slot('armor')}${slot('trinket')}
+      <h3 class="teal" style="font-size:11px;margin:10px 0 4px">SET COLLECTIONS</h3>${setProg}
+      <h3 class="purple" style="font-size:11px;margin:10px 0 4px">AFFINITY PATHS</h3>${paths}
+      <h3 style="font-size:11px;margin:10px 0 4px">RELICS</h3><div>${relics}</div>
+      <h3 style="font-size:11px;margin:10px 0 4px">SYNERGIES</h3><div>${syn}</div>
+      <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; ${p.gold}g &middot; ${p.relics.length} relic(s)</div>`; }
 function openDoor(i){ G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); }
@@ -606,7 +729,7 @@ function renderRoom(){
         <button class="btn center amber" onclick="openChest()"><span class="k">&#128273;</span>OPEN IT</button>
         <button class="btn center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE IT</button></div>`;
   } else if(r.type==='relic'){
-    if(!r.options) r.options=shuffle(RELICS).slice(0,3);
+    if(!r.options) r.options=shuffle(RELICS.filter(rl=>!rl.cls||rl.cls===p.cls)).slice(0,3);
     const owned=new Set(p.relics);
     const cards=r.options.map((rl,i)=>{const have=owned.has(rl.name);
       return `<button class="btn" ${have?'disabled':''} onclick="takeRelic(${i})"><span class="k purple">&#9670;</span>${rl.name}${have?' (owned)':''}<small>${rl.note}<br><span class="teal">&#10022; ${affTagText(rl.aff)}</span></small></button>`;}).join('');
@@ -685,11 +808,13 @@ function openChest(){
 /* ---------- MERCHANT ---------- */
 function renderMerchant(){
   const p=G.player;
-  if(!G.room.stock) G.room.stock={relic:pick(RELICS.filter(r=>!p.relics.includes(r.name))||RELICS)||null, weapon:pick(WEAPONS[p.cls].filter(w=>w.name!==p.weapon.name))};
+  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(['weapon','armor','trinket']);
+    G.room.stock={relic:rp.length?pick(rp):null, gear:makeItem(gslot,p.cls,G.depth+1)}; }
   const st=G.room.stock;
   const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
-  const relicBtn=st.relic && !p.relics.includes(st.relic.name)?item('Relic: '+st.relic.name,70,st.relic.note,"buy('relic')",p.gold>=70):'';
-  const wpnBtn=st.weapon?item('Weapon: '+st.weapon.name,55,`${st.weapon.dmg} dmg${st.weapon.note?' &middot; '+st.weapon.note:''}`,"buy('weapon')",p.gold>=55):'';
+  const relicBtn=st.relic?item('Relic: '+st.relic.name,70,st.relic.note,"buy('relic')",p.gold>=70):'';
+  const gcost=st.gear?40+st.gear.rarity*22:0;
+  const gearBtn=st.gear?item(st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,itemStatsText(st.gear),"buy('gear')",p.gold>=gcost):'';
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
     <div class="panel fade"><pre class="sprite amber">  ,---.\n  (o o)\n /|MERCH|\\\n  |   |</pre>
       <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
@@ -698,7 +823,7 @@ function renderMerchant(){
       ${item('Healing Draught',18,'restore 50% HP now',"buy('heal')",p.gold>=18)}
       ${item('Mana Tonic',14,'fully restore mana now',"buy('mana')",p.gold>=14)}
       ${item('Mystery Upgrade',40,'a random permanent upgrade',"buy('upgrade')",p.gold>=40)}
-      ${wpnBtn}${relicBtn}
+      ${gearBtn}${relicBtn}
       <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>${statusFooter()}`;
 }
 function buy(kind){ const p=G.player,st=G.room.stock;
@@ -706,7 +831,7 @@ function buy(kind){ const p=G.player,st=G.room.stock;
   else if(kind==='heal'&&p.gold>=18){p.gold-=18;heal(p,Math.round(p.maxHp*0.5));}
   else if(kind==='mana'&&p.gold>=14){p.gold-=14;p.mana=p.maxMana;}
   else if(kind==='upgrade'&&p.gold>=40){p.gold-=40;gainUpgrade(p,pick(UPGRADES));}
-  else if(kind==='weapon'&&p.gold>=55&&st.weapon){p.gold-=55;equip(p,st.weapon);st.weapon=null;}
+  else if(kind==='gear'&&st.gear){const c=40+st.gear.rarity*22;if(p.gold>=c){p.gold-=c;equipItem(p,st.gear);st.gear=null;}}
   else if(kind==='relic'&&p.gold>=70&&st.relic){p.gold-=70;gainRelic(p,st.relic);st.relic=null;}
   renderMerchant();
 }
@@ -721,7 +846,7 @@ function startBattle(intro){
     pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
   if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
-  if(p.affTier.v>=3){ G.battle.barrier=Math.round(p.maxHp*0.22); }
+  let bar=0; if(p.affTier.v>=3)bar+=Math.round(p.maxHp*0.22); if(p.flags.gearBarrier)bar+=Math.round(p.maxHp*0.12); G.battle.barrier=bar;
   G.log=[];
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
@@ -791,6 +916,7 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
   if(p.flags.bloodpact){ let h=Math.round(p.maxHp*0.08); if(p.flags.synSanguine)h*=2; heal(p,h); blog(`Blood Pact heals ${h}.`,'heal'); }
+  if(p.flags.bloodKill){ const h=Math.round(p.maxHp*0.06); heal(p,h); }
   if(p.flags.synOver){ p.mana=clamp(p.mana+8,0,p.maxMana); } }
 function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.player; if(!e||e.hp<=0)return 0;
   dmg=Math.max(1,Math.round(dmg*playerDamageMult(e)-(e.def||0)));
@@ -800,7 +926,7 @@ function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.
   if(crit&&p.affTier.g>=3){ p.mana=clamp(p.mana+5,0,p.maxMana); }
   if(e.hp<=0) onEnemyDeath(e);
   return dmg; }
-function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(c)d*=critMult();
+function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(b.shadowCrit){c=true;b.shadowCrit=0;} if(c)d*=critMult();
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
   const e=b.enemies[idx];
   // Avatar of Wrath: cleave splash to other foes
@@ -830,12 +956,16 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
   const mm=p.maxMana;
   switch(id){
     case 'bolt':{let d=12+Math.round(mm*0.18)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
-    case 'fire':{blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=15+Math.round(mm*0.13)+p.weapon.dmg;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,6,3);});break;}
+    case 'fire':{ if(p.flags.kBeam){ let d=30+Math.round(mm*0.34)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,12,3); }
+      else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=15+Math.round(mm*0.13)+p.weapon.dmg;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,6,3);}); } break;}
     case 'frost':{blog('Frost Nova chills the room!','info');aoeHit(i=>{let d=7+Math.round(mm*0.07);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
     case 'power':{let d=(p.atk+p.weapon.dmg)*1.9+rnd(4);let c=rollCrit();if(c)d*=1.7;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
     case 'shield':{b.pdef=0.65;b.pdefTurns=2;blog('You raise your guard! (65% block, 2 turns)','info');break;}
-    case 'reck':{blog('You spin into a whirlwind!','info');aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.5+rnd(5);let c=rollCrit();if(c)d*=1.5;dealToEnemy(i,d,'Whirlwind rends',c);});b.guardDown=1;blog('...but you are left EXPOSED!','info');break;}
-    case 'aim':{let d=(p.atk+p.weapon.dmg)*1.6;let c=chance(effCrit(p)+30);if(c)d*=2;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,4,2);break;}
+    case 'reck':{ const k=p.flags.kWhirl; blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
+      aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.8:1.5)+rnd(5);let c=rollCrit();if(c)d*=1.5;dealToEnemy(i,d,'Whirlwind rends',c);});
+      if(k){ const h=Math.round(p.maxHp*0.06); heal(p,h); blog(`The cyclone restores ${h} HP.`,'heal'); } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
+    case 'aim':{ if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.4;let c=chance(effCrit(p)+20);if(c)d*=2;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
+      else { let d=(p.atk+p.weapon.dmg)*1.6;let c=chance(effCrit(p)+30);if(c)d*=2;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,4,2); } break;}
     case 'evade':{b.evade=45;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{blog('You loose a volley of arrows!','info');for(let k=0;k<3;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.8;dealToEnemy(idx,d,'Arrow hits',c);} break;}
   }
@@ -866,14 +996,14 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if(e.boss&&e.hp<=e.maxHp*0.3){dmg=Math.round(dmg*1.3);}            // enrage
     if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
     dmg=Math.round(dmg*G.mods.eDmg);
-    const dodgeChance=effDodge(p)+(b.evadeTurns>0?b.evade:0);
-    if(chance(dodgeChance)){ blog(`You dance aside — ${e.name} misses!`,'info'); continue; }
+    const dodgeChance=Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0));
+    if(chance(dodgeChance)){ blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
     let red=(b.pdefTurns>0?b.pdef:0);
-    dmg=Math.max(1,Math.round(dmg*(1-red))-p.def);
+    dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.7)));
     if(b.guardDown>0)dmg=Math.round(dmg*1.3);
     if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
     if(b.barrier>0&&dmg>0){ const ab=Math.min(b.barrier,dmg); b.barrier-=ab; dmg-=ab; blog(`Barrier absorbs ${ab}.`,'info'); }
-    if(p.cls==='mage'&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info');} }
+    if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
     let lethal=p.hp-dmg<=0;
     if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
     else { p.hp=clamp(p.hp-dmg,0,p.maxHp); blog(`${label} for ${dmg}!`,'dmg'); }
@@ -908,29 +1038,34 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
 /* ============================================================
    REWARDS
    ============================================================ */
-function buildRewards(){ const p=G.player,isBoss=G.pending&&G.pending.boss;
-  const wpool=WEAPONS[p.cls].filter(w=>w.name!==p.weapon.name); const opts=[];
-  if(wpool.length) opts.push({kind:'weapon',data:isBoss?wpool.reduce((a,b)=>b.dmg>a.dmg?b:a):pick(wpool)});
-  const ups=shuffle(UPGRADES); opts.push({kind:'upgrade',data:ups[0]}); opts.push({kind:'upgrade',data:ups[1]});
-  if(isBoss && RELICS.some(r=>!p.relics.includes(r.name))){ opts.push({kind:'relic',data:pick(RELICS.filter(r=>!p.relics.includes(r.name)))}); }
+function buildRewards(){ const p=G.player,isBoss=G.pending&&G.pending.boss; const d=G.depth; const opts=[];
+  // two gear picks of differing slots — the rarity-vs-level dilemma emerges from random rolls
+  const slots=shuffle(['weapon','armor','trinket']);
+  opts.push({kind:'gear',data:makeItem(slots[0],p.cls,d,isBoss?{rarity:clamp(rollRarity(d)+1,0,4)}:{})});
+  opts.push({kind:'gear',data:makeItem(slots[1],p.cls,d)});
+  opts.push({kind:'upgrade',data:shuffle(UPGRADES)[0]});
+  if(isBoss){ const rp=relicPool(p); if(rp.length)opts.push({kind:'relic',data:pick(rp)}); }
   let n=3; if(G.mods.luck)n=4;
   G.pending.options=shuffle(opts).slice(0,Math.min(n,opts.length)); }
 function renderReward(){ const p=G.player,pd=G.pending;
   const src=pd.source==='chest'?'THE CHEST CONTAINS':'SPOILS OF BATTLE';
   const gold=pd.gold?`<p class="center amber" style="font-size:9px">+${pd.gold} gold &middot; ${p.gold}g total</p>`:'';
-  const tag=a=>a?`<br><span class="teal">&#10022; ${affTagText(a)}</span>`:'';
+  const tag=a=>a?` &middot; <span class="teal">&#10022; ${affTagText(a)}</span>`:'';
+  const icon={weapon:'&#9876;',armor:'&#128737;',trinket:'&#9883;'};
   const cards=pd.options.map((o,i)=>{
-    if(o.kind==='weapon')return `<button class="btn" onclick="takeReward(${i})"><span class="k amber">&#9876;</span>${o.data.name}<small>${o.data.dmg} dmg &middot; ${o.data.type}${o.data.note?' &middot; '+o.data.note:''}</small></button>`;
+    if(o.kind==='gear'){ const it=o.data; const cur=p.equip[it.slot];
+      const curTxt=cur?`<br><span class="muted">replaces ${cur.name} Lv${cur.ilvl}</span>`:'';
+      return `<button class="btn" onclick="takeReward(${i})"><span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${itemStatsText(it)}${tag(it.aff)}${curTxt}</small></button>`; }
     if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small></button>`;
     return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small></button>`;}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
     <div class="panel fade"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px">Choose one reward:</p>${cards}
-      ${pd.source==='chest'?`<button class="btn muted center" onclick="takeReward(-1)">Leave it all</button>`:''}</div>`;
+      <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button></div>`;
 }
 function takeReward(i){ const p=G.player,pd=G.pending;
   if(i>=0){ const o=pd.options[i];
-    if(o.kind==='weapon')equip(p,o.data);
+    if(o.kind==='gear')equipItem(p,o.data);
     else if(o.kind==='relic')gainRelic(p,o.data);
     else gainUpgrade(p,o.data); }
   if(pd.boss)p.potions++;
@@ -946,14 +1081,19 @@ function proceed(msg){
   if(msg){ const f=document.querySelector('.footer'); if(f)f.innerHTML=`<span class="amber">${msg}</span>`; }
 }
 function renderEnd(win){ const p=G.player;
+  const gear=['weapon','armor','trinket'].map(s=>{const it=p.equip[s];return it?`<div class="slot"><span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`:`<div class="slot muted">${s.toUpperCase()}: empty</div>`;}).join('');
+  const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}`).join(', ')||'none';
   app.innerHTML=`<h1 class="title" style="color:var(--${win?'green':'red'})">${win?'VICTORY!':'YOU DIED'}</h1>
     <div class="panel center fade"><pre class="sprite ${win?'green':'red'}">${win?"  \\o/   \\o/\n   |     |\n  / \\   / \\\n THE THRONE IS YOURS":"   _____\n  /     \\\n | x   x |\n  \\  _  /\n   |||||\n   R.I.P"}</pre>
       <p style="font-size:10px;line-height:2">
         ${win?'You conquered the Crypt of the Champion!':'Your journey ends in the dark.'}<br>
-        <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level}<br>
-        <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
-        <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills}<br>
-        <span class="muted">Gold:</span> ${p.gold}<br>
+        <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level} &middot; <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
+        <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills} &middot; <span class="muted">Gold:</span> ${p.gold}</p>
+      <h3 class="amber center" style="font-size:11px;margin:6px 0">YOUR BUILD</h3>
+      ${gear}
+      <p style="font-size:9px;line-height:2"><span class="muted">Paths:</span> ${paths}<br>
+        ${p.sets&&p.sets.length?`<span class="teal">Sets: ${p.sets.join(', ')}</span><br>`:''}
+        ${p.synergies&&p.synergies.length?`<span class="teal">Synergies: ${p.synergies.join(', ')}</span><br>`:''}
         <span class="muted">Relics:</span> ${p.relics.length?p.relics.join(', '):'none'}</p>
       <button class="btn center" onclick="restart()"><span class="k">&#8635;</span>PLAY AGAIN</button></div>`;
 }
@@ -961,10 +1101,12 @@ function restart(){ newGame(); render(); }
 
 /* ---------- shared UI ---------- */
 function affinityBar(p){
+  const earned=['w','g','v'].filter(k=>p.aff[k]>0);
+  if(!earned.length && !(p.synergies&&p.synergies.length)) return '';
   const seg=k=>{ const m=AFF_META[k],t=p.affTier[k]; const roman=t>0?['I','II','III'][t-1]:'';
     const next=t<3?AFF_THRESH[t]:null; const prog=next?` ${p.aff[k]}/${next}`:' MAX';
     return `<span class="${m.color}">${m.name}${t>0?' '+roman:''}${prog}</span>`; };
-  let s=`<div class="stats" style="font-size:8px">PATHS &middot; ${seg('w')} &middot; ${seg('g')} &middot; ${seg('v')}</div>`;
+  let s=earned.length?`<div class="stats" style="font-size:8px">PATHS &middot; ${earned.map(seg).join(' &middot; ')}</div>`:'';
   if(p.synergies&&p.synergies.length) s+=`<div>${p.synergies.map(n=>`<span class="chip" style="border-color:var(--teal);color:var(--teal)">&#10022; ${n}</span>`).join('')}</div>`;
   return s;
 }
@@ -983,7 +1125,9 @@ function playerBar(p,full){
     ${full?relics:''}</div>`;
 }
 /* ---------- keyboard ---------- */
-document.addEventListener('keydown',e=>{ const btns=[...document.querySelectorAll('.btn:not([disabled])')];
+document.addEventListener('keydown',e=>{
+  if((e.key==='i'||e.key==='I')&&G.player){ if(G.screen==='inventory')closeInventory(); else if(['corridor','room','reward','merchant'].includes(G.screen))openInventory(); return; }
+  const btns=[...document.querySelectorAll('.btn:not([disabled])')];
   const n=parseInt(e.key,10); if(!isNaN(n)&&n>=1&&n<=btns.length){btns[n-1].click();return;}
   if(e.key==='Enter'&&btns.length)btns[0].click(); });
 
