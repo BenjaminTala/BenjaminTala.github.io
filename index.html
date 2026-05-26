@@ -48,6 +48,11 @@
   .fill.mp{background:linear-gradient(var(--blue),#356fbf)}
   .fill.boss{background:linear-gradient(var(--red),#a82f3a)}
   .fill.xpf{background:linear-gradient(var(--amber),#b88a1f)}
+  .fill.chg{background:linear-gradient(var(--purple),var(--blue))}
+  .fill.chg.ready{background:linear-gradient(#fff,var(--amber));animation:chgpulse .7s ease-in-out infinite}
+  @keyframes chgpulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.6)}}
+  .btn.ult{border-color:var(--purple);background:linear-gradient(90deg,#2a1c4a,#1f1c3a)}
+  .btn.ult.ready{border-color:var(--amber);color:#fff;text-shadow:0 0 6px var(--amber);animation:chgpulse 1s ease-in-out infinite}
   .stats{font-size:9px;line-height:2;color:var(--dim)}.stats b{color:var(--ink)}
   .chip{display:inline-block;background:#000;border:2px solid var(--line);padding:3px 7px;margin:3px 3px 3px 0;font-size:8px}
   .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
@@ -1471,7 +1476,7 @@ function renderForge(){ const p=G.player;
    ============================================================ */
 function startBattle(intro){
   const r=G.room; const enemies=r._enemies?r._enemies:buildEnemies(r);
-  G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,
+  G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:0,
     over:false,anim:'',animIdx:-1,usedSecond:false,
     pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
@@ -1521,10 +1526,14 @@ function renderBattle(){
       <div class="enemies-row">${cells}</div>
       <div class="log">${logHtml}</div>
       ${playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`}
-      <div class="center">${pStatus}</div>${playerBar(p,true)}</div>
-    ${b.over?'':`<div class="panel tight"><div class="menu-grid">
+      <div class="center">${pStatus}</div>${playerBar(p,true)}
+      <div class="bar"><div class="lbl"><span class="purple">&#10022; ULTIMATE</span><span>${b.charge>=100?'READY':Math.floor(b.charge||0)+'%'}</span></div>
+        <div class="track"><div class="fill chg ${b.charge>=100?'ready':''}" style="width:${clamp(b.charge||0,0,100)}%"></div></div></div></div>
+    ${b.over?'':`<div class="panel tight">
+      <button class="btn ult ${b.charge>=100?'ready':''}" ${b.charge>=100?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span>${ultMeta(p.cls).name}<small>${b.charge>=100?ultMeta(p.cls).desc:'charge by fighting — '+Math.floor(b.charge||0)+'/100'}</small></button>
+      <div class="menu-grid">
         <button class="btn" onclick="playerAttack()"><span class="k">&#9876;</span>ATTACK<small>${p.weapon.name} (${p.atk+p.weapon.dmg} pow)</small></button>
-        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 40%</small></button></div>
+        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 30%</small></button></div>
       <hr class="hr">${skills}
       <button class="btn muted" onclick="fleeBattle()"><span class="k">&#10551;</span>FLEE<small>${b.hadBoss?'cannot flee a boss!':'risky — foes may strike'}</small></button></div>`}`;
 }
@@ -1589,9 +1598,24 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapo
   stormfury(c,isExtra); }
 function stormfury(crit,isExtra){ const p=G.player,b=G.battle;
   if(crit&&p.flags.synStorm&&!isExtra&&living().length){ blog('Stormfury — the crit echoes!','crit'); ensureTarget(); basicHit(b.target,true); } }
+function gainCharge(n){ const b=G.battle; if(b)b.charge=clamp((b.charge||0)+n,0,100); }
+function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foes for massive magic + heavy BURN'},
+  warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
+  ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
+function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<100)return; b.charge=0;
+  SFX.play('win'); flash('playerHit'); const mm=p.maxMana; ensureTarget();
+  if(p.cls==='mage'){ blog('&#10022; ARCANE SUPERNOVA! &#10022;','crit');
+    aoeHit(i=>{let d=40+Math.round(mm*0.4)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(i,d,'Supernova engulfs',c);});
+    aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,10,3);}); }
+  else if(p.cls==='warrior'){ blog("&#10022; EXECUTIONER'S WRATH! &#10022;",'crit'); const e=b.enemies[b.target];
+    let d=(p.atk+p.weapon.dmg)*3.0+(e?(e.maxHp-e.hp)*0.45:0); let c=rollCrit(); if(c)d*=1.6;
+    dealToEnemy(b.target,d,'A world-ending blow lands',c); const h=Math.round(p.maxHp*0.15); heal(p,h); blog(`You roar with fury — +${h} HP.`,'heal'); }
+  else { blog('&#10022; RAIN OF DEATH! &#10022;','crit'); for(let k=0;k<5;k++){ const liv=living(); if(!liv.length)break;
+    const idx=b.enemies.indexOf(pick(liv)); let d=(p.atk*0.8+p.weapon.dmg); let c=chance(effCrit(p)+40); if(c)d*=2; dealToEnemy(idx,d,'Death rains down',c); } }
+  afterPlayer(); }
 function playerAttack(){ const p=G.player,b=G.battle; if(b.over)return; ensureTarget(); basicHit(b.target);
   if(p.flags.doubleStrike&&chance(35)&&living().length){ ensureTarget(); blog('Twin Fang — a second strike!','info'); basicHit(b.target,true); }
-  afterPlayer(); }
+  gainCharge(20); afterPlayer(); }
 function aoeHit(fn){ G.battle.enemies.forEach((e,i)=>{ if(e.hp>0) fn(i); }); }
 function spendMana(cost){ const p=G.player; p.mana-=cost; let frac=0; if(p.flags.soulSiphon)frac=0.5; if(p.flags.synOver)frac=1.0; if(frac){ heal(p,Math.max(1,Math.round(cost*frac))); } }
 function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>x.id===id); if(!s||b.over)return;
@@ -1612,7 +1636,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');for(let k=0;k<3;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
   }
-  afterPlayer(); }
+  gainCharge(24); afterPlayer(); }
 function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.30); heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); afterPlayer(); }
 function fleeBattle(){ const p=G.player,b=G.battle;
   if(b.hadBoss){ blog('There is no escape from this foe!','info'); return render(); }
@@ -1649,7 +1673,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
     let lethal=p.hp-dmg<=0;
     if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
-    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); }
+    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0)gainCharge(9); }
     if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
     if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
     if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
