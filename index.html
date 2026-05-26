@@ -659,12 +659,18 @@ function itemIconHtml(item,lg){
 const RUN_LENGTH=20;
 const BOSS_CHAMBERS={5:0,10:1,15:2,20:3};   // chamber -> zone index for boss pool
 const ZONES=[
-  {name:'THE CATACOMBS',color:'green'},
-  {name:'THE CAVERNS',  color:'blue'},
-  {name:'THE INFERNO',  color:'red'},
-  {name:'THE SUNLESS THRONE',color:'purple'},
+  {name:'THE CATACOMBS',color:'green',lore:'The upper bone-halls, where the crypt buries its lesser dead. The air tastes of dust and old prayers.'},
+  {name:'THE CAVERNS',  color:'blue',lore:'Beneath the tombs, raw stone weeps cold water. Things that never saw the sun nest in the dark.'},
+  {name:'THE INFERNO',  color:'red',lore:'The crypt remembers it was once a furnace for the damned. Heat shimmers; the walls breathe smoke.'},
+  {name:'THE SUNLESS THRONE',color:'purple',lore:'The heart of the prison. Here the old powers wait, jealous of the light you carry down to them.'},
 ];
 const zoneOf=d=>d<=5?0:d<=10?1:d<=15?2:3;
+const BOSS_CRY={
+  ogre:'"FRESH MEAT FOR THE WARLORD!"', gobking:'"Kill it! Kill it for the King!"', spider:'"My children are so hungry..."',
+  necro:'"You will serve me in death."', titan:'"...INTRUDER. CRUSH. CRUSH."', tyrant:'"This crypt is MINE, little champion."',
+  demon:'"Your soul will burn for a thousand years."', lich:'"Flesh is such a fleeting indulgence."', flameknight:'"Ash to ash, hero."',
+  dragon:'"NONE LEAVE THE CRYPT ALIVE."', king:'"I was king before your gods drew breath."', devourer:'"AT LAST... ANOTHER SOUL TO DEVOUR."',
+};
 
 /* ============================================================
    CLASSES
@@ -720,6 +726,12 @@ const ENEMIES=[
   {name:'Stone Golem',hp:84,atk:12,def:6,xp:13,sprite:" [#####]\n [ o o ]\n [#####]\n  ]   ["},
   {name:'Hellhound',hp:58,atk:16,def:1,burnAtk:[4,2,40],xp:14,sprite:"  /^--^\\\n ( >  < )\n  U    U"},
   {name:'Cultist',hp:54,atk:14,def:2,caster:true,poison:[5,3,45],xp:14,sprite:"  ,-^-,\n ( o o )\n  )-+-(" },
+  {name:'Bloodbat',hp:30,atk:12,def:0,dodgy:true,leech:true,xp:11,sprite:" /\\^^/\\\n ( o o )\n  \\vv/"},
+  {name:'Will-o-Wisp',hp:34,atk:14,def:0,caster:true,dodgy:true,xp:12,sprite:"   .*.\n  ( o )\n   '*'"},
+  {name:'Plague Bearer',hp:66,atk:12,def:2,poison:[7,3,60],xp:15,sprite:"  (~~~)\n /(x x)\\\n  )~~~("},
+  {name:'Sand Wurm',hp:94,atk:16,def:2,xp:16,sprite:"  _____\n /(o o)\\\n((=====))\n \\_____/"},
+  {name:'Gargoyle',hp:80,atk:13,def:7,xp:15,sprite:"  /^_^\\\n  (0 0)\n  /|_|\\\n  ^   ^"},
+  {name:'Frostbite',hp:50,atk:15,def:1,caster:true,xp:13,sprite:"  *.-.* \n ( >< )\n  *._.* "},
 ];
 const AFFIXES=[
   {tag:'Armored',  hp:1.3,atk:1.0,def:6, note:'tough hide', desc:'+armor'},
@@ -1015,6 +1027,27 @@ const EVENTS=[
      {label:'Trade your blood (-15 HP)',desc:'Free relic from her shelf',run:p=>{p.hp=clamp(p.hp-15,1,p.maxHp);const r=grantRandomRelic(p);return r?`She draws your blood and hands you: ${r}.`:'She draws your blood but her shelves are bare of new relics.';}},
      {label:'Decline politely',desc:'Move on',run:p=>'You thank the witch and continue down the hall.'},
    ]},
+  {id:'soulwell',title:'THE SOUL WELL',sprite:{src:'assets/monsters/ghost.png',tint:'tint-blue'},art:"  .===.\n  |~~~|\n  |~~~|",
+   text:'A well brimming with swirling, half-remembered souls. They whisper of power... and hunger.',
+   options:[
+     {label:'Draw essence',desc:'Gain Soul Essence',run:p=>{const e=18+rnd(24);p.essence+=e;return `You draw ${e} ${ESS} essence from the well.`;}},
+     {label:'Plunge your arm in',desc:'More essence, but it bites',run:p=>{const e=42+rnd(34);p.essence+=e;const c=Math.round(p.maxHp*0.12);p.hp=clamp(p.hp-c,1,p.maxHp);return `Souls swarm your arm — +${e} ${ESS} essence, but they tear ${c} HP away.`;}},
+     {label:'Leave it',desc:'Souls are not toys',run:p=>'You back away from the whispering dark.'},
+   ]},
+  {id:'oldforge',title:'AN ABANDONED FORGE',art:"  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|",
+   text:'A cold forge, embers long dead — yet one last working still hums in the bellows.',
+   options:[
+     {label:'Reforge your weapon',desc:'+2 weapon levels, free',run:p=>{upgradeGear(p,'weapon');return `You stoke the bellows; your ${p.weapon.name} comes out keener than ever (Lv${p.weapon.ilvl}).`;}},
+     {label:'Reinforce your armor',desc:'+2 armor levels, free',run:p=>{if(!p.equip.armor)return 'You wear no armor to improve.';upgradeGear(p,'armor');return `Your ${p.equip.armor.name} is hammered thick and true (Lv${p.equip.armor.ilvl}).`;}},
+     {label:'Scavenge the scrap',desc:'Essence from old metal',run:p=>{const e=16+rnd(18);p.essence+=e;return `You strip the forge for ${e} ${ESS} essence.`;}},
+   ]},
+  {id:'prisoner',title:'THE STARVED PRISONER',sprite:{src:'assets/players/warrior.png',tint:'tint-shadow'},art:"  ,---,\n  (- -)\n  /|=|\\\n   | |",
+   text:'A champion who came before you, chained and wasted to bone. "Free me... or take what little I have left."',
+   options:[
+     {label:'Break the chains',desc:'A grateful gift',run:p=>{const roll=rnd(3);if(roll===0){const r=grantRandomRelic(p);return r?`Freed, the champion presses a relic into your hand: ${r}.`:'Freed, the champion blesses your blade. (+3 ATK)'+(p.atk+=3,'');}if(roll===1){p.maxHp+=20;heal(p,20);return 'Freed, the champion shares their last vigor — +20 max HP.';}p.essence+=40;return 'As the chains fall, the champion dissolves into 40 '+ESS+' essence and a whispered thanks.';}},
+     {label:'Take their gear',desc:'Loot the doomed',run:p=>{const w=makeItem(pick(['weapon','armor','trinket']),p.cls,G.depth+1);equipItem(p,w);return `You pry loose their ${w.name} (Lv${w.ilvl}). Their eyes never leave you.`;}},
+     {label:'End their suffering',desc:'Mercy, and a dark gift',run:p=>{p.essence+=26;const fam='Undead';p.slayer[fam]=(p.slayer[fam]||0)+2;return `You grant mercy. Their released soul steels you — +26 ${ESS} essence.`;}},
+   ]},
 ];
 
 /* ============================================================
@@ -1134,13 +1167,16 @@ function go(s){ G.screen=s; render(); }
 /* ---------- TITLE ---------- */
 function renderTitle(){
   app.innerHTML=`<h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
-    <div class="subtitle">an 8-bit text roguelike &middot; v3</div>
+    <div class="subtitle">an 8-bit text roguelike</div>
     <div class="panel center fade">
       <img class="title-art" src="assets/monsters/dragon.png" alt="Crypt Dragon" draggable="false">
-      <p class="muted" style="font-size:9px;line-height:2">
-        20 chambers &middot; 4 zones &middot; random Omens, relics<br>
-        &amp; narrative events make every run unique.<br>
-        Pick a champion, choose your curse, and descend.</p>
+      <p class="evtext center" style="font-size:9px;line-height:2;color:#cfcbef">
+        Below the dead city lies the Crypt — a prison sunk to cage<br>
+        <span class="red">the Devourer</span>, eater of worlds. Its hoarded power calls to<br>
+        the desperate and the proud. You answer. You descend.</p>
+      <p class="muted" style="font-size:8px;line-height:2">
+        20 chambers &middot; 4 zones &middot; slay, forge, and grow OP<br>
+        &middot; then dare the endless Abyss beneath.</p>
       <button class="btn center" onclick="go('class')"><span class="blink">&#9654;</span> PRESS START</button>
     </div>
     <div class="footer">number keys or click &middot; Enter = first option</div>`;
@@ -1221,6 +1257,7 @@ function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presen
   chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
   merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
 function nextCorridor(){ G.depth++;
+  if(!G.abyss && (G.depth===1||G.depth===6||G.depth===11||G.depth===16)){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
   else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); } }
 function renderCorridor(){
@@ -1229,7 +1266,9 @@ function renderCorridor(){
     <span class="k">${isBoss?'&#9760;':'['+(i+1)+']'}</span>${isBoss?'THE BOSS DOOR':'Door '+(i+1)}<small>${doorHint(d)}</small></button>`).join('');
   const banner=G._affMsg?`<div class="panel tight center teal fade" style="font-size:9px">&#10022; ${G._affMsg}</div>`:'';
   G._affMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${banner}${playerBar(G.player)}
+  const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
+  G._zoneMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${zone}${banner}${playerBar(G.player)}
     <div class="panel fade"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
@@ -1279,7 +1318,7 @@ function scaleEnemy(unit,depth){
   return e;
 }
 function cloneBoss(key){ const b=BOSSES[key]; const f=1+Math.max(0,G.depth-5)*0.04;
-  return freshEnemy({...b,hp:Math.round(b.hp*f),maxHp:Math.round(b.hp*f),atk:Math.round(b.atk*f)}); }
+  return freshEnemy({...b,hp:Math.round(b.hp*f),maxHp:Math.round(b.hp*f),atk:Math.round(b.atk*f),cry:BOSS_CRY[key]}); }
 function findBase(n){ return ENEMIES.find(e=>e.name===n); }
 function buildEnemies(room){
   if(room.boss){ const list=[cloneBoss(room.boss)];
@@ -1426,13 +1465,14 @@ function buy(kind){ const p=G.player,st=G.room.stock; let bought=false;
 }
 
 /* ---------- THE FORGE (spend Soul Essence to grow OP) ---------- */
-function forgeUpgrade(slot){ const p=G.player,it=p.equip[slot]; if(!it)return false;
-  const cost=14+it.ilvl*2; if(p.essence<cost)return false; p.essence-=cost;
+function upgradeGear(p,slot){ const it=p.equip[slot]; if(!it)return false;
   applyItemStats(p,it,-1);
   const oldIl=it.ilvl,newIl=oldIl+2,f=(1+(newIl-1)*0.10)/(1+(oldIl-1)*0.10);
   for(const k in it.stats) it.stats[k]=Math.max(it.stats[k]+1,Math.round(it.stats[k]*f));
   it.ilvl=newIl; if(slot==='weapon')it.dmg=it.stats.dmg||it.dmg;
   applyItemStats(p,it,+1); recomputeSets(p); recomputeAffinity(p); return true; }
+function forgeUpgrade(slot){ const p=G.player,it=p.equip[slot]; if(!it)return false;
+  const cost=14+it.ilvl*2; if(p.essence<cost)return false; p.essence-=cost; return upgradeGear(p,slot); }
 function forgeReforge(slot){ const p=G.player,it=p.equip[slot]; if(!it||it.rarity>=4)return false;
   const cost=30+it.rarity*16; if(p.essence<cost)return false; p.essence-=cost;
   applyItemStats(p,it,-1);
@@ -1485,6 +1525,7 @@ function startBattle(intro){
   G.log=[];
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
+  const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE) blog(bossE.cry,'crit');
   G.screen='battle'; render();
 }
 function blog(t,c=''){ G.log.push({text:t,cls:c}); if(G.log.length>40)G.log.shift(); }
