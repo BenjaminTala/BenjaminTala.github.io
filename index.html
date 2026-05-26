@@ -743,6 +743,27 @@ const BOSSES={
 const BOSS_POOL=[['ogre','gobking','spider'],['necro','titan','tyrant'],['demon','lich','flameknight'],['dragon','king']];
 
 /* ============================================================
+   FAMILIES + SLAYER (every kill stacks permanent power vs a family)
+   + SOUL ESSENCE (kill currency spent at the Forge)
+   ============================================================ */
+const ESS='&#9674;';   // soul essence glyph
+const FAMILY={
+  'Giant Rat':'Vermin','Goblin':'Humanoid','Cave Bat':'Beast','Slime':'Ooze','Skeleton':'Undead',
+  'Imp':'Demon','Ghoul':'Undead','Venomspitter':'Beast','Orc Brute':'Humanoid','Dark Acolyte':'Humanoid',
+  'Wraith':'Undead','Stone Golem':'Construct','Hellhound':'Demon','Cultist':'Humanoid',
+  'MIMIC':'Construct','Treasure Goblin':'Humanoid','Sand Wurm':'Beast','Gargoyle':'Construct',
+  'Will-o-Wisp':'Undead','Plague Bearer':'Undead','Frostbite':'Beast','Bloodbat':'Beast',
+  'OGRE WARLORD':'Humanoid','GOBLIN KING':'Humanoid','BROODMOTHER':'Beast','THE NECROMANCER':'Undead',
+  'STONE TITAN':'Construct','CAVE TYRANT':'Beast','DEMON LORD':'Demon','THE LICH':'Undead',
+  'FLAME KNIGHT':'Undead','THE CRYPT DRAGON':'Dragon','THE FORGOTTEN KING':'Undead','THE DEVOURER':'Demon',
+};
+function familyOf(e){ return FAMILY[stripAffix(e.name)]||'Beast'; }
+const SLAYER_THRESH=[5,12,22];
+const SLAYER_BONUS=[0,0.06,0.14,0.26];
+function slayerTier(c){ return c>=22?3:c>=12?2:c>=5?1:0; }
+function slayerMult(e){ const p=G.player; if(!p||!p.slayer)return 1; return 1+SLAYER_BONUS[slayerTier(p.slayer[familyOf(e)]||0)]; }
+
+/* ============================================================
    LOOT: equipment (rarity + item level + passives + sets), upgrades, relics
    ============================================================ */
 const RARITY=[
@@ -1006,7 +1027,7 @@ function makePlayer(key){
     hp:c.hp,maxHp:c.hp,mana:c.mana,maxMana:c.mana,
     atk:c.atk,def:c.def,dodge:c.dodge,crit:c.crit,lifesteal:c.lifesteal,regen:c.regen,
     weapon:sw,equip:{weapon:sw,armor:null,trinket:null},skills:c.skills.map(s=>({...s})),
-    potions:1,gold:0,kills:0,relics:[],flags:{},flagRefs:{},_setApplied:{},sets:[],level:1,xp:0,
+    potions:1,gold:0,essence:0,kills:0,slayer:{},relics:[],flags:{},flagRefs:{},_setApplied:{},sets:[],level:1,xp:0,
     affBase:{w:0,g:0,v:0},aff:{w:0,g:0,v:0},affTier:{w:0,g:0,v:0},synergies:[]};
 }
 /* ---- refcounted flags (so relics + gear + sets can share a flag safely) ---- */
@@ -1175,11 +1196,12 @@ function makeRoom(depth){
   const greedy=G.mods.greedy;
   const r=rnd(100);
   if(r<(greedy?34:40)){ const g=makeGroup(depth); return {type:'enemy',group:g,peek:groupPeek(g)}; }
-  if(r<(greedy?60:54)) return {type:'chest',peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A latched strongbox waits.'])};
-  if(r<70) return {type:'event',ev:pickEvent(),peek:'You hear something unusual ahead.'};
-  if(r<78) return {type:'relic',peek:'An ancient pedestal hums with power.'};
-  if(r<(greedy?92:86)) return {type:'merchant',peek:'A hooded figure beckons from the shadows.'};
-  if(r<92) return {type:'shrine',peek:'A faint glow pulses from a cracked altar.'};
+  if(r<(greedy?56:52)) return {type:'chest',peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A latched strongbox waits.'])};
+  if(r<66) return {type:'event',ev:pickEvent(),peek:'You hear something unusual ahead.'};
+  if(r<74) return {type:'relic',peek:'An ancient pedestal hums with power.'};
+  if(r<(greedy?86:80)) return {type:'merchant',peek:'A hooded figure beckons from the shadows.'};
+  if(r<88) return {type:'forge',peek:'The ring of a phantom hammer echoes ahead.'};
+  if(r<93) return {type:'shrine',peek:'A faint glow pulses from a cracked altar.'};
   if(r<97) return {type:'fountain',peek:'A strange, shimmering fountain bubbles here.'};
   return {type:'empty',peek:'Cold, empty stone. A moment to breathe.'};
 }
@@ -1192,7 +1214,7 @@ function groupPeek(g){ if(g.length===1){const u=g[0];return `A ${u.affix?u.affix
   return `A pack of ${g.length} creatures stirs in the dark${g.some(u=>u.affix)?', one of them gleaming with power':''}.`; }
 function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presence':'You sense hostile creatures',
   chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
-  merchant:'Coins clink in the dark',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
+  merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
 function nextCorridor(){ G.depth++;
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
   else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); } }
@@ -1227,7 +1249,7 @@ function renderInventory(){ const p=G.player;
       <h3 style="font-size:11px;margin:10px 0 4px">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
-function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; ${p.gold}g &middot; ${p.relics.length} relic(s)</div>`; }
+function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
 function openDoor(i){ SFX.play('door'); G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); }
 
 /* ============================================================
@@ -1292,6 +1314,7 @@ function renderRoom(){
       <p class="muted center" style="font-size:9px">Claim ONE relic. It will reshape how you fight.</p>${cards}
       <button class="btn muted center" onclick="leaveRoom()">Touch nothing, move on</button>`;
   } else if(r.type==='merchant'){ return renderMerchant();
+  } else if(r.type==='forge'){ return renderForge();
   } else if(r.type==='shrine'){
     body=`<pre class="sprite purple">   _/\\_\n  /    \\\n |  *   |\n |______|</pre>
       <h3 class="center purple" style="margin:8px 0">CRACKED ALTAR</h3>
@@ -1397,6 +1420,52 @@ function buy(kind){ const p=G.player,st=G.room.stock; let bought=false;
   renderMerchant();
 }
 
+/* ---------- THE FORGE (spend Soul Essence to grow OP) ---------- */
+function forgeUpgrade(slot){ const p=G.player,it=p.equip[slot]; if(!it)return false;
+  const cost=14+it.ilvl*2; if(p.essence<cost)return false; p.essence-=cost;
+  applyItemStats(p,it,-1);
+  const oldIl=it.ilvl,newIl=oldIl+2,f=(1+(newIl-1)*0.10)/(1+(oldIl-1)*0.10);
+  for(const k in it.stats) it.stats[k]=Math.max(it.stats[k]+1,Math.round(it.stats[k]*f));
+  it.ilvl=newIl; if(slot==='weapon')it.dmg=it.stats.dmg||it.dmg;
+  applyItemStats(p,it,+1); recomputeSets(p); recomputeAffinity(p); return true; }
+function forgeReforge(slot){ const p=G.player,it=p.equip[slot]; if(!it||it.rarity>=4)return false;
+  const cost=30+it.rarity*16; if(p.essence<cost)return false; p.essence-=cost;
+  applyItemStats(p,it,-1);
+  const oldR=it.rarity,newR=oldR+1,f=RARITY[newR].mult/RARITY[oldR].mult;
+  for(const k in it.stats) it.stats[k]=Math.max(it.stats[k]+1,Math.round(it.stats[k]*f));
+  it.rarity=newR; let newFlag=null;
+  if(RARITY[newR].passive&&!it.passiveFlag&&!it.proc&&!it.set&&PASSIVES[slot]){
+    const pas=pick(PASSIVES[slot]);
+    if(pas.stat)for(const k in pas.stat)it.stats[k]=(it.stats[k]||0)+pas.stat[k];
+    if(pas.proc&&slot==='weapon')it.proc=pas.proc;
+    if(pas.flag){it.passiveFlag=pas.flag;newFlag=pas.flag;}
+    it.passiveDesc=pas.desc; it.name=(pas.prefix||'')+it.name+(pas.suffix||''); }
+  if(slot==='weapon')it.dmg=it.stats.dmg||it.dmg;
+  applyItemStats(p,it,+1); if(newFlag)addFlag(p,newFlag); recomputeSets(p); recomputeAffinity(p); return true; }
+function forgeImbue(){ const p=G.player,w=p.weapon,cost=24; if(p.essence<cost||w.proc)return false; p.essence-=cost;
+  const o=pick([{proc:{burn:[7,3,55]},name:'Flaming',d:'hits may BURN'},{proc:{poison:[7,3,55]},name:'Venomous',d:'hits may POISON'},{proc:{vuln:[2]},name:'Sundering',d:'hits apply VULNERABLE'}]);
+  w.proc=o.proc; w.passiveDesc=o.d; if(!/^(Flaming|Venomous|Sundering)/.test(w.name))w.name=o.name+' '+w.name; return true; }
+function fUpgrade(s){ SFX.play(forgeUpgrade(s)?'upgrade':'fail'); renderForge(); }
+function fReforge(s){ SFX.play(forgeReforge(s)?'upgrade':'fail'); renderForge(); }
+function fImbue(){ SFX.play(forgeImbue()?'upgrade':'fail'); renderForge(); }
+function leaveForge(){ leaveRoom(); }
+function renderForge(){ const p=G.player;
+  const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${sub}</small></button>`;
+  const slots=['weapon','armor','trinket'];
+  const up=slots.map(s=>{const it=p.equip[s];if(!it)return '';const c=14+it.ilvl*2;
+    return fb(`Upgrade ${s.toUpperCase()}: ${itemLabel(it)}`,c,`+2 item levels &middot; ${itemStatsText(it)}`,`fUpgrade('${s}')`,p.essence>=c);}).join('');
+  const im=p.weapon.proc?'':fb('Imbue weapon with an element',24,'add a random on-hit effect (BURN / POISON / VULN)',`fImbue()`,p.essence>=24);
+  const re=slots.map(s=>{const it=p.equip[s];if(!it||it.rarity>=4)return '';const c=30+it.rarity*16;
+    return fb(`Reforge ${s.toUpperCase()}: <span class="${RARITY[it.rarity].cls}">${RARITY[it.rarity].name}</span> &rarr; <span class="${RARITY[it.rarity+1].cls}">${RARITY[it.rarity+1].name}</span>`,c,'raise rarity; may grant a passive',`fReforge('${s}')`,p.essence>=c);}).join('');
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+    <div class="panel fade">
+      <pre class="sprite amber">  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|</pre>
+      <h3 class="center amber" style="margin:8px 0">THE SOUL FORGE</h3>
+      <p class="muted center" style="font-size:9px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS} essence</span> to grow stronger.</p>
+      ${up}${im}${re}
+      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>${statusFooter()}`;
+}
+
 /* ============================================================
    BATTLE
    ============================================================ */
@@ -1472,6 +1541,7 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   const et=f.synReaper?0.45:0.30;
   if(f.executioner&&e.hp<=e.maxHp*et)m*=2;
   if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15;
+  m*=slayerMult(e);
   if(e.st.vulnT>0)m*=1.25;
   return m; }
 function rollCrit(){ return chance(effCrit(G.player)); }
@@ -1480,6 +1550,13 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   SFX.play('kill');
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
+  // SLAYER: every kill stacks permanent power vs that family
+  const fam=familyOf(e), before=p.slayer[fam]||0; p.slayer[fam]=before+1;
+  const t1=slayerTier(before+1); if(t1>slayerTier(before)) blog(`SLAYER ${['','I','II','III'][t1]} — +${Math.round(SLAYER_BONUS[t1]*100)}% dmg vs ${fam}!`,'lvl');
+  // SOUL ESSENCE: kill currency for the Forge
+  let ess=2+Math.round((e.xp||6)/4); if(e.elite)ess+=5; if(e.boss)ess+=34; ess=Math.round(ess*(G.mods.essMul||1));
+  p.essence+=ess; blog(`+${ess} ${ESS} essence.`,'info');
+  if(e.elite&&chance(35)){ p.potions++; blog('It dropped a Health Potion!','heal'); }
   if(p.flags.bloodpact){ let h=Math.round(p.maxHp*0.08); if(p.flags.synSanguine)h*=2; heal(p,h); blog(`Blood Pact heals ${h}.`,'heal'); }
   if(p.flags.bloodKill){ const h=Math.round(p.maxHp*0.06); heal(p,h); }
   if(p.flags.synOver){ p.mana=clamp(p.mana+8,0,p.maxMana); } }
