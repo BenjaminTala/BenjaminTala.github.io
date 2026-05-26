@@ -58,6 +58,15 @@
   .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
   .r-com{color:#cfcbef}.r-unc{color:var(--green)}.r-rare{color:var(--blue)}.r-epic{color:var(--purple)}.r-leg{color:var(--amber)}
   .slot{border:2px solid var(--line);background:#00000055;padding:8px 10px;margin:6px 0;font-size:10px;text-align:left;line-height:1.7}
+  .invtabs{display:flex;gap:6px;margin:4px 0 12px}
+  .invtabs button{flex:1;font-family:inherit;font-size:9px;padding:9px 4px;background:var(--panel2);color:var(--dim);border:2px solid var(--line);cursor:pointer;touch-action:manipulation;letter-spacing:1px}
+  .invtabs button.on{color:var(--amber);border-color:var(--amber);background:#2a1c1a40}
+  .invtabs button:hover{border-color:var(--amber)}
+  .cur-row{text-align:center;font-size:10px;margin:2px 0 10px;letter-spacing:1px}
+  .ivh{font-size:11px;margin:12px 0 4px}
+  .best-row{display:flex;justify-content:space-between;align-items:center;border:2px solid var(--line);background:#00000055;padding:7px 9px;margin:5px 0;font-size:9px;gap:8px}
+  .best-bar{flex:0 0 78px;height:9px;background:#000;border:2px solid var(--line)}
+  .best-bar>i{display:block;height:100%;background:linear-gradient(var(--red),#a82f3a)}
   .c-burn{border-color:var(--amber);color:var(--amber)}.c-pois{border-color:var(--green);color:var(--green)}
   .c-weak{border-color:var(--purple);color:var(--purple)}.c-vuln{border-color:var(--red);color:var(--red)}
   .c-stun{border-color:var(--teal);color:var(--teal)}.c-guard{border-color:var(--blue);color:var(--blue)}
@@ -1146,6 +1155,13 @@ function makeItem(slot,cls,depth,opts){ opts=opts||{};
   if(passive)item.passiveDesc=passive.desc;
   return item;
 }
+const STAT_LBL={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT',dodge:'DODGE',lifesteal:'LS',regen:'RGN'};
+function itemExtraText(it){ let s=''; if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`; if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`; return s; }
+function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stats||{}),...(cur?Object.keys(cur.stats||{}):[])])];
+  const parts=keys.map(k=>{ const nv=it.stats[k]||0, ov=(cur&&cur.stats[k])||0, d=nv-ov;
+    const dt=!cur?'':d>0?` <span class="green">&#9650;${d}</span>`:d<0?` <span class="red">&#9660;${-d}</span>`:'';
+    return `${STAT_LBL[k]||k} <b>${nv}</b>${dt}`; });
+  return parts.join(' &middot; ')+itemExtraText(it); }
 function itemLabel(it){ return `<span class="${RARITY[it.rarity].cls}">${it.name}</span> <span class="muted">Lv${it.ilvl}</span>`; }
 function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT%',dodge:'DODGE%',lifesteal:'LS%',regen:'RGN'};
   for(const k in it.stats){ parts.push(`+${it.stats[k]} ${lbl[k]||k}`); }
@@ -1280,22 +1296,36 @@ function renderCorridor(){
 let _invReturn='corridor';
 function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
 function closeInventory(){ G.screen=_invReturn; render(); }
-function renderInventory(){ const p=G.player;
-  const slot=s=>{ const it=p.equip[s]; if(!it)return `<div class="slot muted">${s.toUpperCase()}: — empty —</div>`;
-    return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> &nbsp; ${itemLabel(it)}<br><span style="font-size:8px">${itemStatsText(it)}</span></div>`; };
-  const setProg=Object.keys(SETS).map(sn=>{ const set=SETS[sn]; const have=['weapon','armor','trinket'].filter(s=>p.equip[s]&&p.equip[s].set===sn).length;
-    const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
-  const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
-    return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
-  const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
-  const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
+function setInvTab(t){ G._invTab=t; SFX.play('click'); render(); }
+function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
+  const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
+  const tabs=`<div class="invtabs">${tb('gear','GEAR')}${tb('powers','POWERS')}${tb('best','BESTIARY')}</div>`;
+  const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
+  let body='';
+  if(tab==='gear'){
+    const slot=s=>{ const it=p.equip[s]; if(!it)return `<div class="slot muted">${s.toUpperCase()}: — empty —</div>`;
+      return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> &nbsp; ${itemLabel(it)}<br><span style="font-size:8px">${gearCompareHtml(it,null)}</span></div>`; };
+    const setProg=Object.keys(SETS).map(sn=>{ const set=SETS[sn]; const have=['weapon','armor','trinket'].filter(s=>p.equip[s]&&p.equip[s].set===sn).length;
+      const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
+    body=`<h3 class="amber ivh">EQUIPMENT</h3>${slot('weapon')}${slot('armor')}${slot('trinket')}
+      <h3 class="teal ivh">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}`;
+  } else if(tab==='powers'){
+    const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
+      return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
+    const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
+    const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
+    body=`<h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
+      <h3 class="ivh">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
+      <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
+  } else {
+    const fams=Object.keys(p.slayer).sort((a,b)=>p.slayer[b]-p.slayer[a]);
+    const rows=fams.length?fams.map(f=>{const c=p.slayer[f],t=slayerTier(c),nx=t<3?SLAYER_THRESH[t]:null,pct=nx?Math.min(100,c/nx*100):100;
+      return `<div class="best-row"><span>${f} <span class="muted">&times;${c}</span>${t>0?` &middot; <span class="amber">SLAYER ${['','I','II','III'][t]} +${Math.round(SLAYER_BONUS[t]*100)}%</span>`:''}<br><span class="muted" style="font-size:8px">${nx?`${c}/${nx} to next tier`:'mastered'}</span></span><span class="best-bar"><i style="width:${pct}%"></i></span></div>`;}).join('')
+      :'<div class="slot muted">No kills recorded yet. Hunt to grow your Slayer power.</div>';
+    body=`<h3 class="red ivh">BESTIARY &mdash; SLAYER</h3><p class="muted" style="font-size:8px;line-height:1.8">Every kill of a family permanently boosts your damage against it. Tiers at 5 / 12 / 22 kills.</p>${rows}`;
+  }
   app.innerHTML=`<div class="floortag">INVENTORY &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
-    <div class="panel fade">
-      <h3 class="amber" style="font-size:11px;margin-bottom:4px">EQUIPMENT</h3>${slot('weapon')}${slot('armor')}${slot('trinket')}
-      <h3 class="teal" style="font-size:11px;margin:10px 0 4px">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}
-      <h3 class="purple" style="font-size:11px;margin:10px 0 4px">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
-      <h3 style="font-size:11px;margin:10px 0 4px">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
-      <h3 style="font-size:11px;margin:10px 0 4px">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>
+    <div class="panel fade">${cur}${tabs}${body}
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
@@ -1768,8 +1798,8 @@ function renderReward(){ const p=G.player,pd=G.pending;
   const icon={weapon:'&#9876;',armor:'&#128737;',trinket:'&#9883;'};
   const cards=pd.options.map((o,i)=>{
     if(o.kind==='gear'){ const it=o.data; const cur=p.equip[it.slot];
-      const curTxt=cur?`<br><span class="muted">replaces ${cur.name} Lv${cur.ilvl}</span>`:'';
-      return `<button class="btn" onclick="takeReward(${i})">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${itemStatsText(it)}${tag(it.aff)}${curTxt}</small></button>`; }
+      const curTxt=cur?`<br><span class="muted">replaces ${cur.name} Lv${cur.ilvl}</span>`:'<br><span class="green">empty slot</span>';
+      return `<button class="btn" onclick="takeReward(${i})">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)}${curTxt}</small></button>`; }
     if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small></button>`;
     return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small></button>`;}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
@@ -1917,7 +1947,7 @@ function playerBar(p,full){
       <div class="track"><div class="fill mp" style="width:${p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0}%"></div></div></div>
     <div class="bar xp"><div class="track"><div class="fill xpf" style="width:${xpPct}%"></div></div></div>
     ${affinityBar(p)}
-    ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''}</div>`:''}
+    ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence}${ESS}</span></div>`:''}
     ${full?relics:''}</div>`;
 }
 /* ---------- keyboard ---------- */
