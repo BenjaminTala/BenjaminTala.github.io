@@ -695,7 +695,7 @@ const BOSS_CRY={
 const CLASSES={
   mage:{name:'MAGE',color:'purple',affinity:'ARCANE',
     affinityText:'Spell power scales with MAX MANA. Mana also soaks incoming damage (Mana Shield) and refills fast.',
-    hp:86,mana:120,atk:5,def:0,dodge:0,crit:5,lifesteal:0,regen:15,
+    hp:94,mana:124,atk:5,def:0,dodge:0,crit:5,lifesteal:0,regen:16,
     weapon:{name:'Apprentice Wand',dmg:5,type:'magic'},
     sprite:"   /\\\n  (oo)\n <(  )>\n   ||\n  _||_",
     skills:[
@@ -1240,7 +1240,7 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.185; }
+function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.168; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
