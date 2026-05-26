@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0c1d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>CRYPT OF THE CHAMPION</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,9 +78,58 @@
   .footer{text-align:center;color:var(--dim);font-size:8px;margin-top:8px}
   .evtext{font-size:10px;line-height:2;color:#cfcbef;margin:10px 0}
   ::selection{background:var(--amber);color:#000}
+  /* mobile/touch */
+  .btn,.tgt,.btn *{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  @media (hover:none){.btn:hover{background:var(--panel2);border-color:var(--line);color:var(--ink)}.btn:hover small{color:var(--dim)}}
+  .btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  /* audio toggles */
+  #audio-toggles{position:fixed;top:6px;right:6px;z-index:200;display:flex;gap:4px;font-family:'Press Start 2P',monospace}
+  #audio-toggles button{font-family:inherit;font-size:8px;background:var(--panel);color:var(--ink);
+    border:2px solid var(--line);padding:6px 8px;cursor:pointer;line-height:1;letter-spacing:1px;touch-action:manipulation}
+  #audio-toggles button:hover{border-color:var(--amber)}
+  #audio-toggles button.off{color:var(--dim);border-color:#2a2748;text-decoration:line-through}
+  /* narrow screens */
+  @media (max-width:560px){
+    body{padding:42px 4px 24px;font-size:11px}
+    #app{max-width:100%}
+    .title{font-size:18px;margin:8px 0 4px}
+    .subtitle{font-size:8px;margin-bottom:14px}
+    .panel{padding:10px;border-width:2px;margin-bottom:10px;box-shadow:0 0 0 2px #000,4px 4px 0 rgba(0,0,0,.5)}
+    .panel.tight{padding:8px}
+    .btn{font-size:10px;padding:12px 10px;line-height:1.4;min-height:44px;margin:6px 0}
+    .btn small{font-size:8px;margin-top:5px;line-height:1.6}
+    .menu-grid{grid-template-columns:1fr;gap:6px}
+    .row{gap:6px}.row .btn{min-width:0;flex-basis:calc(50% - 3px)}
+    .grid3{flex-direction:column;gap:8px}.grid3 .card{min-width:0}
+    .enemies-row{gap:4px}
+    .enemy-cell{min-width:0;flex:1 1 calc(50% - 4px);max-width:none;padding:4px}
+    .enemy-cell pre.sprite{font-size:8px;line-height:1.15}
+    pre.sprite{font-size:9px;line-height:1.2}
+    .log{height:104px;font-size:8px;padding:8px;line-height:1.6}
+    .floortag{font-size:8px;margin-bottom:6px}
+    .omentag{font-size:7px}
+    .stats{font-size:8px;line-height:1.9}
+    .chip{font-size:7px;padding:2px 5px;margin:2px 2px 2px 0}
+    .bar .lbl{font-size:8px}
+    .slot{padding:6px 8px;font-size:9px;line-height:1.6}
+    .evtext{font-size:9px;line-height:1.9}
+    .tgt{font-size:7px;padding:5px 3px}
+    .footer{font-size:7px;line-height:1.7}
+    #audio-toggles button{font-size:7px;padding:5px 6px}
+  }
+  @media (max-width:380px){
+    .title{font-size:15px}
+    .row .btn{flex-basis:100%}
+    .enemy-cell{flex-basis:100%}
+    pre.sprite{font-size:8px}
+  }
 </style>
 </head>
 <body>
+<div id="audio-toggles">
+  <button id="btn-music" type="button" onclick="toggleMusic()" aria-label="Toggle music">&#9834; ON</button>
+  <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
+</div>
 <div id="app"></div>
 <script>
 "use strict";
@@ -92,6 +144,159 @@ const pick=a=>a[rnd(a.length)];
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const chance=p=>Math.random()*100<p;
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+
+/* ============================================================
+   AUDIO  —  chiptune SFX + music (WebAudio synth, no assets)
+   ============================================================ */
+const SFX=(()=>{
+  const sg=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+  const ss=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+  let ctx=null,master=null,musicGain=null,sfxGain=null;
+  let muted=sg('crypt_muted')==='1', musicMuted=sg('crypt_music_muted')==='1';
+  let currentMusic=null,musicTimer=null;
+  const init=()=>{
+    if(ctx){if(ctx.state==='suspended')ctx.resume();return;}
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
+      ctx=new AC();
+      master=ctx.createGain();master.gain.value=0.55;master.connect(ctx.destination);
+      musicGain=ctx.createGain();musicGain.gain.value=musicMuted?0:0.13;musicGain.connect(master);
+      sfxGain=ctx.createGain();sfxGain.gain.value=muted?0:0.45;sfxGain.connect(master);
+      if(ctx.state==='suspended')ctx.resume();
+    }catch(e){ctx=null;}
+  };
+  const tone=(freq,dur,o)=>{
+    if(!ctx)return; o=o||{};
+    const t0=o.when||ctx.currentTime, type=o.type||'square';
+    const osc=ctx.createOscillator();osc.type=type;osc.frequency.setValueAtTime(freq,t0);
+    if(o.slide)osc.frequency.exponentialRampToValueAtTime(Math.max(20,o.slide),t0+dur);
+    const g=ctx.createGain(); const v=o.vol!=null?o.vol:0.3;
+    g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(v,t0+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    osc.connect(g);g.connect(o.dest||sfxGain);
+    osc.start(t0);osc.stop(t0+dur+0.03);
+  };
+  const noise=(dur,vol)=>{
+    if(!ctx)return; vol=vol||0.2;
+    const bs=Math.max(1,Math.floor(ctx.sampleRate*dur));
+    const buf=ctx.createBuffer(1,bs,ctx.sampleRate); const d=buf.getChannelData(0);
+    for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,1.6);
+    const s=ctx.createBufferSource();s.buffer=buf;
+    const g=ctx.createGain();g.gain.value=vol;
+    s.connect(g);g.connect(sfxGain);s.start();
+  };
+  const aft=(ms,fn)=>setTimeout(fn,ms);
+  const DEFS={
+    click:  ()=>tone(1100,0.03,{type:'square',vol:0.12}),
+    hit:    ()=>{tone(220,0.06,{type:'square',vol:0.3,slide:90});noise(0.08,0.18);},
+    crit:   ()=>{tone(660,0.06,{type:'square',vol:0.3});aft(40,()=>tone(1175,0.1,{type:'square',vol:0.3}));noise(0.14,0.22);},
+    hurt:   ()=>{tone(160,0.18,{type:'sawtooth',vol:0.28,slide:70});noise(0.18,0.18);},
+    dodge:  ()=>tone(660,0.06,{type:'sine',vol:0.22,slide:1320}),
+    heal:   ()=>{[523,659,784].forEach((f,i)=>aft(i*55,()=>tone(f,0.1,{type:'sine',vol:0.25})));},
+    potion: ()=>{[440,659,880].forEach((f,i)=>aft(i*55,()=>tone(f,0.08,{type:'triangle',vol:0.26})));},
+    skill:  ()=>{[440,587,740].forEach((f,i)=>aft(i*40,()=>tone(f,0.07,{type:'square',vol:0.26})));},
+    fire:   ()=>{noise(0.35,0.22);tone(180,0.35,{type:'sawtooth',vol:0.18,slide:60});},
+    frost:  ()=>{[1175,988,784,659].forEach((f,i)=>aft(i*50,()=>tone(f,0.1,{type:'triangle',vol:0.22})));},
+    arrow:  ()=>{tone(1320,0.05,{type:'square',vol:0.2,slide:660});noise(0.06,0.12);},
+    kill:   ()=>{tone(196,0.18,{type:'sawtooth',vol:0.22,slide:80});noise(0.16,0.12);},
+    levelup:()=>{[523,659,784,1046,1318].forEach((f,i)=>aft(i*70,()=>tone(f,0.14,{type:'square',vol:0.3})));},
+    death:  ()=>{[440,392,349,294,247,196,165].forEach((f,i)=>aft(i*120,()=>tone(f,0.22,{type:'sawtooth',vol:0.3})));},
+    win:    ()=>{[523,659,784,1046,1318,1568].forEach((f,i)=>aft(i*110,()=>tone(f,0.18,{type:'square',vol:0.3})));},
+    gold:   ()=>{tone(1568,0.05,{type:'square',vol:0.22});aft(50,()=>tone(2093,0.08,{type:'square',vol:0.22}));},
+    chest:  ()=>{tone(659,0.07,{type:'square',vol:0.25});aft(60,()=>tone(880,0.07,{type:'square',vol:0.25}));aft(120,()=>tone(1175,0.12,{type:'square',vol:0.25}));},
+    relic:  ()=>{[659,880,1046,1318,1568].forEach((f,i)=>aft(i*70,()=>tone(f,0.13,{type:'triangle',vol:0.27})));},
+    status: ()=>tone(330,0.08,{type:'sawtooth',vol:0.18,slide:220}),
+    door:   ()=>{tone(110,0.12,{type:'square',vol:0.2,slide:70});noise(0.05,0.1);},
+    fail:   ()=>tone(220,0.15,{type:'square',vol:0.24,slide:110}),
+    upgrade:()=>{[523,659,880].forEach((f,i)=>aft(i*55,()=>tone(f,0.1,{type:'square',vol:0.25})));},
+  };
+  const play=(name)=>{if(!ctx)return; const fn=DEFS[name]; if(fn)fn();};
+  /* music tracks: melody (square) + bass (triangle) loops */
+  const M={
+    title:{bpm:88, melody:[
+      [0,2],[440,1],[523,1],[659,2],[523,1],[440,1],[523,4],
+      [392,1],[440,1],[523,2],[440,1],[349,1],[330,4],
+      [440,1],[523,1],[659,2],[783,1],[659,1],[587,4],
+      [523,1],[440,1],[392,2],[440,1],[349,1],[330,4]],
+      bass:[[110,2],[131,2],[110,2],[98,2],[110,2],[131,2],[110,2],[98,2],
+            [110,2],[131,2],[110,2],[98,2],[110,2],[131,2],[110,2],[98,2]]},
+    explore:{bpm:84, melody:[
+      [294,2],[349,1],[440,1],[349,2],[330,2],
+      [294,1],[349,1],[440,2],[523,1],[440,1],[349,2],
+      [392,2],[440,1],[349,1],[330,4],
+      [294,2],[262,1],[294,1],[330,4]],
+      bass:[[73,2],[98,2],[73,2],[98,2],[73,2],[98,2],[87,2],[98,2]]},
+    battle:{bpm:144, melody:[
+      [330,0.5],[392,0.5],[330,0.5],[392,0.5],[330,0.5],[392,0.5],[440,1],
+      [349,0.5],[440,0.5],[349,0.5],[440,0.5],[349,0.5],[440,0.5],[523,1],
+      [330,0.5],[523,0.5],[440,0.5],[330,0.5],[294,0.5],[330,0.5],[392,1],
+      [330,0.5],[440,0.5],[392,0.5],[330,0.5],[262,2]],
+      bass:[[82,0.5],[82,0.5],[82,0.5],[82,0.5],[110,0.5],[110,0.5],[82,0.5],[82,0.5],
+            [82,0.5],[82,0.5],[82,0.5],[82,0.5],[123,0.5],[123,0.5],[82,0.5],[82,0.5]]},
+    boss:{bpm:110, melody:[
+      [220,1],[247,1],[262,1],[247,1],[220,2],[196,2],
+      [247,1],[262,1],[294,1],[262,1],[247,2],[220,2],
+      [196,1],[220,1],[247,1],[262,1],[294,2],[262,2],
+      [247,1],[220,1],[247,1],[262,1],[220,4]],
+      bass:[[55,1],[55,1],[55,1],[55,1],[49,1],[49,1],[55,1],[55,1],
+            [62,1],[62,1],[62,1],[62,1],[55,1],[55,1],[55,1],[55,1]]},
+    victory:{bpm:120, melody:[
+      [523,1],[659,1],[784,1],[1046,2],[784,1],[1046,3],
+      [880,1],[1046,1],[1318,2],[1046,2],[1568,4]],
+      bass:[[131,1],[131,1],[131,1],[131,1],[174,1],[174,1],[196,1],[196,1],[131,2]]},
+  };
+  const stopMusic=()=>{if(musicTimer){clearTimeout(musicTimer);musicTimer=null;}currentMusic=null;};
+  const setMusic=(name)=>{
+    if(!ctx)return;
+    if(currentMusic===name)return;
+    stopMusic();
+    if(!name||!M[name])return;
+    currentMusic=name;
+    const track=M[name], beat=60/track.bpm;
+    let mi=0,bi=0,mNext=ctx.currentTime+0.1,bNext=ctx.currentTime+0.1;
+    const tick=()=>{
+      if(currentMusic!==name)return;
+      const look=ctx.currentTime+0.3;
+      while(mNext<look){
+        const n=track.melody[mi%track.melody.length], f=n[0], d=n[1];
+        if(f>0)tone(f,d*beat*0.92,{when:mNext,type:'square',vol:0.10,dest:musicGain});
+        mNext+=d*beat; mi++;
+      }
+      while(bNext<look){
+        const n=track.bass[bi%track.bass.length], f=n[0], d=n[1];
+        if(f>0)tone(f,d*beat*0.95,{when:bNext,type:'triangle',vol:0.13,dest:musicGain});
+        bNext+=d*beat; bi++;
+      }
+      musicTimer=setTimeout(tick,80);
+    };
+    tick();
+  };
+  const refreshUI=()=>{
+    try{
+      const m=document.getElementById('btn-music'), s=document.getElementById('btn-sfx');
+      if(m){m.innerHTML=musicMuted?'♪ OFF':'♪ ON'; m.classList.toggle('off',musicMuted);}
+      if(s){s.textContent=muted?'SFX OFF':'SFX ON'; s.classList.toggle('off',muted);}
+    }catch(e){}
+  };
+  const toggleSfx=()=>{muted=!muted; ss('crypt_muted',muted?'1':'0');
+    if(sfxGain)sfxGain.gain.value=muted?0:0.45; refreshUI(); if(!muted)play('click');};
+  const toggleMusic=()=>{musicMuted=!musicMuted; ss('crypt_music_muted',musicMuted?'1':'0');
+    if(musicGain)musicGain.gain.value=musicMuted?0:0.13; refreshUI();};
+  return {init,play,setMusic,stopMusic,toggleSfx,toggleMusic,refreshUI,
+          isMuted:()=>muted, isMusicMuted:()=>musicMuted};
+})();
+function toggleSfx(){ SFX.init(); SFX.toggleSfx(); }
+function toggleMusic(){ SFX.init(); SFX.toggleMusic(); setMusicForScreen(); }
+function setMusicForScreen(){
+  if(typeof SFX==='undefined')return;
+  const s=G&&G.screen;
+  if(s==='battle'&&G.battle&&G.battle.hadBoss)return SFX.setMusic('boss');
+  if(s==='battle')return SFX.setMusic('battle');
+  if(s==='victory')return SFX.setMusic('victory');
+  if(s==='gameover')return SFX.setMusic(null);
+  if(s==='title'||s==='class'||s==='omen')return SFX.setMusic('title');
+  SFX.setMusic('explore');
+}
 
 const RUN_LENGTH=20;
 const BOSS_CHAMBERS={5:0,10:1,15:2,20:3};   // chamber -> zone index for boss pool
@@ -471,7 +676,7 @@ function recomputeSynergies(p){ p.synergies=[];
   SYNERGIES.forEach(s=>{ if(s.need.every(n=>p.relics.includes(n))){ p.synergies.push(s.name);
     if(!p.flags[s.flag]){ addFlag(p,s.flag); if(s.onForm)s.onForm(p);
       if(G.screen==='battle') blog(`SYNERGY: ${s.name}!`,'lvl'); else G._affMsg=`Synergy unlocked: ${s.name} — ${s.desc}`; } } }); }
-function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.apply(p); p.relics.push(rl.name); addAffinity(p,rl.aff); recomputeSynergies(p); return true; }
+function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.apply(p); p.relics.push(rl.name); addAffinity(p,rl.aff); recomputeSynergies(p); SFX.play('relic'); return true; }
 function gainUpgrade(p,up){ up.apply(p); addAffinity(p,up.aff); }
 function affCritBonus(p){ let c=0; if(p.affTier.g>=1)c+=12; if(p.affTier.g>=2)c+=8; if(p.affTier.w>=2)c+=8; return c; }
 function affDodgeBonus(p){ return p.affTier.g>=1?10:0; }
@@ -483,7 +688,7 @@ function xpNeeded(lvl){ return 18+lvl*14; }
 function gainXp(p,n){ if(p.flags.scholar) n=Math.round(n*1.5); p.xp+=n; let ups=0;
   while(p.xp>=xpNeeded(p.level)){ p.xp-=xpNeeded(p.level); levelUp(p); ups++; } return ups; }
 function levelUp(p,silent){ p.level++; p.maxHp+=11; p.atk+=2; p.maxMana+=5; p.mana+=5; heal(p,14);
-  if(!silent && G.screen==='battle') blog(`LEVEL UP! You are now level ${p.level}.`,'lvl'); }
+  if(!silent){ SFX.play('levelup'); if(G.screen==='battle') blog(`LEVEL UP! You are now level ${p.level}.`,'lvl'); } }
 function relicPool(p){ return RELICS.filter(r=>(!r.cls||r.cls===p.cls)&&!p.relics.includes(r.name)); }
 function grantRandomRelic(p){ const avail=relicPool(p); if(!avail.length)return null; const r=pick(avail); gainRelic(p,r); return r.name; }
 /* ---- equipment engine ---- */
@@ -540,6 +745,7 @@ function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'
    RENDER ROUTER
    ============================================================ */
 function render(){
+  setMusicForScreen();
   ({title:renderTitle,class:renderClassSelect,omen:renderOmen,corridor:renderCorridor,room:renderRoom,
     event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
@@ -674,7 +880,7 @@ function renderInventory(){ const p=G.player;
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; ${p.gold}g &middot; ${p.relics.length} relic(s)</div>`; }
-function openDoor(i){ G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); }
+function openDoor(i){ SFX.play('door'); G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); }
 
 /* ============================================================
    ENEMY BUILD / SCALING
@@ -762,20 +968,20 @@ function renderRoom(){
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?88:60;
-  if(chance(base-extra*8)){ proceed('You slip past unseen.'); }
-  else { const dmg=6+rnd(8)+G.depth; p.hp=clamp(p.hp-dmg,0,p.maxHp); if(p.hp<=0){G.screen='gameover';return render();} proceed(`Caught! You take ${dmg} escaping.`); } }
+  if(chance(base-extra*8)){ SFX.play('door'); proceed('You slip past unseen.'); }
+  else { const dmg=6+rnd(8)+G.depth; p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play('hurt'); if(p.hp<=0){SFX.play('death');G.screen='gameover';return render();} proceed(`Caught! You take ${dmg} escaping.`); } }
 function leaveRoom(){ proceed('You move on.'); }
 function restEmpty(){ heal(G.player,12); G.player.mana=clamp(G.player.mana+8,0,G.player.maxMana); proceed(); }
 function shrine(k){ const p=G.player;
-  if(k==='heal'){ heal(p,Math.round(p.maxHp*0.45)); p.mana=clamp(p.mana+Math.round(p.maxMana*0.45),0,p.maxMana); }
-  if(k==='power'){ p.atk+=4; p.hp=clamp(p.hp-12,1,p.maxHp); }
-  if(k==='ward'){ p.def+=3; p.maxHp+=8; heal(p,8); }
+  if(k==='heal'){ heal(p,Math.round(p.maxHp*0.45)); p.mana=clamp(p.mana+Math.round(p.maxMana*0.45),0,p.maxMana); SFX.play('heal'); }
+  if(k==='power'){ p.atk+=4; p.hp=clamp(p.hp-12,1,p.maxHp); SFX.play('upgrade'); }
+  if(k==='ward'){ p.def+=3; p.maxHp+=8; heal(p,8); SFX.play('upgrade'); }
   proceed(); }
 function takeRelic(i){ const rl=G.room.options[i]; gainRelic(G.player,rl); proceed(`Relic claimed: ${rl.name}!`); }
 function drinkFountain(){ const p=G.player,roll=rnd(100);
-  if(roll<55){ const h=Math.round(p.maxHp*0.45); heal(p,h); p.mana=clamp(p.mana+Math.round(p.maxMana*0.4),0,p.maxMana); proceed(`Blessed water! +${h} HP and mana restored.`); }
-  else if(roll<80){ const c=Math.round(p.maxHp*0.18); p.hp=clamp(p.hp-c,1,p.maxHp); proceed(`Cursed! The water burns for ${c}.`); }
-  else { p.maxHp+=12; heal(p,12); p.atk+=2; proceed('A surge of vigor! +12 max HP, +2 ATK.'); } }
+  if(roll<55){ const h=Math.round(p.maxHp*0.45); heal(p,h); p.mana=clamp(p.mana+Math.round(p.maxMana*0.4),0,p.maxMana); SFX.play('heal'); proceed(`Blessed water! +${h} HP and mana restored.`); }
+  else if(roll<80){ const c=Math.round(p.maxHp*0.18); p.hp=clamp(p.hp-c,1,p.maxHp); SFX.play('hurt'); proceed(`Cursed! The water burns for ${c}.`); }
+  else { p.maxHp+=12; heal(p,12); p.atk+=2; SFX.play('upgrade'); proceed('A surge of vigor! +12 max HP, +2 ATK.'); } }
 
 /* ---------- EVENTS ---------- */
 function renderEvent(){
@@ -801,7 +1007,9 @@ function chooseEvent(i){ const r=G.room,res=r.ev.options[i].run(G.player);
 /* ---------- CHEST ---------- */
 function openChest(){
   if(chance(15)){ const m=freshEnemy({name:'MIMIC',sprite:"  ______\n /<><><>\\\n | (oo) |\n  \\vvvv/",hp:scaleHpVal(52),maxHp:scaleHpVal(52),atk:Math.round(11*depthFactor()),def:1,xp:14});
+    SFX.play('fail');
     G.room={type:'enemy',_enemies:[m]}; startBattle('The chest was a MIMIC!'); return; }
+  SFX.play('chest');
   G.pending={source:'chest'}; G.screen='reward'; buildRewards(); render();
 }
 
@@ -826,13 +1034,14 @@ function renderMerchant(){
       ${gearBtn}${relicBtn}
       <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>${statusFooter()}`;
 }
-function buy(kind){ const p=G.player,st=G.room.stock;
-  if(kind==='potion'&&p.gold>=25){p.gold-=25;p.potions++;}
-  else if(kind==='heal'&&p.gold>=18){p.gold-=18;heal(p,Math.round(p.maxHp*0.5));}
-  else if(kind==='mana'&&p.gold>=14){p.gold-=14;p.mana=p.maxMana;}
-  else if(kind==='upgrade'&&p.gold>=40){p.gold-=40;gainUpgrade(p,pick(UPGRADES));}
-  else if(kind==='gear'&&st.gear){const c=40+st.gear.rarity*22;if(p.gold>=c){p.gold-=c;equipItem(p,st.gear);st.gear=null;}}
-  else if(kind==='relic'&&p.gold>=70&&st.relic){p.gold-=70;gainRelic(p,st.relic);st.relic=null;}
+function buy(kind){ const p=G.player,st=G.room.stock; let bought=false;
+  if(kind==='potion'&&p.gold>=25){p.gold-=25;p.potions++;SFX.play('potion');bought=true;}
+  else if(kind==='heal'&&p.gold>=18){p.gold-=18;heal(p,Math.round(p.maxHp*0.5));SFX.play('heal');bought=true;}
+  else if(kind==='mana'&&p.gold>=14){p.gold-=14;p.mana=p.maxMana;SFX.play('heal');bought=true;}
+  else if(kind==='upgrade'&&p.gold>=40){p.gold-=40;gainUpgrade(p,pick(UPGRADES));SFX.play('upgrade');bought=true;}
+  else if(kind==='gear'&&st.gear){const c=40+st.gear.rarity*22;if(p.gold>=c){p.gold-=c;equipItem(p,st.gear);st.gear=null;SFX.play('upgrade');bought=true;}}
+  else if(kind==='relic'&&p.gold>=70&&st.relic){p.gold-=70;gainRelic(p,st.relic);st.relic=null;bought=true;}
+  if(!bought)SFX.play('fail');
   renderMerchant();
 }
 
@@ -913,6 +1122,7 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
 function rollCrit(){ return chance(effCrit(G.player)); }
 function critMult(){ return G.player.flags.bigCrit?2.1:1.8; }
 function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
+  SFX.play('kill');
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
   if(p.flags.bloodpact){ let h=Math.round(p.maxHp*0.08); if(p.flags.synSanguine)h*=2; heal(p,h); blog(`Blood Pact heals ${h}.`,'heal'); }
@@ -927,6 +1137,7 @@ function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.
   if(e.hp<=0) onEnemyDeath(e);
   return dmg; }
 function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(b.shadowCrit){c=true;b.shadowCrit=0;} if(c)d*=critMult();
+  SFX.play(c?'crit':'hit');
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
   const e=b.enemies[idx];
   // Avatar of Wrath: cleave splash to other foes
@@ -955,22 +1166,22 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
   const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; spendMana(cost); ensureTarget();
   const mm=p.maxMana;
   switch(id){
-    case 'bolt':{let d=12+Math.round(mm*0.18)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
-    case 'fire':{ if(p.flags.kBeam){ let d=30+Math.round(mm*0.34)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,12,3); }
+    case 'bolt':{SFX.play('skill');let d=12+Math.round(mm*0.18)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
+    case 'fire':{SFX.play('fire'); if(p.flags.kBeam){ let d=30+Math.round(mm*0.34)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,12,3); }
       else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=15+Math.round(mm*0.13)+p.weapon.dmg;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,6,3);}); } break;}
-    case 'frost':{blog('Frost Nova chills the room!','info');aoeHit(i=>{let d=7+Math.round(mm*0.07);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
-    case 'power':{let d=(p.atk+p.weapon.dmg)*1.9+rnd(4);let c=rollCrit();if(c)d*=1.7;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
-    case 'shield':{b.pdef=0.65;b.pdefTurns=2;blog('You raise your guard! (65% block, 2 turns)','info');break;}
-    case 'reck':{ const k=p.flags.kWhirl; blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
+    case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');aoeHit(i=>{let d=7+Math.round(mm*0.07);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
+    case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.9+rnd(4);let c=rollCrit();if(c)d*=1.7;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
+    case 'shield':{SFX.play('skill');b.pdef=0.65;b.pdefTurns=2;blog('You raise your guard! (65% block, 2 turns)','info');break;}
+    case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
       aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.8:1.5)+rnd(5);let c=rollCrit();if(c)d*=1.5;dealToEnemy(i,d,'Whirlwind rends',c);});
       if(k){ const h=Math.round(p.maxHp*0.06); heal(p,h); blog(`The cyclone restores ${h} HP.`,'heal'); } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
-    case 'aim':{ if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.4;let c=chance(effCrit(p)+20);if(c)d*=2;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
+    case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.4;let c=chance(effCrit(p)+20);if(c)d*=2;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
       else { let d=(p.atk+p.weapon.dmg)*1.6;let c=chance(effCrit(p)+30);if(c)d*=2;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,4,2); } break;}
-    case 'evade':{b.evade=45;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
-    case 'volley':{blog('You loose a volley of arrows!','info');for(let k=0;k<3;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.8;dealToEnemy(idx,d,'Arrow hits',c);} break;}
+    case 'evade':{SFX.play('skill');b.evade=45;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
+    case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');for(let k=0;k<3;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.8;dealToEnemy(idx,d,'Arrow hits',c);} break;}
   }
   afterPlayer(); }
-function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.4); heal(p,h); blog(`You quaff a potion. +${h} HP.`,'heal'); afterPlayer(); }
+function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.4); heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); afterPlayer(); }
 function fleeBattle(){ const p=G.player,b=G.battle;
   if(b.hadBoss){ blog('There is no escape from this foe!','info'); return render(); }
   if(p.cls==='ranger'?chance(85):chance(55)){ blog('You break away and flee!','info'); b.over=true; render(); setTimeout(()=>proceed('You escaped — no loot.'),700); }
@@ -997,7 +1208,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
     dmg=Math.round(dmg*G.mods.eDmg);
     const dodgeChance=Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0));
-    if(chance(dodgeChance)){ blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
+    if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
     let red=(b.pdefTurns>0?b.pdef:0);
     dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.7)));
     if(b.guardDown>0)dmg=Math.round(dmg*1.3);
@@ -1005,8 +1216,8 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if(b.barrier>0&&dmg>0){ const ab=Math.min(b.barrier,dmg); b.barrier-=ab; dmg-=ab; blog(`Barrier absorbs ${ab}.`,'info'); }
     if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
     let lethal=p.hp-dmg<=0;
-    if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
-    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); blog(`${label} for ${dmg}!`,'dmg'); }
+    if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
+    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); }
     if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
     if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
     if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
@@ -1020,7 +1231,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   if(b.pdefTurns>0)b.pdefTurns--; if(b.evadeTurns>0)b.evadeTurns--; if(b.guardDown>0)b.guardDown--;
   p.mana=clamp(p.mana+p.regen,0,p.maxMana);
   flash('playerHit');
-  if(p.hp<=0){ b.over=true; render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
+  if(p.hp<=0){ b.over=true; SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
   if(allDead()){ winBattle(); return; }
   render(); }
 function flash(kind){ const scene=$('scene');
@@ -1031,8 +1242,9 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   let gold=(8+rnd(12))+G.depth*2+(b.enemies.length-1)*6;
   b.enemies.forEach(e=>{ if(e.goldBonus)gold+=e.goldBonus; });
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
+  SFX.play(b.hadBoss?'win':'gold');
   blog('The chamber is clear!','info'); render();
-  setTimeout(()=>{ if(b.isFinal){ G.screen='victory'; return render(); }
+  setTimeout(()=>{ if(b.isFinal){ SFX.play('win'); G.screen='victory'; return render(); }
     G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); },900); }
 
 /* ============================================================
@@ -1065,9 +1277,10 @@ function renderReward(){ const p=G.player,pd=G.pending;
 }
 function takeReward(i){ const p=G.player,pd=G.pending;
   if(i>=0){ const o=pd.options[i];
-    if(o.kind==='gear')equipItem(p,o.data);
+    if(o.kind==='gear'){equipItem(p,o.data); SFX.play('upgrade');}
     else if(o.kind==='relic')gainRelic(p,o.data);
-    else gainUpgrade(p,o.data); }
+    else {gainUpgrade(p,o.data); SFX.play('upgrade');} }
+  else SFX.play('door');
   if(pd.boss)p.potions++;
   G.pending=null; proceed(); }
 
@@ -1075,7 +1288,7 @@ function takeReward(i){ const p=G.player,pd=G.pending;
    FLOW / END
    ============================================================ */
 function proceed(msg){
-  if(G.depth>=RUN_LENGTH){ G.screen='victory'; return render(); }
+  if(G.depth>=RUN_LENGTH){ SFX.play('win'); G.screen='victory'; return render(); }
   if(G.mods.roamRegen){ heal(G.player,Math.round(G.player.maxHp*0.05)); }
   nextCorridor(); G.screen='corridor'; render();
   if(msg){ const f=document.querySelector('.footer'); if(f)f.innerHTML=`<span class="amber">${msg}</span>`; }
@@ -1130,6 +1343,19 @@ document.addEventListener('keydown',e=>{
   const btns=[...document.querySelectorAll('.btn:not([disabled])')];
   const n=parseInt(e.key,10); if(!isNaN(n)&&n>=1&&n<=btns.length){btns[n-1].click();return;}
   if(e.key==='Enter'&&btns.length)btns[0].click(); });
+
+/* ---------- audio init on first gesture + subtle click sfx ---------- */
+function _audioGo(){ SFX.init(); SFX.refreshUI(); setMusicForScreen();
+  document.removeEventListener('pointerdown',_audioGo,true);
+  document.removeEventListener('keydown',_audioGo,true);
+  document.removeEventListener('touchstart',_audioGo,true); }
+document.addEventListener('pointerdown',_audioGo,true);
+document.addEventListener('keydown',_audioGo,true);
+document.addEventListener('touchstart',_audioGo,true);
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.btn:not([disabled])'); if(t) SFX.play('click');
+});
+SFX.refreshUI();
 
 render();
 </script>
