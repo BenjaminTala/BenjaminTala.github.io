@@ -795,7 +795,8 @@ const FAMILY={
 function familyOf(e){ return FAMILY[stripAffix(e.name)]||'Beast'; }
 const SLAYER_THRESH=[5,12,22];
 const SLAYER_BONUS=[0,0.06,0.14,0.26];
-function slayerTier(c){ return c>=22?3:c>=12?2:c>=5?1:0; }
+function slThreshArr(){ return (G&&G.mods&&G.mods.slayFast)?[3,7,13]:SLAYER_THRESH; }
+function slayerTier(c){ const t=slThreshArr(); return c>=t[2]?3:c>=t[1]?2:c>=t[0]?1:0; }
 function slayerMult(e){ const p=G.player; if(!p||!p.slayer)return 1; return 1+SLAYER_BONUS[slayerTier(p.slayer[familyOf(e)]||0)]; }
 
 /* ============================================================
@@ -940,6 +941,10 @@ const OMENS=[
   {id:'lucky',name:'Lucky Star',note:'+12% crit and richer rewards (extra choices).',apply:(g,p)=>{p.crit+=12;g.luck=1;}},
   {id:'elites',name:'Cursed Riches',note:'Start with 90 gold, but elites prowl everywhere.',apply:(g,p)=>{p.gold+=90;g.eliteMul=2.4;}},
   {id:'endless',name:'Endless Night',note:'Monsters relentless (+1 per pack), but you regen between rooms.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
+  {id:'harvest',name:'Soul Harvest',note:'+70% Soul Essence from kills — forge an empire.',apply:g=>{g.essMul=(g.essMul||1)*1.7;}},
+  {id:'hunter',name:"Hunter's Instinct",note:'Slayer tiers unlock far sooner (3/7/13 kills).',apply:g=>{g.slayFast=1;}},
+  {id:'resolve',name:"Champion's Resolve",note:'Your Ultimate charges 50% faster.',apply:g=>{g.ultFast=1;}},
+  {id:'fragile',name:'Fragile Might',note:'You deal +40% damage, but take +25%.',apply:g=>{g.pDmg*=1.4;g.eDmg*=1.25;}},
 ];
 
 /* ============================================================
@@ -1072,7 +1077,7 @@ const EVENTS=[
    STATE
    ============================================================ */
 let G=null;
-function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0}; }
+function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
 function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[]}; }
 newGame();
 
@@ -1328,7 +1333,7 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
   } else {
     const fams=Object.keys(p.slayer).sort((a,b)=>p.slayer[b]-p.slayer[a]);
-    const rows=fams.length?fams.map(f=>{const c=p.slayer[f],t=slayerTier(c),nx=t<3?SLAYER_THRESH[t]:null,pct=nx?Math.min(100,c/nx*100):100;
+    const rows=fams.length?fams.map(f=>{const c=p.slayer[f],t=slayerTier(c),nx=t<3?slThreshArr()[t]:null,pct=nx?Math.min(100,c/nx*100):100;
       return `<div class="best-row"><span>${f} <span class="muted">&times;${c}</span>${t>0?` &middot; <span class="amber">SLAYER ${['','I','II','III'][t]} +${Math.round(SLAYER_BONUS[t]*100)}%</span>`:''}<br><span class="muted" style="font-size:8px">${nx?`${c}/${nx} to next tier`:'mastered'}</span></span><span class="best-bar"><i style="width:${pct}%"></i></span></div>`;}).join('')
       :'<div class="slot muted">No kills recorded yet. Hunt to grow your Slayer power.</div>';
     body=`<h3 class="red ivh">BESTIARY &mdash; SLAYER</h3><p class="muted" style="font-size:8px;line-height:1.8">Every kill of a family permanently boosts your damage against it. Tiers at 5 / 12 / 22 kills.</p>${rows}`;
@@ -1687,7 +1692,7 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapo
   stormfury(c,isExtra); }
 function stormfury(crit,isExtra){ const p=G.player,b=G.battle;
   if(crit&&p.flags.synStorm&&!isExtra&&living().length){ blog('Stormfury — the crit echoes!','crit'); ensureTarget(); basicHit(b.target,true); } }
-function gainCharge(n){ const b=G.battle; if(b)b.charge=clamp((b.charge||0)+n,0,100); }
+function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math.round(n*1.5); b.charge=clamp((b.charge||0)+n,0,100); }
 function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foes for massive magic + heavy BURN'},
   warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
   ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
