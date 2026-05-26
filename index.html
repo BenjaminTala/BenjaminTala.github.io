@@ -71,7 +71,14 @@
   .c-weak{border-color:var(--purple);color:var(--purple)}.c-vuln{border-color:var(--red);color:var(--red)}
   .c-stun{border-color:var(--teal);color:var(--teal)}.c-guard{border-color:var(--blue);color:var(--blue)}
   .enemies-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:flex-end}
-  .enemy-cell{flex:1;min-width:118px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s}
+  .enemy-cell{flex:1;min-width:118px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s;position:relative}
+  .fxlayer{position:absolute;left:0;right:0;top:26%;pointer-events:none;text-align:center;z-index:6;line-height:1}
+  .dmgfloat{display:inline-block;margin:0 2px;font-size:13px;color:var(--red);text-shadow:2px 2px 0 #000;animation:floatUp .9s ease-out forwards}
+  .dmgfloat.crit{color:var(--purple);font-size:18px;text-shadow:0 0 8px var(--purple),2px 2px 0 #000}
+  @keyframes floatUp{0%{opacity:0;transform:translateY(8px) scale(.7)}18%{opacity:1;transform:translateY(0) scale(1.15)}100%{opacity:0;transform:translateY(-30px) scale(1)}}
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:150;opacity:0;transition:opacity .3s;box-shadow:inset 0 0 110px 36px rgba(255,30,50,.55)}
+  #vignette.on{opacity:1;animation:vigpulse 1.1s ease-in-out infinite}
+  @keyframes vigpulse{0%,100%{opacity:.5}50%{opacity:.95}}
   .enemy-cell.target{border-color:var(--amber);background:#00000055}
   .enemy-cell.dead{opacity:.25;filter:grayscale(1)}
   .enemy-cell pre.sprite{font-size:9px;color:var(--red)}
@@ -290,6 +297,7 @@
   <button id="btn-music" type="button" onclick="toggleMusic()" aria-label="Toggle music">&#9834; ON</button>
   <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
 </div>
+<div id="vignette"></div>
 <div id="app"></div>
 <div id="info-modal" class="hidden" onclick="closeInfo(event)">
   <div class="info-card" onclick="event.stopPropagation()">
@@ -1178,6 +1186,7 @@ function render(){
   ({title:renderTitle,class:renderClassSelect,omen:renderOmen,corridor:renderCorridor,room:renderRoom,
     event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,triumph:renderTriumph,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
+  const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
 }
 function go(s){ G.screen=s; render(); }
 
@@ -1552,7 +1561,7 @@ function renderForge(){ const p=G.player;
 function startBattle(intro){
   const r=G.room; const enemies=r._enemies?r._enemies:buildEnemies(r);
   G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:0,
-    over:false,anim:'',animIdx:-1,usedSecond:false,
+    over:false,anim:'',animIdx:-1,usedSecond:false,floats:[],
     pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:!G.abyss&&enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
   if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
@@ -1582,13 +1591,16 @@ function renderBattle(){
     const sp=enemySpriteHtml(e,G.depth);
     const spriteHtml=sp?sp.replace('class="sprite-enemy',`class="sprite-enemy ${b.animIdx===i?'hitpop':''}`)
       :`<pre class="sprite red ${b.animIdx===i?'hitpop':''}">${e.sprite}</pre>`;
+    const flo=(b.floats||[]).filter(f=>f.idx===i).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
     return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''}">
+      ${flo?`<div class="fxlayer">${flo}</div>`:''}
       <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
       ${spriteHtml}
       <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':stChips(e.st)}</div>
       ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}</div>`;
   }).join('');
+  b.floats=[];
   const logHtml=G.log.slice(-6).map(l=>`<div class="${l.cls}">${l.text}</div>`).join('');
   const pStatus=(b.barrier>0?`<span class="chip c-guard">BARRIER ${b.barrier}</span>`:'')
     +(b.pdefTurns>0?`<span class="chip c-guard">GUARD ${b.pdefTurns}</span>`:'')
@@ -1648,6 +1660,7 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
 function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.player; if(!e||e.hp<=0)return 0;
   dmg=Math.max(1,Math.round(dmg*playerDamageMult(e)-(e.def||0)));
   e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx;
+  (b.floats=b.floats||[]).push({idx,text:''+dmg,cls:crit?'crit':'dmg'});
   blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${b.enemies.length>1?` [${e.name}]`:''}`,crit?'crit':'dmg');
   if(p.lifesteal>0){ const ls=Math.max(1,Math.round(dmg*p.lifesteal/100)); heal(p,ls); blog(`You drain ${ls} HP.`,'heal'); }
   if(crit&&p.affTier.g>=3){ p.mana=clamp(p.mana+5,0,p.maxMana); }
