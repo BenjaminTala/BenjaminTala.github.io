@@ -176,6 +176,34 @@
     max-width:220px;max-height:170px;width:auto;height:auto;
     filter:drop-shadow(0 0 14px rgba(255,92,106,.5)) drop-shadow(0 0 22px rgba(255,207,77,.3));
     animation:idleBob 3s ease-in-out infinite}
+  /* info modal (popup explanations for concepts + tappable chips) */
+  #info-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    font-family:'Press Start 2P',monospace}
+  #info-modal.hidden{display:none}
+  .info-card{background:var(--panel);border:3px solid var(--amber);
+    padding:18px;max-width:460px;width:100%;
+    box-shadow:0 0 0 3px #000,8px 8px 0 rgba(0,0,0,.5);
+    animation:fade .15s ease-out}
+  .info-card h3{font-size:12px;color:var(--amber);margin:0 0 12px;line-height:1.6}
+  .info-card .body{font-size:10px;line-height:1.9;color:var(--ink);margin-bottom:14px;max-height:60vh;overflow-y:auto}
+  .info-card .body b{color:var(--amber)}
+  .info-card .body .muted{color:var(--dim)}
+  .info-card .btn{margin:0}
+  .info-btn{display:inline-block;width:16px;height:16px;
+    border:2px solid var(--dim);background:transparent;color:var(--dim);
+    font-family:inherit;font-size:8px;border-radius:50%;
+    cursor:pointer;line-height:1;padding:0;margin-left:8px;
+    vertical-align:middle;font-style:italic;font-weight:bold;
+    touch-action:manipulation}
+  .info-btn:hover{border-color:var(--amber);color:var(--amber);background:rgba(255,207,77,.12)}
+  .chip.clickable,.tipline{cursor:help}
+  .chip.clickable:hover{background:#0a0a14;filter:brightness(1.3)}
+  .tipline:hover{filter:brightness(1.3)}
+  @media (max-width:560px){
+    .info-card{padding:14px;border-width:2px}
+    .info-card h3{font-size:11px}.info-card .body{font-size:9px}
+  }
   /* event illustration (sprite-based, with CSS recolors for variety) */
   .ev-sprite{display:block;margin:8px auto;image-rendering:pixelated;
     width:auto;height:auto;max-width:120px;max-height:120px;
@@ -249,6 +277,13 @@
   <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
 </div>
 <div id="app"></div>
+<div id="info-modal" class="hidden" onclick="closeInfo(event)">
+  <div class="info-card" onclick="event.stopPropagation()">
+    <h3 id="info-title"></h3>
+    <div class="body" id="info-text"></div>
+    <button class="btn center" onclick="closeInfo()"><span class="k">&#9654;</span>CLOSE</button>
+  </div>
+</div>
 <script>
 "use strict";
 /* ============================================================
@@ -1180,16 +1215,16 @@ function renderInventory(){ const p=G.player;
   const setProg=Object.keys(SETS).map(sn=>{ const set=SETS[sn]; const have=['weapon','armor','trinket'].filter(s=>p.equip[s]&&p.equip[s].set===sn).length;
     const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
   const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
-    return `<div class="slot"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
-  const relics=p.relics.length?p.relics.map(r=>`<span class="chip" style="border-color:var(--purple);color:var(--purple)">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
-  const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip" style="border-color:var(--teal);color:var(--teal)">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
+    return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
+  const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
+  const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
   app.innerHTML=`<div class="floortag">INVENTORY &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
     <div class="panel fade">
       <h3 class="amber" style="font-size:11px;margin-bottom:4px">EQUIPMENT</h3>${slot('weapon')}${slot('armor')}${slot('trinket')}
-      <h3 class="teal" style="font-size:11px;margin:10px 0 4px">SET COLLECTIONS</h3>${setProg}
-      <h3 class="purple" style="font-size:11px;margin:10px 0 4px">AFFINITY PATHS</h3>${paths}
-      <h3 style="font-size:11px;margin:10px 0 4px">RELICS</h3><div>${relics}</div>
-      <h3 style="font-size:11px;margin:10px 0 4px">SYNERGIES</h3><div>${syn}</div>
+      <h3 class="teal" style="font-size:11px;margin:10px 0 4px">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}
+      <h3 class="purple" style="font-size:11px;margin:10px 0 4px">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
+      <h3 style="font-size:11px;margin:10px 0 4px">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
+      <h3 style="font-size:11px;margin:10px 0 4px">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; ${p.gold}g &middot; ${p.relics.length} relic(s)</div>`; }
@@ -1633,18 +1668,81 @@ function renderEnd(win){ const p=G.player;
 function restart(){ newGame(); render(); }
 
 /* ---------- shared UI ---------- */
+/* ---------- info popups (concept explanations + chip tooltips) ---------- */
+const INFO_TEXT={
+  synergies:{title:'SYNERGIES',body:
+    `<b>Named combos that fire automatically</b> when you collect both required relics. Each grants an extra bonus on top of the relics themselves.<br><br>
+     <span class="muted">Examples:</span><br>
+     &bull; <b>Sanguine Pact</b> = Vampiric Aura + Blood Pact &rarr; +10% lifesteal; kills heal twice.<br>
+     &bull; <b>Stormfury</b> = Twin Fang + Eagle Eye &rarr; critical hits trigger an extra strike.<br>
+     &bull; <b>Glass Reaper</b> = Glass Cannon + Executioner &rarr; execute foes below 45% HP.<br><br>
+     Earned synergies appear as <span class="teal">teal chips</span>. Hover a chip to see its exact effect.`},
+  affinity:{title:'AFFINITY PATHS',body:
+    `Every relic and gear piece grants <b>affinity points</b> in one of three colors. As your totals grow, you unlock <b>tier capstones</b> that reshape how your hero fights.<br><br>
+     <span class="red">&#9670; WRATH</span> &mdash; raw damage. Capstones: +dmg, +crit, AVATAR OF WRATH (hits cleave).<br>
+     <span class="teal">&#9670; GUILE</span> &mdash; crit, dodge, status. Capstones: +crit/dodge, longer statuses, TRICKSTER (random status per basic hit + crits refund mana).<br>
+     <span class="blue">&#9670; VEIL</span> &mdash; survival. Capstones: +HP/MP, combat regen, WARDEN (start each battle with a damage barrier).<br><br>
+     Tiers unlock at <b>3 / 6 / 9</b> points. Mix two paths or commit to one &mdash; build identity emerges from what you take.`},
+  sets:{title:'SET COLLECTIONS',body:
+    `Special <b>armor + trinket pairs</b> that grant a build-defining 2-piece bonus when both are equipped together. Set pieces drop at Rare or higher rarity, and replace the normal item passive on that slot.<br><br>
+     &bull; <span class="teal">Shadowdancer</span> &mdash; cloak + band &rarr; +15% dodge; a dodge guarantees your next hit crits.<br>
+     &bull; <span class="purple">Archmage</span> &mdash; robes + orb &rarr; mana shield for any class; full block stuns the attacker.<br>
+     &bull; <span class="red">Bloodforged</span> &mdash; plate + pendant &rarr; +14% lifesteal, +3 ATK; kills heal you.<br><br>
+     Look for set pieces from chests, relic rooms, and the merchant.`},
+  relics:{title:'RELICS',body:
+    `<b>Permanent run-defining artifacts</b> that change how you play. Most modify damage formulas, grant new effects on hit, or give powerful conditional bonuses.<br><br>
+     Earned from <b>boss fights</b>, the <b>Pedestal of Power</b> room, the <b>merchant</b>, and certain <b>events</b>. Some pair up into <b>synergies</b> &mdash; collect the right combo to unlock extras. <b>Keystone</b> relics (one per class) transform a class skill.<br><br>
+     Hover any owned relic to read its effect.`},
+};
+function showInfo(key){
+  const i=typeof key==='object'?key:INFO_TEXT[key];
+  if(!i)return;
+  const m=document.getElementById('info-modal');
+  document.getElementById('info-title').textContent=i.title;
+  document.getElementById('info-text').innerHTML=i.body;
+  if(m)m.classList.remove('hidden');
+  SFX.play('chest');
+}
+function closeInfo(e){
+  if(e&&e.target&&e.target.id!=='info-modal'&&!e.target.closest('.btn'))return;
+  const m=document.getElementById('info-modal');
+  if(m)m.classList.add('hidden');
+  SFX.play('click');
+}
+function relicNoteFor(name){const r=RELICS.find(x=>x.name===name);return r?r.note:'';}
+function synergyDescFor(name){const s=SYNERGIES.find(x=>x.name===name);return s?s.desc:'';}
+function affinityTipFor(p,k){
+  const m=AFF_META[k],t=p.affTier[k];
+  let s=`${m.name} — ${p.aff[k]} points.`;
+  if(t>0)s+=` Current: ${AFF_TIER_TITLE[k][t]}.`;
+  if(t<3)s+=` Next at ${AFF_THRESH[t]} pts: ${AFF_TIER_TITLE[k][t+1]}.`;
+  return s;
+}
+function showRelicInfo(name){ showInfo({title:name,body:relicNoteFor(name)||'A relic of unknown power.'}); }
+function showSynergyInfo(name){ const s=SYNERGIES.find(x=>x.name===name); showInfo({title:name,body:s?`${s.desc}<br><br><span class="muted">Formed by: ${s.need.join(' + ')}</span>`:'A relic synergy.'}); }
+function showPathInfo(k){ if(!G.player)return; showInfo({title:AFF_META[k].name+' PATH',body:affinityTipFor(G.player,k)}); }
+/* HTML-attr-safe escape */
+const escAttr=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function infoBtnHtml(key){
+  return `<button class="info-btn" onclick="showInfo('${key}')" aria-label="What is this?" type="button">i</button>`;
+}
+
 function affinityBar(p){
   const earned=['w','g','v'].filter(k=>p.aff[k]>0);
   if(!earned.length && !(p.synergies&&p.synergies.length)) return '';
   const seg=k=>{ const m=AFF_META[k],t=p.affTier[k]; const roman=t>0?['I','II','III'][t-1]:'';
     const next=t<3?AFF_THRESH[t]:null; const prog=next?` ${p.aff[k]}/${next}`:' MAX';
-    return `<span class="${m.color}">${m.name}${t>0?' '+roman:''}${prog}</span>`; };
+    return `<span class="${m.color} tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}">${m.name}${t>0?' '+roman:''}${prog}</span>`; };
   let s=earned.length?`<div class="stats" style="font-size:8px">PATHS &middot; ${earned.map(seg).join(' &middot; ')}</div>`:'';
-  if(p.synergies&&p.synergies.length) s+=`<div>${p.synergies.map(n=>`<span class="chip" style="border-color:var(--teal);color:var(--teal)">&#10022; ${n}</span>`).join('')}</div>`;
+  if(p.synergies&&p.synergies.length) s+=`<div>${p.synergies.map(n=>
+    `<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`
+  ).join('')}</div>`;
   return s;
 }
 function playerBar(p,full){
-  const relics=p.relics.length?`<div class="relics">${p.relics.map(r=>`<span class="chip">&#9670; ${r}</span>`).join('')}</div>`:'';
+  const relics=p.relics.length?`<div class="relics">${p.relics.map(r=>
+    `<span class="chip clickable" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`
+  ).join('')}</div>`:'';
   const xpPct=clamp(p.xp/xpNeeded(p.level)*100,0,100);
   const ec=effCrit(p),ed=effDodge(p);
   return `<div class="panel tight">
@@ -1674,6 +1772,19 @@ document.addEventListener('keydown',_audioGo,true);
 document.addEventListener('touchstart',_audioGo,true);
 document.addEventListener('click',e=>{
   const t=e.target.closest('.btn:not([disabled])'); if(t) SFX.play('click');
+});
+/* delegated handler for chip/info-button clicks (tap-friendly on mobile) */
+document.addEventListener('click',e=>{
+  const r=e.target.closest('[data-info-relic]');
+  if(r){ showRelicInfo(r.getAttribute('data-info-relic')); return; }
+  const s=e.target.closest('[data-info-synergy]');
+  if(s){ showSynergyInfo(s.getAttribute('data-info-synergy')); return; }
+  const p=e.target.closest('[data-info-path]');
+  if(p){ showPathInfo(p.getAttribute('data-info-path')); return; }
+});
+/* Escape closes the info modal */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ const m=document.getElementById('info-modal'); if(m&&!m.classList.contains('hidden')){ m.classList.add('hidden'); } }
 });
 SFX.refreshUI();
 
