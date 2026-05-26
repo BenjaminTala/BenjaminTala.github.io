@@ -238,9 +238,10 @@
   .ev-sprite.tint-amber {filter:sepia(.6) saturate(1.4) hue-rotate(-15deg) drop-shadow(0 0 8px rgba(255,207,77,.55))}
   .ev-sprite.tint-shadow{filter:brightness(.35) contrast(1.2) drop-shadow(0 0 8px rgba(50,40,80,.8))}
   /* ==== item icons from 16x16 sheets ==== */
-  .iicon{display:inline-block;vertical-align:middle;image-rendering:pixelated;background-repeat:no-repeat;
-    width:24px;height:24px;margin-right:6px;border:1px solid var(--line);background-color:#000}
-  .iicon.lg{width:32px;height:32px}
+  .iicon{box-sizing:content-box;display:inline-block;vertical-align:middle;image-rendering:pixelated;background-repeat:no-repeat;
+    background-origin:content-box;background-clip:content-box;
+    width:24px;height:24px;padding:5px;margin-right:8px;border:2px solid var(--line);background-color:#0a0a16;border-radius:3px}
+  .iicon.lg{width:32px;height:32px;padding:6px}
   .iicon.wpn{background-image:url('assets/items/wpns.png');background-size:288px 240px}
   .iicon.arm{background-image:url('assets/items/armr.png');background-size:240px 96px}
   .iicon.lg.wpn{background-size:384px 320px}
@@ -290,6 +291,36 @@
     .iicon.arm.robe {background-position:-20px -40px}.iicon.arm.ring{background-position:-140px 0}
     .iicon.arm.amulet{background-position:-160px 0}.iicon.arm.cloak{background-position:-60px -20px}
   }
+  /* ===================== VISUAL REFRESH ===================== */
+  body{background:radial-gradient(circle at 50% 16%, #181534 0%, #0d0c1d 58%, #070611 100%)}
+  /* subtle CRT scanlines + edge darkening over everything */
+  #crt{position:fixed;inset:0;pointer-events:none;z-index:140;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, rgba(0,0,0,0) 1px 3px);opacity:.45}
+  #crt::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 150px 30px rgba(4,3,12,.7)}
+  /* chunkier, layered panels */
+  .panel{background:linear-gradient(180deg,#1b1838,#141229)}
+  .panel::after{content:'';position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);pointer-events:none}
+  .panel{position:relative}
+  /* buttons get a left accent stripe + gradient + lift */
+  .btn{background:linear-gradient(180deg,#231e48,#17142f);border-color:#423b78;border-left:5px solid #5e56a8}
+  .btn:hover{background:linear-gradient(180deg,#302a60,#221d46);border-color:var(--amber);border-left-color:var(--amber);color:#fff}
+  .btn.center{border-left-width:3px}
+  .btn.red{border-left-color:var(--red)} .btn.amber{border-left-color:var(--amber)}
+  .btn.blue{border-left-color:var(--blue)} .btn.purple{border-left-color:var(--purple)} .btn.ult{border-left-color:var(--purple)}
+  /* glossy stat bars */
+  .bar .track{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 2px 3px rgba(0,0,0,.6)}
+  .bar .fill{position:relative;box-shadow:0 0 6px currentColor}
+  .bar .fill::after{content:'';position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,0));pointer-events:none}
+  /* floor banner */
+  .floortag{background:linear-gradient(90deg,transparent,#1d1940 45%,#1d1940 55%,transparent);
+    padding:7px 0;border-top:2px solid #2c2658;border-bottom:2px solid #2c2658;text-shadow:1px 1px 0 #000}
+  /* inventory/forge rows get a structured left accent */
+  .slot{border-left:4px solid #4a4486}
+  /* title pops harder */
+  .title{text-shadow:3px 3px 0 #000, 0 0 18px rgba(255,207,77,.5), 0 0 34px rgba(255,92,106,.25)}
+  .menu-grid .btn{border-left-width:4px}
+  @media (max-width:560px){ .btn{border-left-width:4px} .floortag{padding:5px 0} }
 </style>
 </head>
 <body>
@@ -297,6 +328,7 @@
   <button id="btn-music" type="button" onclick="toggleMusic()" aria-label="Toggle music">&#9834; ON</button>
   <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
 </div>
+<div id="crt"></div>
 <div id="vignette"></div>
 <div id="app"></div>
 <div id="info-modal" class="hidden" onclick="closeInfo(event)">
@@ -1245,7 +1277,7 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.168; }
+function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.188; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
