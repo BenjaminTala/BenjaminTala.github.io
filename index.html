@@ -48,16 +48,37 @@
   .fill.mp{background:linear-gradient(var(--blue),#356fbf)}
   .fill.boss{background:linear-gradient(var(--red),#a82f3a)}
   .fill.xpf{background:linear-gradient(var(--amber),#b88a1f)}
+  .fill.chg{background:linear-gradient(var(--purple),var(--blue))}
+  .fill.chg.ready{background:linear-gradient(#fff,var(--amber));animation:chgpulse .7s ease-in-out infinite}
+  @keyframes chgpulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.6)}}
+  .btn.ult{border-color:var(--purple);background:linear-gradient(90deg,#2a1c4a,#1f1c3a)}
+  .btn.ult.ready{border-color:var(--amber);color:#fff;text-shadow:0 0 6px var(--amber);animation:chgpulse 1s ease-in-out infinite}
   .stats{font-size:9px;line-height:2;color:var(--dim)}.stats b{color:var(--ink)}
   .chip{display:inline-block;background:#000;border:2px solid var(--line);padding:3px 7px;margin:3px 3px 3px 0;font-size:8px}
   .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
   .r-com{color:#cfcbef}.r-unc{color:var(--green)}.r-rare{color:var(--blue)}.r-epic{color:var(--purple)}.r-leg{color:var(--amber)}
   .slot{border:2px solid var(--line);background:#00000055;padding:8px 10px;margin:6px 0;font-size:10px;text-align:left;line-height:1.7}
+  .invtabs{display:flex;gap:6px;margin:4px 0 12px}
+  .invtabs button{flex:1;font-family:inherit;font-size:9px;padding:9px 4px;background:var(--panel2);color:var(--dim);border:2px solid var(--line);cursor:pointer;touch-action:manipulation;letter-spacing:1px}
+  .invtabs button.on{color:var(--amber);border-color:var(--amber);background:#2a1c1a40}
+  .invtabs button:hover{border-color:var(--amber)}
+  .cur-row{text-align:center;font-size:10px;margin:2px 0 10px;letter-spacing:1px}
+  .ivh{font-size:11px;margin:12px 0 4px}
+  .best-row{display:flex;justify-content:space-between;align-items:center;border:2px solid var(--line);background:#00000055;padding:7px 9px;margin:5px 0;font-size:9px;gap:8px}
+  .best-bar{flex:0 0 78px;height:9px;background:#000;border:2px solid var(--line)}
+  .best-bar>i{display:block;height:100%;background:linear-gradient(var(--red),#a82f3a)}
   .c-burn{border-color:var(--amber);color:var(--amber)}.c-pois{border-color:var(--green);color:var(--green)}
   .c-weak{border-color:var(--purple);color:var(--purple)}.c-vuln{border-color:var(--red);color:var(--red)}
   .c-stun{border-color:var(--teal);color:var(--teal)}.c-guard{border-color:var(--blue);color:var(--blue)}
   .enemies-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:flex-end}
-  .enemy-cell{flex:1;min-width:118px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s}
+  .enemy-cell{flex:1;min-width:118px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s;position:relative}
+  .fxlayer{position:absolute;left:0;right:0;top:26%;pointer-events:none;text-align:center;z-index:6;line-height:1}
+  .dmgfloat{display:inline-block;margin:0 2px;font-size:13px;color:var(--red);text-shadow:2px 2px 0 #000;animation:floatUp .9s ease-out forwards}
+  .dmgfloat.crit{color:var(--purple);font-size:18px;text-shadow:0 0 8px var(--purple),2px 2px 0 #000}
+  @keyframes floatUp{0%{opacity:0;transform:translateY(8px) scale(.7)}18%{opacity:1;transform:translateY(0) scale(1.15)}100%{opacity:0;transform:translateY(-30px) scale(1)}}
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:150;opacity:0;transition:opacity .3s;box-shadow:inset 0 0 110px 36px rgba(255,30,50,.55)}
+  #vignette.on{opacity:1;animation:vigpulse 1.1s ease-in-out infinite}
+  @keyframes vigpulse{0%,100%{opacity:.5}50%{opacity:.95}}
   .enemy-cell.target{border-color:var(--amber);background:#00000055}
   .enemy-cell.dead{opacity:.25;filter:grayscale(1)}
   .enemy-cell pre.sprite{font-size:9px;color:var(--red)}
@@ -217,9 +238,10 @@
   .ev-sprite.tint-amber {filter:sepia(.6) saturate(1.4) hue-rotate(-15deg) drop-shadow(0 0 8px rgba(255,207,77,.55))}
   .ev-sprite.tint-shadow{filter:brightness(.35) contrast(1.2) drop-shadow(0 0 8px rgba(50,40,80,.8))}
   /* ==== item icons from 16x16 sheets ==== */
-  .iicon{display:inline-block;vertical-align:middle;image-rendering:pixelated;background-repeat:no-repeat;
-    width:24px;height:24px;margin-right:6px;border:1px solid var(--line);background-color:#000}
-  .iicon.lg{width:32px;height:32px}
+  .iicon{box-sizing:content-box;display:inline-block;vertical-align:middle;image-rendering:pixelated;background-repeat:no-repeat;
+    background-origin:content-box;background-clip:content-box;
+    width:24px;height:24px;padding:5px;margin-right:8px;border:2px solid var(--line);background-color:#0a0a16;border-radius:3px}
+  .iicon.lg{width:32px;height:32px;padding:6px}
   .iicon.wpn{background-image:url('assets/items/wpns.png');background-size:288px 240px}
   .iicon.arm{background-image:url('assets/items/armr.png');background-size:240px 96px}
   .iicon.lg.wpn{background-size:384px 320px}
@@ -269,6 +291,64 @@
     .iicon.arm.robe {background-position:-20px -40px}.iicon.arm.ring{background-position:-140px 0}
     .iicon.arm.amulet{background-position:-160px 0}.iicon.arm.cloak{background-position:-60px -20px}
   }
+  /* ===================== VISUAL REFRESH ===================== */
+  body{background:radial-gradient(circle at 50% 16%, #181534 0%, #0d0c1d 58%, #070611 100%)}
+  /* subtle CRT scanlines + edge darkening over everything */
+  #crt{position:fixed;inset:0;pointer-events:none;z-index:140;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, rgba(0,0,0,0) 1px 3px);opacity:.45}
+  #crt::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 150px 30px rgba(4,3,12,.7)}
+  /* chunkier, layered panels */
+  .panel{background:linear-gradient(180deg,#1b1838,#141229)}
+  .panel::after{content:'';position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);pointer-events:none}
+  .panel{position:relative}
+  /* buttons get a left accent stripe + gradient + lift */
+  .btn{background:linear-gradient(180deg,#231e48,#17142f);border-color:#423b78;border-left:5px solid #5e56a8}
+  .btn:hover{background:linear-gradient(180deg,#302a60,#221d46);border-color:var(--amber);border-left-color:var(--amber);color:#fff}
+  .btn.center{border-left-width:3px}
+  .btn.red{border-left-color:var(--red)} .btn.amber{border-left-color:var(--amber)}
+  .btn.blue{border-left-color:var(--blue)} .btn.purple{border-left-color:var(--purple)} .btn.ult{border-left-color:var(--purple)}
+  /* glossy stat bars */
+  .bar .track{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 2px 3px rgba(0,0,0,.6)}
+  .bar .fill{position:relative;box-shadow:0 0 6px currentColor}
+  .bar .fill::after{content:'';position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,0));pointer-events:none}
+  /* floor banner */
+  .floortag{background:linear-gradient(90deg,transparent,#1d1940 45%,#1d1940 55%,transparent);
+    padding:7px 0;border-top:2px solid #2c2658;border-bottom:2px solid #2c2658;text-shadow:1px 1px 0 #000}
+  /* inventory/forge rows get a structured left accent */
+  .slot{border-left:4px solid #4a4486}
+  /* title pops harder */
+  .title{text-shadow:3px 3px 0 #000, 0 0 18px rgba(255,207,77,.5), 0 0 34px rgba(255,92,106,.25)}
+  .menu-grid .btn{border-left-width:4px}
+  @media (max-width:560px){ .btn{border-left-width:4px} .floortag{padding:5px 0} }
+  /* ===================== 8-BIT COMBAT FX ===================== */
+  .pwrap{position:relative}
+  .fxwrap{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:8;overflow:visible}
+  .particle{position:absolute;left:50%;top:46%;image-rendering:pixelated;--dx:0px;--dy:0px;
+    box-shadow:0 0 3px currentColor;animation:burst .5s steps(8) forwards}
+  @keyframes burst{0%{opacity:1;transform:translate(-50%,-50%)}
+    100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.4)}}
+  .slashfx{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:24px;font-weight:bold;
+    pointer-events:none;animation:slashpop .34s ease-out forwards}
+  .slashfx.big{font-size:36px}
+  @keyframes slashpop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-26deg)}
+    45%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(8deg)}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(20deg)}}
+  .spr-flash{animation:sprFlash .26s steps(2)!important}
+  @keyframes sprFlash{0%,100%{filter:none}50%{filter:brightness(3.4) saturate(.3) drop-shadow(0 0 7px #fff)}}
+  .dmgfloat.pdmg{color:var(--red);font-size:15px}
+  .dmgfloat.heal{color:var(--green)}
+  /* ===================== ROOM-ENTER TRANSITIONS ===================== */
+  #transition{position:fixed;inset:0;z-index:158;pointer-events:none;opacity:0}
+  #transition.go{animation:roomWipe .5s ease-out}
+  @keyframes roomWipe{0%{opacity:1;clip-path:inset(0 0 0 0)}68%{opacity:.92}100%{opacity:0;clip-path:inset(0 0 100% 0)}}
+  .room-in{animation:roomIn .42s cubic-bezier(.2,.7,.3,1.25)}
+  @keyframes roomIn{0%{opacity:0;transform:translateY(16px) scale(.95)}100%{opacity:1;transform:none}}
+  /* per-room entrance flourishes on the hero element */
+  .enter-foe{animation:enterFoe .5s ease-out}
+  @keyframes enterFoe{0%{opacity:0;transform:translateY(-26px) scale(1.1)}55%{opacity:1;transform:translateY(4px)}100%{transform:none}}
+  .enter-pop{animation:enterPop .5s cubic-bezier(.2,.7,.3,1.5)}
+  @keyframes enterPop{0%{opacity:0;transform:scale(.2) rotate(-8deg)}60%{opacity:1;transform:scale(1.12) rotate(2deg)}100%{transform:none}}
 </style>
 </head>
 <body>
@@ -276,6 +356,9 @@
   <button id="btn-music" type="button" onclick="toggleMusic()" aria-label="Toggle music">&#9834; ON</button>
   <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
 </div>
+<div id="crt"></div>
+<div id="transition"></div>
+<div id="vignette"></div>
 <div id="app"></div>
 <div id="info-modal" class="hidden" onclick="closeInfo(event)">
   <div class="info-card" onclick="event.stopPropagation()">
@@ -627,21 +710,19 @@ function iconClassesFor(item){
     const key=t==='magic'?(item.rarity>=3?'magic2':'magic'):t==='ranged'?'ranged':(item.rarity>=3?'melee2':'melee');
     return `iicon wpn ${key} ${r}`;
   }
-  if(item.slot==='armor'){
-    const n=(item.name||'').toLowerCase();
-    let key='light';
-    if(n.includes('plate')||n.includes('bloodforged')) key='heavy';
-    else if(n.includes('robe')||n.includes('archmage')||n.includes('mystic')) key='robe';
-    else if(n.includes('chain')||n.includes('scale')) key='heavy';
-    else if(n.includes('cloak')||n.includes('shadow')) key='cloak';
-    return `iicon arm ${key} ${r}`;
-  }
-  if(item.slot==='trinket'){
+  if(item.slot==='ring'){
     const n=(item.name||'').toLowerCase();
     let key='ring';
     if(n.includes('amulet')||n.includes('pendant')||n.includes('orb')) key='amulet';
     else if(n.includes('cloak')) key='cloak';
-    else if(n.includes('sigil')) key='ring';
+    return `iicon arm ${key} ${r}`;
+  }
+  if(item.slot==='head'||item.slot==='chest'||item.slot==='legs'||item.slot==='boots'){
+    const n=(item.name||'').toLowerCase();
+    let key='light';
+    if(item.slot==='boots') key='cloak';
+    else if(n.includes('robe')||n.includes('archmage')||n.includes('mage')||n.includes('cloth')||n.includes('wizard')||n.includes('hood')) key='robe';
+    else if(n.includes('plate')||n.includes('chain')||n.includes('iron')||n.includes('bloodforged')||n.includes('breast')) key='heavy';
     return `iicon arm ${key} ${r}`;
   }
   return null;
@@ -654,12 +735,18 @@ function itemIconHtml(item,lg){
 const RUN_LENGTH=20;
 const BOSS_CHAMBERS={5:0,10:1,15:2,20:3};   // chamber -> zone index for boss pool
 const ZONES=[
-  {name:'THE CATACOMBS',color:'green'},
-  {name:'THE CAVERNS',  color:'blue'},
-  {name:'THE INFERNO',  color:'red'},
-  {name:'THE SUNLESS THRONE',color:'purple'},
+  {name:'THE CATACOMBS',color:'green',lore:'The upper bone-halls, where the crypt buries its lesser dead. The air tastes of dust and old prayers.'},
+  {name:'THE CAVERNS',  color:'blue',lore:'Beneath the tombs, raw stone weeps cold water. Things that never saw the sun nest in the dark.'},
+  {name:'THE INFERNO',  color:'red',lore:'The crypt remembers it was once a furnace for the damned. Heat shimmers; the walls breathe smoke.'},
+  {name:'THE SUNLESS THRONE',color:'purple',lore:'The heart of the prison. Here the old powers wait, jealous of the light you carry down to them.'},
 ];
 const zoneOf=d=>d<=5?0:d<=10?1:d<=15?2:3;
+const BOSS_CRY={
+  ogre:'"FRESH MEAT FOR THE WARLORD!"', gobking:'"Kill it! Kill it for the King!"', spider:'"My children are so hungry..."',
+  necro:'"You will serve me in death."', titan:'"...INTRUDER. CRUSH. CRUSH."', tyrant:'"This crypt is MINE, little champion."',
+  demon:'"Your soul will burn for a thousand years."', lich:'"Flesh is such a fleeting indulgence."', flameknight:'"Ash to ash, hero."',
+  dragon:'"NONE LEAVE THE CRYPT ALIVE."', king:'"I was king before your gods drew breath."', devourer:'"AT LAST... ANOTHER SOUL TO DEVOUR."',
+};
 
 /* ============================================================
    CLASSES
@@ -667,7 +754,7 @@ const zoneOf=d=>d<=5?0:d<=10?1:d<=15?2:3;
 const CLASSES={
   mage:{name:'MAGE',color:'purple',affinity:'ARCANE',
     affinityText:'Spell power scales with MAX MANA. Mana also soaks incoming damage (Mana Shield) and refills fast.',
-    hp:86,mana:120,atk:5,def:0,dodge:0,crit:5,lifesteal:0,regen:15,
+    hp:94,mana:124,atk:5,def:0,dodge:0,crit:5,lifesteal:0,regen:16,
     weapon:{name:'Apprentice Wand',dmg:5,type:'magic'},
     sprite:"   /\\\n  (oo)\n <(  )>\n   ||\n  _||_",
     skills:[
@@ -715,6 +802,12 @@ const ENEMIES=[
   {name:'Stone Golem',hp:84,atk:12,def:6,xp:13,sprite:" [#####]\n [ o o ]\n [#####]\n  ]   ["},
   {name:'Hellhound',hp:58,atk:16,def:1,burnAtk:[4,2,40],xp:14,sprite:"  /^--^\\\n ( >  < )\n  U    U"},
   {name:'Cultist',hp:54,atk:14,def:2,caster:true,poison:[5,3,45],xp:14,sprite:"  ,-^-,\n ( o o )\n  )-+-(" },
+  {name:'Bloodbat',hp:30,atk:12,def:0,dodgy:true,leech:true,xp:11,sprite:" /\\^^/\\\n ( o o )\n  \\vv/"},
+  {name:'Will-o-Wisp',hp:34,atk:14,def:0,caster:true,dodgy:true,xp:12,sprite:"   .*.\n  ( o )\n   '*'"},
+  {name:'Plague Bearer',hp:66,atk:12,def:2,poison:[7,3,60],xp:15,sprite:"  (~~~)\n /(x x)\\\n  )~~~("},
+  {name:'Sand Wurm',hp:94,atk:16,def:2,xp:16,sprite:"  _____\n /(o o)\\\n((=====))\n \\_____/"},
+  {name:'Gargoyle',hp:80,atk:13,def:7,xp:15,sprite:"  /^_^\\\n  (0 0)\n  /|_|\\\n  ^   ^"},
+  {name:'Frostbite',hp:50,atk:15,def:1,caster:true,xp:13,sprite:"  *.-.* \n ( >< )\n  *._.* "},
 ];
 const AFFIXES=[
   {tag:'Armored',  hp:1.3,atk:1.0,def:6, note:'tough hide', desc:'+armor'},
@@ -739,8 +832,31 @@ const BOSSES={
   flameknight:{name:'FLAME KNIGHT',hp:260,atk:20,def:7,boss:true,burnAtk:[6,3,55],xp:170,sprite:"  ,---,\n  |[o]|\n  |###|\n /|# #|\\\n  |___|"},
   dragon:{name:'THE CRYPT DRAGON',hp:370,atk:23,def:8,boss:true,burnAtk:[7,3,50],xp:260,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ x   x /\n   ) ___ (\n  /_/   \\_\\\n (_)     (_)"},
   king:  {name:'THE FORGOTTEN KING',hp:350,atk:22,def:7,boss:true,caster:true,poison:[8,4,55],xp:260,sprite:"   _mWm_\n  /=====\\\n  |o   o|\n  | --- |\n /|=====|\\\n  J|   |L"},
+  devourer:{name:'THE DEVOURER',hp:520,atk:28,def:9,boss:true,burnAtk:[8,3,40],poison:[8,3,40],xp:400,sprite:"  .vVVVv.\n ( O   O )\n (  \\_/  )\n  )vvvvv(\n /_______\\"},
 };
 const BOSS_POOL=[['ogre','gobking','spider'],['necro','titan','tyrant'],['demon','lich','flameknight'],['dragon','king']];
+
+/* ============================================================
+   FAMILIES + SLAYER (every kill stacks permanent power vs a family)
+   + SOUL ESSENCE (kill currency spent at the Forge)
+   ============================================================ */
+const ESS='&#9674;';   // soul essence glyph
+const FAMILY={
+  'Giant Rat':'Vermin','Goblin':'Humanoid','Cave Bat':'Beast','Slime':'Ooze','Skeleton':'Undead',
+  'Imp':'Demon','Ghoul':'Undead','Venomspitter':'Beast','Orc Brute':'Humanoid','Dark Acolyte':'Humanoid',
+  'Wraith':'Undead','Stone Golem':'Construct','Hellhound':'Demon','Cultist':'Humanoid',
+  'MIMIC':'Construct','Treasure Goblin':'Humanoid','Sand Wurm':'Beast','Gargoyle':'Construct',
+  'Will-o-Wisp':'Undead','Plague Bearer':'Undead','Frostbite':'Beast','Bloodbat':'Beast',
+  'OGRE WARLORD':'Humanoid','GOBLIN KING':'Humanoid','BROODMOTHER':'Beast','THE NECROMANCER':'Undead',
+  'STONE TITAN':'Construct','CAVE TYRANT':'Beast','DEMON LORD':'Demon','THE LICH':'Undead',
+  'FLAME KNIGHT':'Undead','THE CRYPT DRAGON':'Dragon','THE FORGOTTEN KING':'Undead','THE DEVOURER':'Demon',
+};
+function familyOf(e){ return FAMILY[stripAffix(e.name)]||'Beast'; }
+const SLAYER_THRESH=[5,12,22];
+const SLAYER_BONUS=[0,0.06,0.14,0.26];
+function slThreshArr(){ return (G&&G.mods&&G.mods.slayFast)?[3,7,13]:SLAYER_THRESH; }
+function slayerTier(c){ const t=slThreshArr(); return c>=t[2]?3:c>=t[1]?2:c>=t[0]?1:0; }
+function slayerMult(e){ const p=G.player; if(!p||!p.slayer)return 1; return 1+SLAYER_BONUS[slayerTier(p.slayer[familyOf(e)]||0)]; }
 
 /* ============================================================
    LOOT: equipment (rarity + item level + passives + sets), upgrades, relics
@@ -761,13 +877,16 @@ const WEAPON_BASES={
   ranger:[{name:'Bow',type:'ranged',stats:{dmg:9},aff:{g:1}},{name:'Longbow',type:'ranged',stats:{dmg:10},aff:{g:1}},
         {name:'Crossbow',type:'ranged',stats:{dmg:12},aff:{w:1}},{name:'Recurve',type:'ranged',stats:{dmg:9},aff:{g:1}}],
 };
-const ARMOR_BASES=[
-  {name:'Leather Armor',stats:{def:3,maxHp:14},aff:{g:1}},
-  {name:'Chainmail',stats:{def:5,maxHp:20},aff:{v:1}},
-  {name:'Plate Armor',stats:{def:8,maxHp:30},aff:{v:1}},
-  {name:'Mystic Robes',stats:{def:2,maxHp:10,maxMana:16},aff:{v:1}},
-  {name:'Scale Mail',stats:{def:6,maxHp:18,dodge:4},aff:{g:1}},
-];
+const SLOTS=['weapon','head','chest','legs','boots','ring'];
+const ARMOR_SLOTS=['head','chest','legs','boots'];
+function passPool(slot){ return slot==='weapon'?'weapon':slot==='ring'?'trinket':'armor'; }
+/* armor pieces are lighter than the old single armor (you now wear 4), each slot themed */
+const ARMOR_BASES={
+  head:[{name:'Leather Cap',stats:{def:2,maxHp:6},aff:{g:1}},{name:'Iron Helm',stats:{def:3,maxHp:8}},{name:'Wizard Hat',stats:{def:1,maxMana:12},aff:{v:1}},{name:'Hood',stats:{def:1,dodge:4},aff:{g:1}}],
+  chest:[{name:'Leather Vest',stats:{def:3,maxHp:14},aff:{g:1}},{name:'Chainmail',stats:{def:5,maxHp:16},aff:{v:1}},{name:'Plate Cuirass',stats:{def:7,maxHp:20},aff:{v:1}},{name:'Mage Robe',stats:{def:2,maxHp:8,maxMana:14},aff:{v:1}}],
+  legs:[{name:'Leather Pants',stats:{def:2,maxHp:8},aff:{g:1}},{name:'Iron Greaves',stats:{def:4,maxHp:10}},{name:'Cloth Leggings',stats:{def:1,maxHp:6,maxMana:8},aff:{v:1}}],
+  boots:[{name:'Leather Boots',stats:{def:1,dodge:6},aff:{g:1}},{name:'Iron Sabatons',stats:{def:3,maxHp:6}},{name:'Swift Treads',stats:{def:1,dodge:4,maxHp:4},aff:{g:1}}],
+};
 const TRINKET_BASES=[
   {name:'Ring',stats:{crit:6}},{name:'Amulet',stats:{maxMana:12,regen:2}},
   {name:'Cloak',stats:{dodge:7}},{name:'Pendant',stats:{maxHp:14,lifesteal:6}},
@@ -807,12 +926,12 @@ const SETS={
   Bloodforged:{name:'Bloodforged',pieces:2,desc:'2pc: +14% lifesteal, +3 ATK; kills heal you',stats:{lifesteal:14,atk:3},flags:['bloodKill']},
 };
 const SET_ITEMS=[
-  {slot:'armor',set:'Shadowdancer',name:'Shadowweave Cloak',stats:{def:3,dodge:8},aff:{g:1}},
-  {slot:'trinket',set:'Shadowdancer',name:'Shadowdancer Band',stats:{dodge:8,crit:6}},
-  {slot:'armor',set:'Archmage',name:'Archmage Robes',stats:{def:3,maxHp:14,maxMana:20},aff:{v:1}},
-  {slot:'trinket',set:'Archmage',name:'Orb of the Archmage',stats:{maxMana:24,regen:4}},
-  {slot:'armor',set:'Bloodforged',name:'Bloodforged Plate',stats:{def:6,maxHp:24},aff:{w:1}},
-  {slot:'trinket',set:'Bloodforged',name:'Sanguine Pendant',stats:{maxHp:14,lifesteal:8}},
+  {slot:'boots',set:'Shadowdancer',name:'Shadowweave Treads',stats:{def:2,dodge:7},aff:{g:1}},
+  {slot:'ring',set:'Shadowdancer',name:'Shadowdancer Band',stats:{dodge:8,crit:6}},
+  {slot:'head',set:'Archmage',name:'Archmage Hood',stats:{def:1,maxMana:16},aff:{v:1}},
+  {slot:'chest',set:'Archmage',name:'Archmage Robes',stats:{def:3,maxHp:12,maxMana:18},aff:{v:1}},
+  {slot:'chest',set:'Bloodforged',name:'Bloodforged Cuirass',stats:{def:5,maxHp:18},aff:{w:1}},
+  {slot:'legs',set:'Bloodforged',name:'Bloodforged Greaves',stats:{def:4,maxHp:12,lifesteal:6},aff:{w:1}},
 ];
 const UPGRADES=[
   {name:'Vital Charm',aff:{v:1},apply:p=>{p.maxHp+=24;heal(p,24);},note:'+24 max HP, heal'},
@@ -884,6 +1003,10 @@ const OMENS=[
   {id:'lucky',name:'Lucky Star',note:'+12% crit and richer rewards (extra choices).',apply:(g,p)=>{p.crit+=12;g.luck=1;}},
   {id:'elites',name:'Cursed Riches',note:'Start with 90 gold, but elites prowl everywhere.',apply:(g,p)=>{p.gold+=90;g.eliteMul=2.4;}},
   {id:'endless',name:'Endless Night',note:'Monsters relentless (+1 per pack), but you regen between rooms.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
+  {id:'harvest',name:'Soul Harvest',note:'+70% Soul Essence from kills — forge an empire.',apply:g=>{g.essMul=(g.essMul||1)*1.7;}},
+  {id:'hunter',name:"Hunter's Instinct",note:'Slayer tiers unlock far sooner (3/7/13 kills).',apply:g=>{g.slayFast=1;}},
+  {id:'resolve',name:"Champion's Resolve",note:'Your Ultimate charges 50% faster.',apply:g=>{g.ultFast=1;}},
+  {id:'fragile',name:'Fragile Might',note:'You deal +40% damage, but take +25%.',apply:g=>{g.pDmg*=1.4;g.eDmg*=1.25;}},
 ];
 
 /* ============================================================
@@ -989,14 +1112,35 @@ const EVENTS=[
      {label:'Trade your blood (-15 HP)',desc:'Free relic from her shelf',run:p=>{p.hp=clamp(p.hp-15,1,p.maxHp);const r=grantRandomRelic(p);return r?`She draws your blood and hands you: ${r}.`:'She draws your blood but her shelves are bare of new relics.';}},
      {label:'Decline politely',desc:'Move on',run:p=>'You thank the witch and continue down the hall.'},
    ]},
+  {id:'soulwell',title:'THE SOUL WELL',sprite:{src:'assets/monsters/ghost.png',tint:'tint-blue'},art:"  .===.\n  |~~~|\n  |~~~|",
+   text:'A well brimming with swirling, half-remembered souls. They whisper of power... and hunger.',
+   options:[
+     {label:'Draw essence',desc:'Gain Soul Essence',run:p=>{const e=18+rnd(24);p.essence+=e;return `You draw ${e} ${ESS} essence from the well.`;}},
+     {label:'Plunge your arm in',desc:'More essence, but it bites',run:p=>{const e=42+rnd(34);p.essence+=e;const c=Math.round(p.maxHp*0.12);p.hp=clamp(p.hp-c,1,p.maxHp);return `Souls swarm your arm — +${e} ${ESS} essence, but they tear ${c} HP away.`;}},
+     {label:'Leave it',desc:'Souls are not toys',run:p=>'You back away from the whispering dark.'},
+   ]},
+  {id:'oldforge',title:'AN ABANDONED FORGE',art:"  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|",
+   text:'A cold forge, embers long dead — yet one last working still hums in the bellows.',
+   options:[
+     {label:'Reforge your weapon',desc:'+2 weapon levels, free',run:p=>{upgradeGear(p,'weapon');return `You stoke the bellows; your ${p.weapon.name} comes out keener than ever (Lv${p.weapon.ilvl}).`;}},
+     {label:'Reinforce your armor',desc:'+2 levels to a worn armor piece',run:p=>{const worn=ARMOR_SLOTS.filter(s=>p.equip[s]);if(!worn.length)return 'You wear no armor to improve.';const s=pick(worn);upgradeGear(p,s);return `Your ${p.equip[s].name} is hammered thick and true (Lv${p.equip[s].ilvl}).`;}},
+     {label:'Scavenge the scrap',desc:'Essence from old metal',run:p=>{const e=16+rnd(18);p.essence+=e;return `You strip the forge for ${e} ${ESS} essence.`;}},
+   ]},
+  {id:'prisoner',title:'THE STARVED PRISONER',sprite:{src:'assets/players/warrior.png',tint:'tint-shadow'},art:"  ,---,\n  (- -)\n  /|=|\\\n   | |",
+   text:'A champion who came before you, chained and wasted to bone. "Free me... or take what little I have left."',
+   options:[
+     {label:'Break the chains',desc:'A grateful gift',run:p=>{const roll=rnd(3);if(roll===0){const r=grantRandomRelic(p);return r?`Freed, the champion presses a relic into your hand: ${r}.`:'Freed, the champion blesses your blade. (+3 ATK)'+(p.atk+=3,'');}if(roll===1){p.maxHp+=20;heal(p,20);return 'Freed, the champion shares their last vigor — +20 max HP.';}p.essence+=40;return 'As the chains fall, the champion dissolves into 40 '+ESS+' essence and a whispered thanks.';}},
+     {label:'Take their gear',desc:'Loot the doomed',run:p=>{const w=makeItem(pick(SLOTS),p.cls,G.depth+1);equipItem(p,w);return `You pry loose their ${w.name} (Lv${w.ilvl}). Their eyes never leave you.`;}},
+     {label:'End their suffering',desc:'Mercy, and a dark gift',run:p=>{p.essence+=26;const fam='Undead';p.slayer[fam]=(p.slayer[fam]||0)+2;return `You grant mercy. Their released soul steels you — +26 ${ESS} essence.`;}},
+   ]},
 ];
 
 /* ============================================================
    STATE
    ============================================================ */
 let G=null;
-function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0}; }
-function newGame(){ G={screen:'title',player:null,depth:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[]}; }
+function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
+function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[]}; }
 newGame();
 
 function makePlayer(key){
@@ -1005,8 +1149,8 @@ function makePlayer(key){
   return {cls:key,color:c.color,sprite:c.sprite,affinity:c.affinity,
     hp:c.hp,maxHp:c.hp,mana:c.mana,maxMana:c.mana,
     atk:c.atk,def:c.def,dodge:c.dodge,crit:c.crit,lifesteal:c.lifesteal,regen:c.regen,
-    weapon:sw,equip:{weapon:sw,armor:null,trinket:null},skills:c.skills.map(s=>({...s})),
-    potions:1,gold:0,kills:0,relics:[],flags:{},flagRefs:{},_setApplied:{},sets:[],level:1,xp:0,
+    weapon:sw,equip:{weapon:sw,head:null,chest:null,legs:null,boots:null,ring:null},skills:c.skills.map(s=>({...s})),
+    potions:1,gold:0,essence:0,kills:0,slayer:{},relics:[],flags:{},flagRefs:{},_setApplied:{},sets:[],level:1,xp:0,
     affBase:{w:0,g:0,v:0},aff:{w:0,g:0,v:0},affTier:{w:0,g:0,v:0},synergies:[]};
 }
 /* ---- refcounted flags (so relics + gear + sets can share a flag safely) ---- */
@@ -1015,7 +1159,7 @@ function removeFlag(p,f){ if(!p.flagRefs[f])return; p.flagRefs[f]--; if(p.flagRe
 function addAffinity(p,aff){ if(aff){ if(aff.w)p.affBase.w+=aff.w; if(aff.g)p.affBase.g+=aff.g; if(aff.v)p.affBase.v+=aff.v; } recomputeAffinity(p); }
 function recomputeAffinity(p){
   p.aff={w:p.affBase.w,g:p.affBase.g,v:p.affBase.v};
-  ['weapon','armor','trinket'].forEach(s=>{ const it=p.equip[s]; if(it&&it.aff){ if(it.aff.w)p.aff.w+=it.aff.w; if(it.aff.g)p.aff.g+=it.aff.g; if(it.aff.v)p.aff.v+=it.aff.v; } });
+  SLOTS.forEach(s=>{ const it=p.equip[s]; if(it&&it.aff){ if(it.aff.w)p.aff.w+=it.aff.w; if(it.aff.g)p.aff.g+=it.aff.g; if(it.aff.v)p.aff.v+=it.aff.v; } });
   checkAffinityTiers(p);
 }
 function affTagText(aff){ if(!aff)return''; const t=[]; if(aff.w)t.push('Wrath +'+aff.w); if(aff.g)t.push('Guile +'+aff.g); if(aff.v)t.push('Veil +'+aff.v); return t.join(', '); }
@@ -1056,7 +1200,7 @@ function equipItem(p,item){ const slot=item.slot; const old=p.equip[slot];
 function recomputeSets(p){
   for(const sn in p._setApplied){ const ap=p._setApplied[sn]; for(const k in ap.stats)p[k]-=ap.stats[k]; ap.flags.forEach(f=>removeFlag(p,f)); }
   p._setApplied={};
-  const counts={}; ['weapon','armor','trinket'].forEach(s=>{ const it=p.equip[s]; if(it&&it.set)counts[it.set]=(counts[it.set]||0)+1; });
+  const counts={}; SLOTS.forEach(s=>{ const it=p.equip[s]; if(it&&it.set)counts[it.set]=(counts[it.set]||0)+1; });
   p.sets=[];
   for(const sn in counts){ const set=SETS[sn]; if(set&&counts[sn]>=set.pieces){ p.sets.push(sn);
     const stats=set.stats||{}; for(const k in stats)p[k]=(p[k]||0)+stats[k]; (set.flags||[]).forEach(f=>addFlag(p,f));
@@ -1071,13 +1215,13 @@ function rollIlvl(depth){ return clamp(depth+rnd(3)-1,1,30); }
 function makeItem(slot,cls,depth,opts){ opts=opts||{};
   let rarity=opts.rarity!=null?opts.rarity:rollRarity(depth);
   const ilvl=opts.ilvl!=null?opts.ilvl:rollIlvl(depth);
-  let base,set=null;
-  if(slot!=='weapon'&&rarity>=3&&chance(50)){ const sp=pick(SET_ITEMS.filter(si=>si.slot===slot)); base=sp; set=sp.set; }
-  else base=slot==='weapon'?pick(WEAPON_BASES[cls]):slot==='armor'?pick(ARMOR_BASES):pick(TRINKET_BASES);
+  let base,set=null; const setsForSlot=SET_ITEMS.filter(si=>si.slot===slot);
+  if(slot!=='weapon'&&rarity>=3&&setsForSlot.length&&chance(50)){ base=pick(setsForSlot); set=base.set; }
+  else base=slot==='weapon'?pick(WEAPON_BASES[cls]):slot==='ring'?pick(TRINKET_BASES):pick(ARMOR_BASES[slot]);
   const rk=RARITY[rarity],im=1+(ilvl-1)*0.10,stats={};
   for(const k in base.stats)stats[k]=Math.max(1,Math.round(base.stats[k]*im*rk.mult));
-  let passive=null,name=base.name;
-  if(rk.passive&&!set&&PASSIVES[slot]){ passive=pick(PASSIVES[slot]);
+  let passive=null,name=base.name; const pp=PASSIVES[passPool(slot)];
+  if(rk.passive&&!set&&pp){ passive=pick(pp);
     if(passive.stat)for(const k in passive.stat)stats[k]=(stats[k]||0)+passive.stat[k];
     name=(passive.prefix||'')+name+(passive.suffix||''); }
   const item={slot,name,type:base.type,rarity,ilvl,stats,aff:base.aff||null,set:set||base.set||null};
@@ -1086,6 +1230,13 @@ function makeItem(slot,cls,depth,opts){ opts=opts||{};
   if(passive)item.passiveDesc=passive.desc;
   return item;
 }
+const STAT_LBL={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT',dodge:'DODGE',lifesteal:'LS',regen:'RGN'};
+function itemExtraText(it){ let s=''; if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`; if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`; return s; }
+function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stats||{}),...(cur?Object.keys(cur.stats||{}):[])])];
+  const parts=keys.map(k=>{ const nv=it.stats[k]||0, ov=(cur&&cur.stats[k])||0, d=nv-ov;
+    const dt=!cur?'':d>0?` <span class="green">&#9650;${d}</span>`:d<0?` <span class="red">&#9660;${-d}</span>`:'';
+    return `${STAT_LBL[k]||k} <b>${nv}</b>${dt}`; });
+  return parts.join(' &middot; ')+itemExtraText(it); }
 function itemLabel(it){ return `<span class="${RARITY[it.rarity].cls}">${it.name}</span> <span class="muted">Lv${it.ilvl}</span>`; }
 function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT%',dodge:'DODGE%',lifesteal:'LS%',regen:'RGN'};
   for(const k in it.stats){ parts.push(`+${it.stats[k]} ${lbl[k]||k}`); }
@@ -1100,21 +1251,27 @@ function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'
 function render(){
   setMusicForScreen();
   ({title:renderTitle,class:renderClassSelect,omen:renderOmen,corridor:renderCorridor,room:renderRoom,
-    event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,
+    event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,triumph:renderTriumph,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
+  const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
 }
 function go(s){ G.screen=s; render(); }
+const ROOM_TINT={enemy:'#5a1620',chest:'#5a4410',relic:'#3a1a5a',merchant:'#4a3a12',forge:'#143a3a',shrine:'#3a1a5a',fountain:'#163450',event:'#16403a',empty:'#1c1c30'};
+function playTransition(color){ const t=$('transition'); if(!t||!t.classList)return; t.style.background=`linear-gradient(180deg, ${color} 0%, #050410 92%)`; t.classList.remove('go'); void t.offsetWidth; t.classList.add('go'); }
 
 /* ---------- TITLE ---------- */
 function renderTitle(){
   app.innerHTML=`<h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
-    <div class="subtitle">an 8-bit text roguelike &middot; v3</div>
+    <div class="subtitle">an 8-bit text roguelike</div>
     <div class="panel center fade">
       <img class="title-art" src="assets/monsters/dragon.png" alt="Crypt Dragon" draggable="false">
-      <p class="muted" style="font-size:9px;line-height:2">
-        20 chambers &middot; 4 zones &middot; random Omens, relics<br>
-        &amp; narrative events make every run unique.<br>
-        Pick a champion, choose your curse, and descend.</p>
+      <p class="evtext center" style="font-size:9px;line-height:2;color:#cfcbef">
+        Below the dead city lies the Crypt — a prison sunk to cage<br>
+        <span class="red">the Devourer</span>, eater of worlds. Its hoarded power calls to<br>
+        the desperate and the proud. You answer. You descend.</p>
+      <p class="muted" style="font-size:8px;line-height:2">
+        20 chambers &middot; 4 zones &middot; slay, forge, and grow OP<br>
+        &middot; then dare the endless Abyss beneath.</p>
       <button class="btn center" onclick="go('class')"><span class="blink">&#9654;</span> PRESS START</button>
     </div>
     <div class="footer">number keys or click &middot; Enter = first option</div>`;
@@ -1143,7 +1300,7 @@ function renderOmen(){
     <span class="k teal">&#10022;</span>${o.name}<small>${o.note}</small></button>`).join('');
   app.innerHTML=`<h1 class="title" style="font-size:15px">READ THE OMENS</h1>
     <div class="subtitle">A force that will shape this entire run</div>
-    <div class="panel fade">
+    <div class="panel fade room-in">
       <img class="ev-sprite tint-purple" src="assets/monsters/ghost.png" alt="Omen Spirit" draggable="false">
       <p class="muted center" style="font-size:9px">Choose one fate:</p>${cards}</div>`;
 }
@@ -1152,9 +1309,9 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.185; }
+function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.206; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
-function depthLabel(){ const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
+function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 
 function makeGroup(depth){
@@ -1175,11 +1332,12 @@ function makeRoom(depth){
   const greedy=G.mods.greedy;
   const r=rnd(100);
   if(r<(greedy?34:40)){ const g=makeGroup(depth); return {type:'enemy',group:g,peek:groupPeek(g)}; }
-  if(r<(greedy?60:54)) return {type:'chest',peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A latched strongbox waits.'])};
-  if(r<70) return {type:'event',ev:pickEvent(),peek:'You hear something unusual ahead.'};
-  if(r<78) return {type:'relic',peek:'An ancient pedestal hums with power.'};
-  if(r<(greedy?92:86)) return {type:'merchant',peek:'A hooded figure beckons from the shadows.'};
-  if(r<92) return {type:'shrine',peek:'A faint glow pulses from a cracked altar.'};
+  if(r<(greedy?56:52)) return {type:'chest',peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A latched strongbox waits.'])};
+  if(r<66) return {type:'event',ev:pickEvent(),peek:'You hear something unusual ahead.'};
+  if(r<74) return {type:'relic',peek:'An ancient pedestal hums with power.'};
+  if(r<(greedy?86:80)) return {type:'merchant',peek:'A hooded figure beckons from the shadows.'};
+  if(r<88) return {type:'forge',peek:'The ring of a phantom hammer echoes ahead.'};
+  if(r<93) return {type:'shrine',peek:'A faint glow pulses from a cracked altar.'};
   if(r<97) return {type:'fountain',peek:'A strange, shimmering fountain bubbles here.'};
   return {type:'empty',peek:'Cold, empty stone. A moment to breathe.'};
 }
@@ -1192,8 +1350,13 @@ function groupPeek(g){ if(g.length===1){const u=g[0];return `A ${u.affix?u.affix
   return `A pack of ${g.length} creatures stirs in the dark${g.some(u=>u.affix)?', one of them gleaming with power':''}.`; }
 function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presence':'You sense hostile creatures',
   chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
-  merchant:'Coins clink in the dark',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
+  merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
 function nextCorridor(){ G.depth++;
+  if(G.abyss){ const floor=G.depth-RUN_LENGTH;
+    if(floor%4===0){ const key=chance(35)?'devourer':pick(Object.keys(BOSSES)); G.doors=[{type:'enemy',boss:key,peek:'A horror of the deep stirs. It has been waiting.'}]; }
+    else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); }
+    return; }
+  if(G.depth===1||G.depth===6||G.depth===11||G.depth===16){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
   else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); } }
 function renderCorridor(){
@@ -1202,33 +1365,49 @@ function renderCorridor(){
     <span class="k">${isBoss?'&#9760;':'['+(i+1)+']'}</span>${isBoss?'THE BOSS DOOR':'Door '+(i+1)}<small>${doorHint(d)}</small></button>`).join('');
   const banner=G._affMsg?`<div class="panel tight center teal fade" style="font-size:9px">&#10022; ${G._affMsg}</div>`:'';
   G._affMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${banner}${playerBar(G.player)}
-    <div class="panel fade"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
+  const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
+  G._zoneMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${zone}${banner}${playerBar(G.player)}
+    <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
 let _invReturn='corridor';
 function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
 function closeInventory(){ G.screen=_invReturn; render(); }
-function renderInventory(){ const p=G.player;
-  const slot=s=>{ const it=p.equip[s]; if(!it)return `<div class="slot muted">${s.toUpperCase()}: — empty —</div>`;
-    return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> &nbsp; ${itemLabel(it)}<br><span style="font-size:8px">${itemStatsText(it)}</span></div>`; };
-  const setProg=Object.keys(SETS).map(sn=>{ const set=SETS[sn]; const have=['weapon','armor','trinket'].filter(s=>p.equip[s]&&p.equip[s].set===sn).length;
-    const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
-  const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
-    return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
-  const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
-  const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
+function setInvTab(t){ G._invTab=t; SFX.play('click'); render(); }
+function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
+  const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
+  const tabs=`<div class="invtabs">${tb('gear','GEAR')}${tb('powers','POWERS')}${tb('best','BESTIARY')}</div>`;
+  const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
+  let body='';
+  if(tab==='gear'){
+    const slot=s=>{ const it=p.equip[s]; if(!it)return `<div class="slot muted">${s.toUpperCase()}: — empty —</div>`;
+      return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> &nbsp; ${itemLabel(it)}<br><span style="font-size:8px">${gearCompareHtml(it,null)}</span></div>`; };
+    const setProg=Object.keys(SETS).map(sn=>{ const set=SETS[sn]; const have=SLOTS.filter(s=>p.equip[s]&&p.equip[s].set===sn).length;
+      const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
+    body=`<h3 class="amber ivh">EQUIPMENT</h3>${SLOTS.map(slot).join('')}
+      <h3 class="teal ivh">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}`;
+  } else if(tab==='powers'){
+    const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
+      return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
+    const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
+    const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
+    body=`<h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
+      <h3 class="ivh">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
+      <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
+  } else {
+    const fams=Object.keys(p.slayer).sort((a,b)=>p.slayer[b]-p.slayer[a]);
+    const rows=fams.length?fams.map(f=>{const c=p.slayer[f],t=slayerTier(c),nx=t<3?slThreshArr()[t]:null,pct=nx?Math.min(100,c/nx*100):100;
+      return `<div class="best-row"><span>${f} <span class="muted">&times;${c}</span>${t>0?` &middot; <span class="amber">SLAYER ${['','I','II','III'][t]} +${Math.round(SLAYER_BONUS[t]*100)}%</span>`:''}<br><span class="muted" style="font-size:8px">${nx?`${c}/${nx} to next tier`:'mastered'}</span></span><span class="best-bar"><i style="width:${pct}%"></i></span></div>`;}).join('')
+      :'<div class="slot muted">No kills recorded yet. Hunt to grow your Slayer power.</div>';
+    body=`<h3 class="red ivh">BESTIARY &mdash; SLAYER</h3><p class="muted" style="font-size:8px;line-height:1.8">Every kill of a family permanently boosts your damage against it. Tiers at 5 / 12 / 22 kills.</p>${rows}`;
+  }
   app.innerHTML=`<div class="floortag">INVENTORY &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
-    <div class="panel fade">
-      <h3 class="amber" style="font-size:11px;margin-bottom:4px">EQUIPMENT</h3>${slot('weapon')}${slot('armor')}${slot('trinket')}
-      <h3 class="teal" style="font-size:11px;margin:10px 0 4px">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}
-      <h3 class="purple" style="font-size:11px;margin:10px 0 4px">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
-      <h3 style="font-size:11px;margin:10px 0 4px">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
-      <h3 style="font-size:11px;margin:10px 0 4px">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>
+    <div class="panel fade room-in">${cur}${tabs}${body}
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
-function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; ${p.gold}g &middot; ${p.relics.length} relic(s)</div>`; }
-function openDoor(i){ SFX.play('door'); G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); }
+function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
+function openDoor(i){ SFX.play('door'); G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
 
 /* ============================================================
    ENEMY BUILD / SCALING
@@ -1252,7 +1431,7 @@ function scaleEnemy(unit,depth){
   return e;
 }
 function cloneBoss(key){ const b=BOSSES[key]; const f=1+Math.max(0,G.depth-5)*0.04;
-  return freshEnemy({...b,hp:Math.round(b.hp*f),maxHp:Math.round(b.hp*f),atk:Math.round(b.atk*f)}); }
+  return freshEnemy({...b,hp:Math.round(b.hp*f),maxHp:Math.round(b.hp*f),atk:Math.round(b.atk*f),cry:BOSS_CRY[key]}); }
 function findBase(n){ return ENEMIES.find(e=>e.name===n); }
 function buildEnemies(room){
   if(room.boss){ const list=[cloneBoss(room.boss)];
@@ -1271,7 +1450,7 @@ function renderRoom(){
       ${enemySpriteHtml(e,G.depth)||`<pre class="sprite red">${e.sprite}</pre>`}
       <div class="center" style="font-size:8px;margin-top:4px">${e.name}${e.boss?' <span class="red">[BOSS]</span>':e.elite?' <span class="amber">&#9733;</span>':''}</div>
       <div class="center stats">HP ~${e.maxHp} &middot; ATK ~${e.atk}</div></div>`).join('');
-    body=`<div class="enemies-row">${cells}</div>
+    body=`<div class="enemies-row enter-foe">${cells}</div>
       <p class="muted center" style="font-size:9px;margin-top:10px">${r.peek}</p>
       <div class="row" style="margin-top:12px">
         <button class="btn center red" onclick="startBattle()"><span class="k">&#9876;</span>FIGHT</button>
@@ -1292,6 +1471,7 @@ function renderRoom(){
       <p class="muted center" style="font-size:9px">Claim ONE relic. It will reshape how you fight.</p>${cards}
       <button class="btn muted center" onclick="leaveRoom()">Touch nothing, move on</button>`;
   } else if(r.type==='merchant'){ return renderMerchant();
+  } else if(r.type==='forge'){ return renderForge();
   } else if(r.type==='shrine'){
     body=`<pre class="sprite purple">   _/\\_\n  /    \\\n |  *   |\n |______|</pre>
       <h3 class="center purple" style="margin:8px 0">CRACKED ALTAR</h3>
@@ -1312,7 +1492,7 @@ function renderRoom(){
       <p class="muted center" style="font-size:9px">${r.peek} You catch your breath. (+6 HP, +4 MP)</p>
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}<div class="panel fade">${body}</div>`;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}<div class="panel fade room-in">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -1339,7 +1519,7 @@ function renderEvent(){
     :`<pre class="sprite teal">${ev.art}</pre>`;
   if(r.outcome){
     app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
-      <div class="panel fade"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
+      <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
         ${art}
         <p class="evtext center">${r.outcome}</p>
         <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
@@ -1347,7 +1527,7 @@ function renderEvent(){
   }
   const opts=ev.options.map((o,i)=>`<button class="btn" onclick="chooseEvent(${i})"><span class="k teal">[${i+1}]</span>${o.label}<small>${o.desc}</small></button>`).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
-    <div class="panel fade"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
+    <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
       ${art}
       <p class="evtext center">${ev.text}</p>${opts}</div>`;
 }
@@ -1367,7 +1547,7 @@ function openChest(){
 /* ---------- MERCHANT ---------- */
 function renderMerchant(){
   const p=G.player;
-  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(['weapon','armor','trinket']);
+  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(SLOTS);
     G.room.stock={relic:rp.length?pick(rp):null, gear:makeItem(gslot,p.cls,G.depth+1)}; }
   const st=G.room.stock;
   const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
@@ -1375,7 +1555,7 @@ function renderMerchant(){
   const gcost=st.gear?40+st.gear.rarity*22:0;
   const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,itemStatsText(st.gear),"buy('gear')",p.gold>=gcost):'';
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
-    <div class="panel fade">
+    <div class="panel fade room-in">
       <img class="ev-sprite tint-amber" src="assets/players/ranger.png" alt="The Merchant" draggable="false">
       <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
       <p class="muted center" style="font-size:9px">"Coin for comfort, traveler." &middot; You have ${p.gold}g</p>
@@ -1397,21 +1577,70 @@ function buy(kind){ const p=G.player,st=G.room.stock; let bought=false;
   renderMerchant();
 }
 
+/* ---------- THE FORGE (spend Soul Essence to grow OP) ---------- */
+function upgradeGear(p,slot){ const it=p.equip[slot]; if(!it)return false;
+  applyItemStats(p,it,-1);
+  const oldIl=it.ilvl,newIl=oldIl+2,f=(1+(newIl-1)*0.10)/(1+(oldIl-1)*0.10);
+  for(const k in it.stats) it.stats[k]=Math.max(it.stats[k]+1,Math.round(it.stats[k]*f));
+  it.ilvl=newIl; if(slot==='weapon')it.dmg=it.stats.dmg||it.dmg;
+  applyItemStats(p,it,+1); recomputeSets(p); recomputeAffinity(p); return true; }
+function forgeUpgrade(slot){ const p=G.player,it=p.equip[slot]; if(!it)return false;
+  const cost=14+it.ilvl*2; if(p.essence<cost)return false; p.essence-=cost; return upgradeGear(p,slot); }
+function forgeReforge(slot){ const p=G.player,it=p.equip[slot]; if(!it||it.rarity>=4)return false;
+  const cost=30+it.rarity*16; if(p.essence<cost)return false; p.essence-=cost;
+  applyItemStats(p,it,-1);
+  const oldR=it.rarity,newR=oldR+1,f=RARITY[newR].mult/RARITY[oldR].mult;
+  for(const k in it.stats) it.stats[k]=Math.max(it.stats[k]+1,Math.round(it.stats[k]*f));
+  it.rarity=newR; let newFlag=null;
+  if(RARITY[newR].passive&&!it.passiveFlag&&!it.proc&&!it.set&&PASSIVES[passPool(slot)]){
+    const pas=pick(PASSIVES[passPool(slot)]);
+    if(pas.stat)for(const k in pas.stat)it.stats[k]=(it.stats[k]||0)+pas.stat[k];
+    if(pas.proc&&slot==='weapon')it.proc=pas.proc;
+    if(pas.flag){it.passiveFlag=pas.flag;newFlag=pas.flag;}
+    it.passiveDesc=pas.desc; it.name=(pas.prefix||'')+it.name+(pas.suffix||''); }
+  if(slot==='weapon')it.dmg=it.stats.dmg||it.dmg;
+  applyItemStats(p,it,+1); if(newFlag)addFlag(p,newFlag); recomputeSets(p); recomputeAffinity(p); return true; }
+function forgeImbue(){ const p=G.player,w=p.weapon,cost=24; if(p.essence<cost||w.proc)return false; p.essence-=cost;
+  const o=pick([{proc:{burn:[7,3,55]},name:'Flaming',d:'hits may BURN'},{proc:{poison:[7,3,55]},name:'Venomous',d:'hits may POISON'},{proc:{vuln:[2]},name:'Sundering',d:'hits apply VULNERABLE'}]);
+  w.proc=o.proc; w.passiveDesc=o.d; if(!/^(Flaming|Venomous|Sundering)/.test(w.name))w.name=o.name+' '+w.name; return true; }
+function fUpgrade(s){ SFX.play(forgeUpgrade(s)?'upgrade':'fail'); renderForge(); }
+function fReforge(s){ SFX.play(forgeReforge(s)?'upgrade':'fail'); renderForge(); }
+function fImbue(){ SFX.play(forgeImbue()?'upgrade':'fail'); renderForge(); }
+function leaveForge(){ leaveRoom(); }
+function renderForge(){ const p=G.player;
+  const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${sub}</small></button>`;
+  const slots=SLOTS;
+  const up=slots.map(s=>{const it=p.equip[s];if(!it)return '';const c=14+it.ilvl*2;
+    return fb(`Upgrade ${s.toUpperCase()}: ${itemLabel(it)}`,c,`+2 item levels &middot; ${itemStatsText(it)}`,`fUpgrade('${s}')`,p.essence>=c);}).join('');
+  const im=p.weapon.proc?'':fb('Imbue weapon with an element',24,'add a random on-hit effect (BURN / POISON / VULN)',`fImbue()`,p.essence>=24);
+  const re=slots.map(s=>{const it=p.equip[s];if(!it||it.rarity>=4)return '';const c=30+it.rarity*16;
+    return fb(`Reforge ${s.toUpperCase()}: <span class="${RARITY[it.rarity].cls}">${RARITY[it.rarity].name}</span> &rarr; <span class="${RARITY[it.rarity+1].cls}">${RARITY[it.rarity+1].name}</span>`,c,'raise rarity; may grant a passive',`fReforge('${s}')`,p.essence>=c);}).join('');
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+    <div class="panel fade room-in">
+      <pre class="sprite amber">  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|</pre>
+      <h3 class="center amber" style="margin:8px 0">THE SOUL FORGE</h3>
+      <p class="muted center" style="font-size:9px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS} essence</span> to grow stronger.</p>
+      ${up}${im}${re}
+      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>${statusFooter()}`;
+}
+
 /* ============================================================
    BATTLE
    ============================================================ */
 function startBattle(intro){
   const r=G.room; const enemies=r._enemies?r._enemies:buildEnemies(r);
-  G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,
-    over:false,anim:'',animIdx:-1,usedSecond:false,
-    pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
+  G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:0,
+    over:false,anim:'',animIdx:-1,usedSecond:false,floats:[],fx:[],
+    pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:!G.abyss&&enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
   if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
   let bar=0; if(p.affTier.v>=3)bar+=Math.round(p.maxHp*0.22); if(p.flags.gearBarrier)bar+=Math.round(p.maxHp*0.12); G.battle.barrier=bar;
   G.log=[];
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
-  G.screen='battle'; render();
+  const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE) blog(bossE.cry,'crit');
+  G.battle.intro=true;
+  G.screen='battle'; render(); playTransition(G.battle.hadBoss?'#6e0d1a':'#3a1622');
 }
 function blog(t,c=''){ G.log.push({text:t,cls:c}); if(G.log.length>40)G.log.shift(); }
 function living(){ return G.battle.enemies.filter(e=>e.hp>0); }
@@ -1430,15 +1659,22 @@ function renderBattle(){
   const multi=b.enemies.length>1;
   const cells=b.enemies.map((e,i)=>{ const dead=e.hp<=0;
     const sp=enemySpriteHtml(e,G.depth);
-    const spriteHtml=sp?sp.replace('class="sprite-enemy',`class="sprite-enemy ${b.animIdx===i?'hitpop':''}`)
-      :`<pre class="sprite red ${b.animIdx===i?'hitpop':''}">${e.sprite}</pre>`;
+    const hitCls=b.animIdx===i?'hitpop spr-flash':'';
+    const spriteHtml=sp?sp.replace('class="sprite-enemy',`class="sprite-enemy ${hitCls}`)
+      :`<pre class="sprite red ${hitCls}">${e.sprite}</pre>`;
+    const flo=(b.floats||[]).filter(f=>f.idx===i).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
+    const efx=(b.fx||[]).filter(f=>f.idx===i).map(f=>fxHtml(f.kind)).join('');
     return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''}">
+      ${efx}${flo?`<div class="fxlayer">${flo}</div>`:''}
       <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
       ${spriteHtml}
       <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':stChips(e.st)}</div>
       ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}</div>`;
   }).join('');
+  const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
+  const pFxHtml=(b.fx||[]).filter(f=>f.idx===-1).map(f=>fxHtml(f.kind)).join('');
+  b.floats=[]; b.fx=[]; b.intro=false;
   const logHtml=G.log.slice(-6).map(l=>`<div class="${l.cls}">${l.text}</div>`).join('');
   const pStatus=(b.barrier>0?`<span class="chip c-guard">BARRIER ${b.barrier}</span>`:'')
     +(b.pdefTurns>0?`<span class="chip c-guard">GUARD ${b.pdefTurns}</span>`:'')
@@ -1449,13 +1685,17 @@ function renderBattle(){
     return `<button class="btn" ${p.mana<cost?'disabled':''} onclick="playerSkill('${s.id}')"><span class="k blue">${cost}MP</span>${s.name}${s.aoe?' <span class="amber">(AOE)</span>':''}<small>${s.desc}</small></button>`;}).join('');
   app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>
     <div class="panel ${b.anim}" id="scene">
-      <div class="enemies-row">${cells}</div>
+      <div class="enemies-row ${b.intro?'enter-foe':''}">${cells}</div>
       <div class="log">${logHtml}</div>
-      ${playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`}
-      <div class="center">${pStatus}</div>${playerBar(p,true)}</div>
-    ${b.over?'':`<div class="panel tight"><div class="menu-grid">
+      <div class="pwrap">${pFxHtml}${pFloHtml?`<div class="fxlayer">${pFloHtml}</div>`:''}${playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`}</div>
+      <div class="center">${pStatus}</div>${playerBar(p,true)}
+      <div class="bar"><div class="lbl"><span class="purple">&#10022; ULTIMATE</span><span>${b.charge>=100?'READY':Math.floor(b.charge||0)+'%'}</span></div>
+        <div class="track"><div class="fill chg ${b.charge>=100?'ready':''}" style="width:${clamp(b.charge||0,0,100)}%"></div></div></div></div>
+    ${b.over?'':`<div class="panel tight">
+      <button class="btn ult ${b.charge>=100?'ready':''}" ${b.charge>=100?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span>${ultMeta(p.cls).name}<small>${b.charge>=100?ultMeta(p.cls).desc:'charge by fighting — '+Math.floor(b.charge||0)+'/100'}</small></button>
+      <div class="menu-grid">
         <button class="btn" onclick="playerAttack()"><span class="k">&#9876;</span>ATTACK<small>${p.weapon.name} (${p.atk+p.weapon.dmg} pow)</small></button>
-        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 40%</small></button></div>
+        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 30%</small></button></div>
       <hr class="hr">${skills}
       <button class="btn muted" onclick="fleeBattle()"><span class="k">&#10551;</span>FLEE<small>${b.hadBoss?'cannot flee a boss!':'risky — foes may strike'}</small></button></div>`}`;
 }
@@ -1472,20 +1712,42 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   const et=f.synReaper?0.45:0.30;
   if(f.executioner&&e.hp<=e.maxHp*et)m*=2;
   if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15;
+  m*=slayerMult(e);
   if(e.st.vulnT>0)m*=1.25;
   return m; }
 function rollCrit(){ return chance(effCrit(G.player)); }
 function critMult(){ return G.player.flags.bigCrit?2.1:1.8; }
+/* ----- 8-bit combat FX (pixel particle bursts + slash glyphs) ----- */
+let _fxKind=null;   // set by the current attack so dealToEnemy tags the right effect
+const FX_COLOR={hit:['#ffffff','#ffe6a0'],crit:['#ffd54a','#c06cff'],fire:['#ff8a3c','#ffd23c'],
+  frost:['#9fe0ff','#ffffff'],poison:['#7cff6b','#aaff00'],arcane:['#c06cff','#e6b3ff'],
+  arrow:['#dfe6ff','#9fb0d0'],pdmg:['#ff5c6a','#ff9aa0'],heal:['#5cff8f','#aaffcc']};
+const FX_GLYPH={hit:'&#10006;',crit:'&#10022;',fire:'&#10042;',frost:'&#10052;',poison:'&#9763;',
+  arcane:'&#10038;',arrow:'&#10142;',pdmg:'&#10006;',heal:'&#10010;'};
+function fxHtml(kind){ const cols=FX_COLOR[kind]||FX_COLOR.hit; const n=kind==='crit'?10:6; let parts='';
+  for(let k=0;k<n;k++){ const a=Math.random()*6.283,dist=16+Math.random()*24,dx=Math.round(Math.cos(a)*dist),dy=Math.round(Math.sin(a)*dist-6),c=cols[k%cols.length],sz=kind==='crit'?6:5;
+    parts+=`<i class="particle" style="--dx:${dx}px;--dy:${dy}px;width:${sz}px;height:${sz}px;background:${c};color:${c}"></i>`; }
+  return `<div class="fxwrap"><span class="slashfx ${kind==='crit'?'big':''}" style="color:${cols[0]};text-shadow:0 0 8px ${cols[0]},2px 2px 0 #000">${FX_GLYPH[kind]||'&#10006;'}</span>${parts}</div>`; }
+function pushFx(idx,kind){ const b=G.battle; if(b)(b.fx=b.fx||[]).push({idx,kind}); }
 function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   SFX.play('kill');
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
+  // SLAYER: every kill stacks permanent power vs that family
+  const fam=familyOf(e), before=p.slayer[fam]||0; p.slayer[fam]=before+1;
+  const t1=slayerTier(before+1); if(t1>slayerTier(before)) blog(`SLAYER ${['','I','II','III'][t1]} — +${Math.round(SLAYER_BONUS[t1]*100)}% dmg vs ${fam}!`,'lvl');
+  // SOUL ESSENCE: kill currency for the Forge
+  let ess=2+Math.round((e.xp||6)/4); if(e.elite)ess+=5; if(e.boss)ess+=34; ess=Math.round(ess*(G.mods.essMul||1));
+  p.essence+=ess; blog(`+${ess} ${ESS} essence.`,'info');
+  if(e.elite&&chance(35)){ p.potions++; blog('It dropped a Health Potion!','heal'); }
   if(p.flags.bloodpact){ let h=Math.round(p.maxHp*0.08); if(p.flags.synSanguine)h*=2; heal(p,h); blog(`Blood Pact heals ${h}.`,'heal'); }
   if(p.flags.bloodKill){ const h=Math.round(p.maxHp*0.06); heal(p,h); }
   if(p.flags.synOver){ p.mana=clamp(p.mana+8,0,p.maxMana); } }
 function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.player; if(!e||e.hp<=0)return 0;
   dmg=Math.max(1,Math.round(dmg*playerDamageMult(e)-(e.def||0)));
   e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx;
+  (b.floats=b.floats||[]).push({idx,text:''+dmg,cls:crit?'crit':'dmg'});
+  pushFx(idx, crit?'crit':(_fxKind||'hit'));
   blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${b.enemies.length>1?` [${e.name}]`:''}`,crit?'crit':'dmg');
   if(p.lifesteal>0){ const ls=Math.max(1,Math.round(dmg*p.lifesteal/100)); heal(p,ls); blog(`You drain ${ls} HP.`,'heal'); }
   if(crit&&p.affTier.g>=3){ p.mana=clamp(p.mana+5,0,p.maxMana); }
@@ -1512,13 +1774,30 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapo
   stormfury(c,isExtra); }
 function stormfury(crit,isExtra){ const p=G.player,b=G.battle;
   if(crit&&p.flags.synStorm&&!isExtra&&living().length){ blog('Stormfury — the crit echoes!','crit'); ensureTarget(); basicHit(b.target,true); } }
-function playerAttack(){ const p=G.player,b=G.battle; if(b.over)return; ensureTarget(); basicHit(b.target);
-  if(p.flags.doubleStrike&&chance(35)&&living().length){ ensureTarget(); blog('Twin Fang — a second strike!','info'); basicHit(b.target,true); }
+function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math.round(n*1.5); b.charge=clamp((b.charge||0)+n,0,100); }
+function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foes for massive magic + heavy BURN'},
+  warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
+  ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
+function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<100)return; b.charge=0;
+  SFX.play('win'); flash('playerHit'); const mm=p.maxMana; ensureTarget();
+  _fxKind=p.cls==='mage'?'fire':p.cls==='ranger'?'arrow':'crit';
+  if(p.cls==='mage'){ blog('&#10022; ARCANE SUPERNOVA! &#10022;','crit');
+    aoeHit(i=>{let d=40+Math.round(mm*0.4)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(i,d,'Supernova engulfs',c);});
+    aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,10,3);}); }
+  else if(p.cls==='warrior'){ blog("&#10022; EXECUTIONER'S WRATH! &#10022;",'crit'); const e=b.enemies[b.target];
+    let d=(p.atk+p.weapon.dmg)*3.0+(e?(e.maxHp-e.hp)*0.45:0); let c=rollCrit(); if(c)d*=1.6;
+    dealToEnemy(b.target,d,'A world-ending blow lands',c); const h=Math.round(p.maxHp*0.15); heal(p,h); blog(`You roar with fury — +${h} HP.`,'heal'); }
+  else { blog('&#10022; RAIN OF DEATH! &#10022;','crit'); for(let k=0;k<5;k++){ const liv=living(); if(!liv.length)break;
+    const idx=b.enemies.indexOf(pick(liv)); let d=(p.atk*0.8+p.weapon.dmg); let c=chance(effCrit(p)+40); if(c)d*=2; dealToEnemy(idx,d,'Death rains down',c); } }
   afterPlayer(); }
+function playerAttack(){ const p=G.player,b=G.battle; if(b.over)return; _fxKind='hit'; ensureTarget(); basicHit(b.target);
+  if(p.flags.doubleStrike&&chance(35)&&living().length){ ensureTarget(); blog('Twin Fang — a second strike!','info'); basicHit(b.target,true); }
+  gainCharge(20); afterPlayer(); }
 function aoeHit(fn){ G.battle.enemies.forEach((e,i)=>{ if(e.hp>0) fn(i); }); }
 function spendMana(cost){ const p=G.player; p.mana-=cost; let frac=0; if(p.flags.soulSiphon)frac=0.5; if(p.flags.synOver)frac=1.0; if(frac){ heal(p,Math.max(1,Math.round(cost*frac))); } }
 function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>x.id===id); if(!s||b.over)return;
   const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; spendMana(cost); ensureTarget();
+  _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow'}[id]||'hit';
   const mm=p.maxMana;
   switch(id){
     case 'bolt':{SFX.play('skill');let d=10+Math.round(mm*0.14)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
@@ -1535,8 +1814,8 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');for(let k=0;k<3;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
   }
-  afterPlayer(); }
-function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.30); heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); afterPlayer(); }
+  gainCharge(24); afterPlayer(); }
+function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.30); heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
 function fleeBattle(){ const p=G.player,b=G.battle;
   if(b.hadBoss){ blog('There is no escape from this foe!','info'); return render(); }
   if(p.cls==='ranger'?chance(85):chance(55)){ blog('You break away and flee!','info'); b.over=true; render(); setTimeout(()=>proceed('You escaped — no loot.'),700); }
@@ -1572,7 +1851,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
     let lethal=p.hp-dmg<=0;
     if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
-    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); }
+    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
     if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
     if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
     if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
@@ -1599,15 +1878,15 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
   SFX.play(b.hadBoss?'win':'gold');
   blog('The chamber is clear!','info'); render();
-  setTimeout(()=>{ if(b.isFinal){ SFX.play('win'); G.screen='victory'; return render(); }
-    G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); },900); }
+  setTimeout(()=>{ if(b.isFinal){ SFX.play('win'); p.won=true; G.screen='triumph'; return render(); }
+    G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); playTransition('#5a4410'); },900); }
 
 /* ============================================================
    REWARDS
    ============================================================ */
 function buildRewards(){ const p=G.player,isBoss=G.pending&&G.pending.boss; const d=G.depth; const opts=[];
   // two gear picks of differing slots — the rarity-vs-level dilemma emerges from random rolls
-  const slots=shuffle(['weapon','armor','trinket']);
+  const slots=shuffle(SLOTS);
   opts.push({kind:'gear',data:makeItem(slots[0],p.cls,d,isBoss?{rarity:clamp(rollRarity(d)+1,0,4)}:{})});
   opts.push({kind:'gear',data:makeItem(slots[1],p.cls,d)});
   opts.push({kind:'upgrade',data:shuffle(UPGRADES)[0]});
@@ -1618,15 +1897,15 @@ function renderReward(){ const p=G.player,pd=G.pending;
   const src=pd.source==='chest'?'THE CHEST CONTAINS':'SPOILS OF BATTLE';
   const gold=pd.gold?`<p class="center amber" style="font-size:9px">+${pd.gold} gold &middot; ${p.gold}g total</p>`:'';
   const tag=a=>a?` &middot; <span class="teal">&#10022; ${affTagText(a)}</span>`:'';
-  const icon={weapon:'&#9876;',armor:'&#128737;',trinket:'&#9883;'};
+  const icon={weapon:'&#9876;',head:'&#9651;',chest:'&#128737;',legs:'&#9646;',boots:'&#128094;',ring:'&#9883;'};
   const cards=pd.options.map((o,i)=>{
     if(o.kind==='gear'){ const it=o.data; const cur=p.equip[it.slot];
-      const curTxt=cur?`<br><span class="muted">replaces ${cur.name} Lv${cur.ilvl}</span>`:'';
-      return `<button class="btn" onclick="takeReward(${i})">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${itemStatsText(it)}${tag(it.aff)}${curTxt}</small></button>`; }
+      const curTxt=cur?`<br><span class="muted">replaces ${cur.name} Lv${cur.ilvl}</span>`:'<br><span class="green">empty slot</span>';
+      return `<button class="btn" onclick="takeReward(${i})">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)}${curTxt}</small></button>`; }
     if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small></button>`;
     return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small></button>`;}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
-    <div class="panel fade"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
+    <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px">Choose one reward:</p>${cards}
       <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button></div>`;
 }
@@ -1643,18 +1922,36 @@ function takeReward(i){ const p=G.player,pd=G.pending;
    FLOW / END
    ============================================================ */
 function proceed(msg){
-  if(G.depth>=RUN_LENGTH){ SFX.play('win'); G.screen='victory'; return render(); }
+  if(!G.abyss && G.depth>=RUN_LENGTH){ SFX.play('win'); G.player.won=true; G.screen='triumph'; return render(); }
   if(G.mods.roamRegen){ heal(G.player,Math.round(G.player.maxHp*0.05)); }
-  nextCorridor(); G.screen='corridor'; render();
+  nextCorridor(); G.screen='corridor'; render(); playTransition('#16183a');
   if(msg){ const f=document.querySelector('.footer'); if(f)f.innerHTML=`<span class="amber">${msg}</span>`; }
 }
+function renderTriumph(){
+  app.innerHTML=`<h1 class="title" style="color:var(--amber)">THE THRONE FALLS</h1>
+    <div class="subtitle">Chamber ${G.depth} conquered</div>
+    <div class="panel center fade">
+      <pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>
+      <p class="evtext center">The crypt's last guardian lies broken at your feet. You have what you came for — glory, and survival.<br><br>
+        But a cold wind rises from a stair that should not exist, spiralling down past the throne. <span class="red">The Devourer</span> still hungers below.</p>
+      <button class="btn center" onclick="claimVictory()"><span class="k">&#9819;</span>RETIRE A LEGEND<small>end the run victorious &amp; keep your glory</small></button>
+      <button class="btn center" onclick="startAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>endless &amp; escalating — claim ever-greater power, until it claims you</small></button>
+    </div>`;
+}
+function claimVictory(){ SFX.play('win'); G.screen='victory'; render(); }
+function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
+  G.mods.essMul=(G.mods.essMul||1)*1.6; G.mods.luck=1; G.mods.goldMul*=1.3;
+  SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
+  nextCorridor(); G.screen='corridor'; render(); }
 function renderEnd(win){ const p=G.player;
-  const gear=['weapon','armor','trinket'].map(s=>{const it=p.equip[s];return it?`<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`:`<div class="slot muted">${s.toUpperCase()}: empty</div>`;}).join('');
+  const gear=SLOTS.map(s=>{const it=p.equip[s];return it?`<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`:`<div class="slot muted">${s.toUpperCase()}: empty</div>`;}).join('');
   const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}`).join(', ')||'none';
-  app.innerHTML=`<h1 class="title" style="color:var(--${win?'green':'red'})">${win?'VICTORY!':'YOU DIED'}</h1>
-    <div class="panel center fade"><pre class="sprite ${win?'green':'red'}">${win?"  \\o/   \\o/\n   |     |\n  / \\   / \\\n THE THRONE IS YOURS":"   _____\n  /     \\\n | x   x |\n  \\  _  /\n   |||||\n   R.I.P"}</pre>
+  const wonAbyss=!win&&p.won; const head=win?'VICTORY!':(wonAbyss?'THE ABYSS TAKES YOU':'YOU DIED'); const col=win?'green':(wonAbyss?'purple':'red');
+  const tellTale=win?'You conquered the Crypt of the Champion and retired a legend!':(wonAbyss?`You broke the crypt's throne, then plunged into the Abyss and reached <b class="purple">depth ${G.depth-RUN_LENGTH}</b> before the dark closed over you.`:'Your journey ends in the dark.');
+  app.innerHTML=`<h1 class="title" style="color:var(--${col})">${head}</h1>
+    <div class="panel center fade"><pre class="sprite ${col}">${win?"  \\o/   \\o/\n   |     |\n  / \\   / \\\n THE THRONE IS YOURS":"   _____\n  /     \\\n | x   x |\n  \\  _  /\n   |||||\n   R.I.P"}</pre>
       <p style="font-size:10px;line-height:2">
-        ${win?'You conquered the Crypt of the Champion!':'Your journey ends in the dark.'}<br>
+        ${tellTale}<br>
         <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level} &middot; <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
         <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills} &middot; <span class="muted">Gold:</span> ${p.gold}</p>
       <h3 class="amber center" style="font-size:11px;margin:6px 0">YOUR BUILD</h3>
@@ -1752,7 +2049,7 @@ function playerBar(p,full){
       <div class="track"><div class="fill mp" style="width:${p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0}%"></div></div></div>
     <div class="bar xp"><div class="track"><div class="fill xpf" style="width:${xpPct}%"></div></div></div>
     ${affinityBar(p)}
-    ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''}</div>`:''}
+    ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence}${ESS}</span></div>`:''}
     ${full?relics:''}</div>`;
 }
 /* ---------- keyboard ---------- */

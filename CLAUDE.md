@@ -61,3 +61,17 @@ Everything lives in one `<script>` block. Read it top-to-bottom in this order:
 - For new events, prefer adding `sprite:{src, tint}` rather than crafting more ASCII art. The tints exist in CSS as `.ev-sprite.tint-*` classes — reuse, don't add new ones unless the palette gap is real.
 - The chiptune SFX timbre and the piano music timbre are deliberate counterparts — keep SFX dry/square-wave and music layered/reverbed. Don't unify them.
 - Commit messages follow the existing style (subject + bulleted body grouped by area). Use the Claude `Co-Authored-By` trailer.
+
+## Progression systems (the "get OP" loop)
+
+Added in the `claude/grand-revamp` revamp; these are what make fighting rewarding:
+
+- **Soul Essence** (`p.essence`, glyph `ESS`): a kill currency granted in `onEnemyDeath` (scales with enemy xp; +5 elite, +34 boss, `G.mods.essMul`). Spent only at **The Forge** room (`renderForge`/`forgeUpgrade`/`forgeReforge`/`forgeImbue`; core upgrade is `upgradeGear(p,slot)`, reused by the Abandoned Forge event). Forge = a sub-render under `screen:'room'`, `room.type:'forge'` (same pattern as merchant).
+- **Slayer / Bestiary** (`p.slayer={family:count}`): `FAMILY[stripAffix(name)]` maps every enemy to a family; `slayerMult(e)` multiplies player damage by family-kill tier (5/12/22 → +6/14/26%, halved thresholds under the Hunter's Instinct omen via `slThreshArr`). Shown in the inventory BESTIARY tab.
+- **Ultimate** (`b.charge` 0–100): `gainCharge` from attacking/casting/being hit; `useUltimate()` fires a per-class super (`ultMeta`). Charge bar + glowing button in `renderBattle`.
+- **The Abyss** (`G.abyss`, depth keeps rising past `RUN_LENGTH`): beating the chamber-20 boss routes to `renderTriumph` (retire via `claimVictory` or `startAbyss`). `nextCorridor` has an abyss branch (boss every 4th floor, incl. `devourer`); `isFinal` and the `proceed`/zone-intro logic are guarded with `!G.abyss`.
+- **Run modifiers** live in `OMENS` (mods on `G.mods`); new flags `essMul/slayFast/ultFast`. Add new ones to `defaultMods` so they're always defined.
+
+UI/juice: tabbed inventory (`G._invTab`, `setInvTab`), reward stat-deltas (`gearCompareHtml`), floating damage numbers (`b.floats`, rendered then cleared each `renderBattle`), and a `#vignette` overlay toggled in `render()` at low HP.
+
+A reusable balance harness pattern lives in chat history (`/tmp/bal.js`): a *competent* bot that retires at Triumph and reports throne-reach %. Target ~45% across classes.
