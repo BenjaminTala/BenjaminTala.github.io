@@ -105,6 +105,12 @@
   .btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   /* audio toggles */
   #audio-toggles{position:fixed;top:6px;right:6px;z-index:200;display:flex;gap:4px;font-family:'Press Start 2P',monospace}
+  #inv-fab{position:fixed;top:6px;left:6px;z-index:200;font-family:'Press Start 2P',monospace}
+  #inv-fab button{font-family:inherit;font-size:8px;background:var(--panel);color:var(--amber);border:2px solid var(--line);padding:6px 8px;cursor:pointer;letter-spacing:1px;touch-action:manipulation}
+  #inv-fab button:hover{border-color:var(--amber)}
+  .coinbar{display:flex;justify-content:center;gap:14px;align-items:center;margin:6px 0 12px;font-size:14px;letter-spacing:1px}
+  .coinbar .amber{text-shadow:0 0 10px rgba(255,207,77,.6)}
+  .coinbar .teal{text-shadow:0 0 10px rgba(76,224,208,.5)}
   #audio-toggles button{font-family:inherit;font-size:8px;background:var(--panel);color:var(--ink);
     border:2px solid var(--line);padding:6px 8px;cursor:pointer;line-height:1;letter-spacing:1px;touch-action:manipulation}
   #audio-toggles button:hover{border-color:var(--amber)}
@@ -356,6 +362,7 @@
   <button id="btn-music" type="button" onclick="toggleMusic()" aria-label="Toggle music">&#9834; ON</button>
   <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
 </div>
+<div id="inv-fab" style="display:none"><button type="button" onclick="openInventory()" aria-label="Open inventory">&#9776; INV</button></div>
 <div id="crt"></div>
 <div id="transition"></div>
 <div id="vignette"></div>
@@ -774,7 +781,7 @@ const CLASSES={
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
-    hp:120,mana:30,atk:10,def:2,dodge:25,crit:18,lifesteal:0,regen:5,
+    hp:122,mana:30,atk:10,def:3,dodge:25,crit:18,lifesteal:0,regen:5,
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
@@ -1254,6 +1261,7 @@ function render(){
     event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,triumph:renderTriumph,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
   const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
+  const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display=(G.player&&['corridor','room','event','reward','triumph'].includes(G.screen))?'block':'none'; }
 }
 function go(s){ G.screen=s; render(); }
 const ROOM_TINT={enemy:'#5a1620',chest:'#5a4410',relic:'#3a1a5a',merchant:'#4a3a12',forge:'#143a3a',shrine:'#3a1a5a',fountain:'#163450',event:'#16403a',empty:'#1c1c30'};
@@ -1309,16 +1317,17 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.206; }
+function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.188; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 
 function makeGroup(depth){
-  let count=1;
-  if(depth>=12){ const r=rnd(100); count=r<22?1:r<64?2:r<92?3:4; }
-  else if(depth>=6){ count=rnd(100)<40?1:rnd(100)<78?2:3; }
-  else if(depth>=3){ count=rnd(100)<65?1:2; }
+  let count=1; const r=rnd(100);
+  if(depth>=12){ count=r<12?1:r<46?2:r<84?3:4; }
+  else if(depth>=6){ count=r<26?1:r<64?2:r<92?3:4; }
+  else if(depth>=3){ count=r<44?1:r<84?2:3; }
+  else { count=r<68?1:2; }
   count+=G.mods.packBonus; count=clamp(count,1,4);
   return Array.from({length:count},()=>({base:pick(ENEMIES),affix:rollAffix(depth)}));
 }
@@ -1367,7 +1376,7 @@ function renderCorridor(){
   G._affMsg=null;
   const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
   G._zoneMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${zone}${banner}${playerBar(G.player)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${zone}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
@@ -1392,7 +1401,11 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
     const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
     const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
-    body=`<h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
+    const skills=p.skills.map(s=>`<div class="slot"><span class="blue">${s.name}</span> <span class="muted">(${Math.max(1,Math.round(s.cost*G.mods.skillCost))} MP${s.aoe?', AOE':''})</span><br><span class="muted" style="font-size:8px">${s.desc}</span></div>`).join('');
+    const ult=ultMeta(p.cls);
+    const ultRow=`<div class="slot" style="border-color:var(--purple)"><span class="purple">&#10022; ${ult.name}</span> <span class="muted">(ULTIMATE — charge in battle)</span><br><span class="muted" style="font-size:8px">${ult.desc}</span></div>`;
+    body=`<h3 class="blue ivh">SKILLS &amp; ULTIMATE</h3>${skills}${ultRow}
+      <h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
       <h3 class="ivh">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
       <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
   } else {
@@ -1492,7 +1505,7 @@ function renderRoom(){
       <p class="muted center" style="font-size:9px">${r.peek} You catch your breath. (+6 HP, +4 MP)</p>
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}<div class="panel fade room-in">${body}</div>`;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -1554,11 +1567,12 @@ function renderMerchant(){
   const relicBtn=st.relic?item('Relic: '+st.relic.name,70,st.relic.note,"buy('relic')",p.gold>=70):'';
   const gcost=st.gear?40+st.gear.rarity*22:0;
   const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,itemStatsText(st.gear),"buy('gear')",p.gold>=gcost):'';
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p,true)}
     <div class="panel fade room-in">
       <img class="ev-sprite tint-amber" src="assets/players/ranger.png" alt="The Merchant" draggable="false">
       <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
-      <p class="muted center" style="font-size:9px">"Coin for comfort, traveler." &middot; You have ${p.gold}g</p>
+      <p class="muted center" style="font-size:9px">"Coin for comfort, traveler."</p>
+      <div class="coinbar"><span class="amber">&#128176; ${p.gold} GOLD</span><span class="teal">&#9670; ${p.essence}</span></div>
       ${item('Health Potion',25,'+1 potion (heals 40% in battle)',"buy('potion')",p.gold>=25)}
       ${item('Healing Draught',18,'restore 50% HP now',"buy('heal')",p.gold>=18)}
       ${item('Mana Tonic',14,'fully restore mana now',"buy('mana')",p.gold>=14)}
@@ -1812,7 +1826,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
     case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.25;let c=chance(effCrit(p)+15);if(c)d*=1.9;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
       else { let d=(p.atk+p.weapon.dmg)*1.45;let c=chance(effCrit(p)+25);if(c)d*=1.9;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,4,2); } break;}
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
-    case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');for(let k=0;k<3;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
+    case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
   }
   gainCharge(24); afterPlayer(); }
 function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.30); heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
@@ -1841,7 +1855,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if(e.boss&&e.hp<=e.maxHp*0.35){dmg=Math.round(dmg*1.4);}            // enrage
     if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
     dmg=Math.round(dmg*G.mods.eDmg);
-    const dodgeChance=Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0));
+    const dodgeChance=Math.min(66,effDodge(p)+(b.evadeTurns>0?b.evade:0));
     if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
     let red=(b.pdefTurns>0?b.pdef:0);
     dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.7)));
@@ -2054,7 +2068,7 @@ function playerBar(p,full){
 }
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
-  if((e.key==='i'||e.key==='I')&&G.player){ if(G.screen==='inventory')closeInventory(); else if(['corridor','room','reward','merchant'].includes(G.screen))openInventory(); return; }
+  if((e.key==='i'||e.key==='I')&&G.player){ if(G.screen==='inventory')closeInventory(); else if(['corridor','room','event','reward','triumph'].includes(G.screen))openInventory(); return; }
   const btns=[...document.querySelectorAll('.btn:not([disabled])')];
   const n=parseInt(e.key,10); if(!isNaN(n)&&n>=1&&n<=btns.length){btns[n-1].click();return;}
   if(e.key==='Enter'&&btns.length)btns[0].click(); });
