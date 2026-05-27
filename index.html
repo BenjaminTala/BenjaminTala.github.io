@@ -1287,7 +1287,7 @@ function render(){
   const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display=(G.player&&['corridor','room','event','reward','triumph'].includes(G.screen))?'block':'none'; }
 }
 function go(s){ G.screen=s; render(); }
-const ROOM_TINT={enemy:'#5a1620',chest:'#5a4410',relic:'#3a1a5a',merchant:'#4a3a12',forge:'#143a3a',shrine:'#3a1a5a',fountain:'#163450',event:'#16403a',empty:'#1c1c30'};
+const ROOM_TINT={enemy:'#5a1620',chest:'#5a4410',relic:'#3a1a5a',merchant:'#4a3a12',forge:'#143a3a',echo:'#2a2440',shrine:'#3a1a5a',fountain:'#163450',event:'#16403a',empty:'#1c1c30'};
 function playTransition(color){ const t=$('transition'); if(!t||!t.classList)return; t.style.background=`linear-gradient(180deg, ${color} 0%, #050410 92%)`; t.classList.remove('go'); void t.offsetWidth; t.classList.add('go'); }
 
 /* ---------- TITLE ---------- */
@@ -1322,7 +1322,7 @@ function renderClassSelect(){
     <div class="subtitle">All wield mana &amp; health — each in their own way</div>
     <div class="grid3 fade">${card('mage')}${card('warrior')}${card('ranger')}</div>`;
 }
-function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods();
+function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes();
   G.omenChoices=shuffle(OMENS.filter(o=>o.id!=='none')).slice(0,2); G.omenChoices.unshift(OMENS[0]); G.omenChoices=shuffle(G.omenChoices);
   G.screen='omen'; render(); }
 /* ---------- OMEN ---------- */
@@ -1367,6 +1367,7 @@ function rollAffix(depth){
 function makeRoom(depth){
   if(BOSS_CHAMBERS[depth]!==undefined){ const key=pick(BOSS_POOL[BOSS_CHAMBERS[depth]]);
     return {type:'enemy',boss:key,peek:depth===RUN_LENGTH?'A world-ending roar shakes the crypt...':'Something powerful stirs beyond this door.'}; }
+  if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(8)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:'A figure slumps against the far wall. It does not breathe.'}; }
   const greedy=G.mods.greedy;
   const r=rnd(100);
   if(r<(greedy?34:40)){ const g=makeGroup(depth); return {type:'enemy',group:g,peek:groupPeek(g)}; }
@@ -1384,11 +1385,80 @@ function pickEvent(){
   if(!avail.length){ G.seenEvents=[]; avail=EVENTS; }
   const e=pick(avail); G.seenEvents.push(e.id); return e;
 }
+/* ============================================================
+   ECHOES — ghosts of your failed runs, persisted across deaths.
+   Answers "what happened before?"
+   ============================================================ */
+function loadEchoes(){ try{ return JSON.parse(localStorage.getItem('crypt_echoes')||'[]'); }catch(e){ return []; } }
+function topCause(){ const d=G.dmgBy||{}; let best=null,bv=0; for(const k in d){ if(d[k]>bv){bv=d[k];best=k;} } return best; }
+const ECHO_LINE={
+  enemy:['Something in the deep was faster than me.','I traded blows I should have dodged.','Watch the packs — they swarm.'],
+  miasma:['The cold ate me from the inside. Cleanse, or rot.','I stopped to heal and the heal never came.','Drink from every fountain. Every one.'],
+  heat:['I pushed the furnace too hard. It pushed back.','Greed cooked me alive.','Cool down before the walls pulse.'],
+  burn:['I burned. Bring something that does not catch.','Fire follows you down here.'],
+  poison:['The venom never stopped. I should have run.','Something green did me in.'],
+  hazard:['Do not trust the bright water.','The crypt itself bleeds you.'],
+  null:['I do not remember how I died. That should frighten you.','The dark took me mid-step.'],
+};
+function echoLine(cause){ return pick(ECHO_LINE[cause]||ECHO_LINE.null); }
+function saveEcho(){ const p=G.player; if(!p)return; const cause=topCause();
+  const items=SLOTS.map(s=>p.equip[s]).filter(Boolean).sort((a,b)=>(b.rarity*100+b.ilvl)-(a.rarity*100+a.ilvl));
+  let item=null; try{ item=items[0]?JSON.parse(JSON.stringify(items[0])):null; }catch(e){}
+  const snap={depth:G.depth,cls:p.cls,level:p.level,item,relic:p.relics.length?pick(p.relics):null,cause:cause||'null',line:echoLine(cause),monster:chance(15),t:Date.now()};
+  let arr=loadEchoes(); arr.push(snap); if(arr.length>12)arr=arr.slice(-12);
+  try{ localStorage.setItem('crypt_echoes',JSON.stringify(arr)); }catch(e){}
+}
+function pickEcho(depth){ const pool=G._echoPool||[]; if(!pool.length)return null;
+  // weight toward echoes that died near this depth
+  const w=pool.map(e=>1/(1+Math.abs((e.depth||10)-depth)));
+  let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<pool.length;i++){ if(r<w[i])return pool[i]; r-=w[i]; } return pool[0]; }
+function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoom(); }
+  const cls=CLASSES[ec.cls]?CLASSES[ec.cls].name:'CHAMPION';
+  const sprite=`<div class="sprite-player ${ec.cls} dead" style="filter:grayscale(1) brightness(.6) drop-shadow(0 0 10px rgba(120,110,180,.6))"></div>`;
+  const gearTxt=ec.item?`${RARITY[ec.item.rarity]?'<span class="'+RARITY[ec.item.rarity].cls+'">'+ec.item.name+'</span>':ec.item.name} Lv${ec.item.ilvl}`:'rusted scraps';
+  if(G.room.outcome){
+    app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
+      <div class="panel fade room-in"><h3 class="center purple" style="margin-bottom:8px">A FALLEN CHAMPION</h3>${sprite}
+        <p class="evtext center">${G.room.outcome}</p>
+        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
+    return; }
+  let opts;
+  if(ec.monster){
+    opts=`<p class="evtext center red">The husk lurches up — whatever it was, the crypt wears its skin now.</p>
+      <button class="btn center red" onclick="echoChoice('fight')"><span class="k">&#9876;</span>PUT IT DOWN</button>
+      <button class="btn center" onclick="echoChoice('leave')"><span class="k">&#10551;</span>BACK AWAY</button>`;
+  } else {
+    opts=`<button class="btn" onclick="echoChoice('speak')"><span class="k teal">[1]</span>Speak<small>hear its last words (the dead misremember)</small></button>
+      ${ec.item?`<button class="btn" onclick="echoChoice('take')"><span class="k amber">[2]</span>Take its gear<small>equip ${gearTxt} &middot; disturbs the dead (+miasma, -HP)</small></button>`:''}
+      ${ec.relic?`<button class="btn" onclick="echoChoice('trade')"><span class="k purple">[3]</span>Take its relic: ${ec.relic}<small>the dead do not give freely (+miasma)</small></button>`:''}
+      <button class="btn" onclick="echoChoice('attack')"><span class="k red">[4]</span>Lay it to rest<small>fight the echo for its hoard</small></button>
+      <button class="btn muted" onclick="echoChoice('leave')"><span class="k">&#10551;</span>Leave it in peace</button>`;
+  }
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
+    <div class="panel fade room-in"><h3 class="center purple" style="margin-bottom:8px">A FALLEN CHAMPION</h3>${sprite}
+      <p class="evtext center">A dead ${cls.toLowerCase()}, Lv ${ec.level}, slumped in the dark. It died at chamber ${ec.depth}${ec.item?` clutching ${gearTxt}`:''}.</p>
+      ${opts}</div>`;
+}
+function echoEnemy(ec){ const f=depthFactor(); const lv=ec.level||5;
+  const hp=Math.round((70+lv*14)*f*0.5), atk=Math.round((9+lv*1.2)*f*0.5);
+  const e=freshEnemy({name:'Echo of a '+(CLASSES[ec.cls]?CLASSES[ec.cls].name:'Champion'),sprite:CLASSES[ec.cls]?CLASSES[ec.cls].sprite:"  (x_x)\n /|=|\\\n  | |",hp,maxHp:hp,atk,def:3,xp:40+lv*4,goldBonus:30+lv*3,_echo:ec});
+  return e; }
+function echoChoice(kind){ const p=G.player,ec=G.room.echo;
+  if(kind==='leave'){ SFX.play('door'); return proceed('You leave the fallen champion to the dark.'); }
+  if(kind==='fight'||kind==='attack'){ G.room={type:'enemy',_enemies:[echoEnemy(ec)],_echoItem:ec.item}; startBattle('The echo rises to face you!'); return; }
+  if(kind==='speak'){ const corrupt=chance(35); let line=ec.line;
+    if(corrupt&&chance(50)){ const c=8+rnd(8); hurt(p,c,'hazard'); SFX.play('hurt'); if(p.hp<=0){G.screen='gameover';return render();} line=`"...${ec.line}" — its jaw unhinges; the words turn to a scream that claws ${c} from you.`; }
+    else if(!corrupt){ heal(p,Math.round(p.maxHp*0.08)); line=`"${ec.line}" Its peace settles on you (small heal).`; }
+    else { line=`"${ec.line}" ...but the dead misremember. Trust it at your peril.`; }
+    G.room.outcome=line; SFX.play('chest'); render(); return; }
+  if(kind==='take'&&ec.item){ try{ equipItem(p,JSON.parse(JSON.stringify(ec.item))); }catch(e){} const c=Math.round(p.maxHp*0.08); hurt(p,c,'hazard'); addMiasma(10); SFX.play('upgrade'); if(p.hp<=0){G.screen='gameover';return render();} G.room.outcome=`You pry the ${ec.item.name} from cold fingers and don it. The dead resent the theft (-${c} HP, the cold thickens).`; render(); return; }
+  if(kind==='trade'&&ec.relic){ const gained=gainRelic(p,RELICS.find(r=>r.name===ec.relic)); addMiasma(12); G.room.outcome=gained?`You take the ${ec.relic}. Something follows it into you (the cold thickens).`:`You already carry the ${ec.relic}; you leave it.`; render(); return; }
+  proceed(); }
 function groupPeek(g){ if(g.length===1){const u=g[0];return `A ${u.affix?u.affix.tag+' ':''}${u.base.name.toLowerCase()} lurks within.`;}
   return `A pack of ${g.length} creatures stirs in the dark${g.some(u=>u.affix)?', one of them gleaming with power':''}.`; }
 function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presence':'You sense hostile creatures',
   chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
-  merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
+  merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',echo:'A cold presence — someone died here',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
 function nextCorridor(){ G.depth++;
   if(G.abyss){ const floor=G.depth-RUN_LENGTH;
     if(floor%4===0){ const key=chance(35)?'devourer':pick(Object.keys(BOSSES)); G.doors=[{type:'enemy',boss:key,peek:'A horror of the deep stirs. It has been waiting.'}]; }
@@ -1534,6 +1604,7 @@ function renderRoom(){
       <button class="btn muted center" onclick="leaveRoom()">Touch nothing, move on</button>`;
   } else if(r.type==='merchant'){ return renderMerchant();
   } else if(r.type==='forge'){ return renderForge();
+  } else if(r.type==='echo'){ return renderEcho();
   } else if(r.type==='shrine'){
     body=`<pre class="sprite purple">   _/\\_\n  /    \\\n |  *   |\n |______|</pre>
       <h3 class="center purple" style="margin:8px 0">CRACKED ALTAR</h3>
@@ -2020,6 +2091,7 @@ function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Dam
   const rows=entries.map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">${labels[k]||k}</span><span class="red">${Math.round(v/tot*100)}%</span></div>`).join('');
   return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}</div>`; }
 function renderEnd(win){ const p=G.player;
+  if(!win&&!G._echoSaved){ G._echoSaved=1; try{saveEcho();}catch(e){} }
   const gear=SLOTS.map(s=>{const it=p.equip[s];return it?`<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`:`<div class="slot muted">${s.toUpperCase()}: empty</div>`;}).join('');
   const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}`).join(', ')||'none';
   const wonAbyss=!win&&p.won; const head=win?'VICTORY!':(wonAbyss?'THE ABYSS TAKES YOU':'YOU DIED'); const col=win?'green':(wonAbyss?'purple':'red');
