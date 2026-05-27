@@ -683,7 +683,7 @@ const BOSS_SPRITE={
   'OGRE WARLORD':'golem','GOBLIN KING':'goblin','BROODMOTHER':'sahagin',
   'THE NECROMANCER':'demonlord','STONE TITAN':'golem','CAVE TYRANT':'golem',
   'DEMON LORD':'demonlord','THE LICH':'demonlord','FLAME KNIGHT':'demon',
-  'THE CRYPT DRAGON':'dragon','THE FORGOTTEN KING':'demonlord',
+  'THE CRYPT DRAGON':'dragon','THE FORGOTTEN KING':'demonlord','THE DRAGON WARDEN':'dragon','THE DEVOURER':'demonlord',
 };
 const AFFIX_TAGS=['Armored','Frenzied','Vampiric','Toxic','Brutal'];
 function stripAffix(name){
@@ -742,10 +742,10 @@ function itemIconHtml(item,lg){
 const RUN_LENGTH=20;
 const BOSS_CHAMBERS={5:0,10:1,15:2,20:3};   // chamber -> zone index for boss pool
 const ZONES=[
-  {name:'THE CATACOMBS',color:'green',lore:'The upper bone-halls, where the crypt buries its lesser dead. The air tastes of dust and old prayers.'},
-  {name:'THE CAVERNS',  color:'blue',lore:'Beneath the tombs, raw stone weeps cold water. Things that never saw the sun nest in the dark.'},
-  {name:'THE INFERNO',  color:'red',lore:'The crypt remembers it was once a furnace for the damned. Heat shimmers; the walls breathe smoke.'},
-  {name:'THE SUNLESS THRONE',color:'purple',lore:'The heart of the prison. Here the old powers wait, jealous of the light you carry down to them.'},
+  {name:'THE WARM CRYPT',color:'amber',lore:'An ancient stone prison, dry and dust-choked. The deeper you go, the warmer the air — as if something below has been burning for a very long time. The air grows warmer. Stone sweats.'},
+  {name:'THE FURNACE',  color:'red',lore:'The prison is awake. Heat shimmers off iron walls; the deeper you push, the hotter it gets. Push too hard and the fire turns on you — but the flames forge richer spoils.'},
+  {name:'THE FROZEN BELOW',color:'blue',lore:'Past the furnace, a cold older than fire. No flame survives here. The crypt begins to taste your soul — MIASMA seeps in, and wounds no longer close on their own.'},
+  {name:'THE SILENT DEEP',color:'purple',lore:'Beneath everything, reality thins to nothing. The crypt does not eat bodies. It eats possibility. What you brought down here may not all leave with you.'},
 ];
 const zoneOf=d=>d<=5?0:d<=10?1:d<=15?2:3;
 const BOSS_CRY={
@@ -753,7 +753,9 @@ const BOSS_CRY={
   necro:'"You will serve me in death."', titan:'"...INTRUDER. CRUSH. CRUSH."', tyrant:'"This crypt is MINE, little champion."',
   demon:'"Your soul will burn for a thousand years."', lich:'"Flesh is such a fleeting indulgence."', flameknight:'"Ash to ash, hero."',
   dragon:'"NONE LEAVE THE CRYPT ALIVE."', king:'"I was king before your gods drew breath."', devourer:'"AT LAST... ANOTHER SOUL TO DEVOUR."',
+  warden:'"Turn back, champion. I am not your enemy — I am the lock."',
 };
+const BOSS_DEATHCRY={ warden:'"Fool... you opened the furnace. The cold below was never sealed for YOUR sake."' };
 
 /* ============================================================
    CLASSES
@@ -840,8 +842,10 @@ const BOSSES={
   dragon:{name:'THE CRYPT DRAGON',hp:370,atk:23,def:8,boss:true,burnAtk:[7,3,50],xp:260,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ x   x /\n   ) ___ (\n  /_/   \\_\\\n (_)     (_)"},
   king:  {name:'THE FORGOTTEN KING',hp:350,atk:22,def:7,boss:true,caster:true,poison:[8,4,55],xp:260,sprite:"   _mWm_\n  /=====\\\n  |o   o|\n  | --- |\n /|=====|\\\n  J|   |L"},
   devourer:{name:'THE DEVOURER',hp:520,atk:28,def:9,boss:true,burnAtk:[8,3,40],poison:[8,3,40],xp:400,sprite:"  .vVVVv.\n ( O   O )\n (  \\_/  )\n  )vvvvv(\n /_______\\"},
+  warden:{name:'THE DRAGON WARDEN',hp:300,atk:21,def:7,boss:true,burnAtk:[8,3,60],xp:200,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ o   o /\n   )=====(\n  /_/   \\_\\\n (_) SEAL(_)"},
 };
-const BOSS_POOL=[['ogre','gobking','spider'],['necro','titan','tyrant'],['demon','lich','flameknight'],['dragon','king']];
+/* ch5 random; ch10 is ALWAYS the Dragon Warden (its death collapses the world); ch15 random; ch20 final */
+const BOSS_POOL=[['ogre','gobking','spider'],['warden'],['demon','lich','flameknight'],['king']];
 
 /* ============================================================
    FAMILIES + SLAYER (every kill stacks permanent power vs a family)
@@ -856,7 +860,7 @@ const FAMILY={
   'Will-o-Wisp':'Undead','Plague Bearer':'Undead','Frostbite':'Beast','Bloodbat':'Beast',
   'OGRE WARLORD':'Humanoid','GOBLIN KING':'Humanoid','BROODMOTHER':'Beast','THE NECROMANCER':'Undead',
   'STONE TITAN':'Construct','CAVE TYRANT':'Beast','DEMON LORD':'Demon','THE LICH':'Undead',
-  'FLAME KNIGHT':'Undead','THE CRYPT DRAGON':'Dragon','THE FORGOTTEN KING':'Undead','THE DEVOURER':'Demon',
+  'FLAME KNIGHT':'Undead','THE CRYPT DRAGON':'Dragon','THE DRAGON WARDEN':'Dragon','THE FORGOTTEN KING':'Undead','THE DEVOURER':'Demon',
 };
 function familyOf(e){ return FAMILY[stripAffix(e.name)]||'Beast'; }
 const SLAYER_THRESH=[5,12,22];
@@ -1147,8 +1151,26 @@ const EVENTS=[
    ============================================================ */
 let G=null;
 function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
-function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[]}; }
+function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
+  heat:0,miasma:0,collapsed:0,dmgBy:{}}; }
 newGame();
+
+/* ============================================================
+   WORLD SYSTEMS — Temperature Arc (Heat -> cold collapse -> Miasma)
+   Heat answers "how fast can I push?"; Miasma answers "how long can I survive?"
+   ============================================================ */
+function heatActive(){ return !G.abyss && !G.collapsed && zoneOf(G.depth)===1; }       // the Furnace
+function miasmaActive(){ return G.abyss || G.collapsed || zoneOf(G.depth)>=2; }          // Frozen Below + Silent Deep
+function heatTier(){ const h=G.heat; return h>=100?4:h>=75?3:h>=50?2:h>=25?1:0; }
+function miasmaTier(){ const m=G.miasma; return m>=60?6:m>=50?5:m>=40?4:m>=30?3:m>=20?2:m>=10?1:0; }
+function healFactor(){ const t=miasmaTier(); return t>=2?0.5:t>=1?0.78:1; }              // wounds stop closing in the cold
+function addHeat(n){ if(heatActive())G.heat=clamp(G.heat+n,0,140); }
+function addMiasma(n){ if(miasmaActive())G.miasma=clamp(G.miasma+n,0,99); }
+function coolHeat(n){ G.heat=clamp(G.heat-n,0,140); }
+function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
+function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
+/* damage the player from a tracked source; returns true if it killed them */
+function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp; p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp); return p.hp<=0; }
 
 function makePlayer(key){
   const c=CLASSES[key];
@@ -1187,7 +1209,7 @@ function affDodgeBonus(p){ return p.affTier.g>=1?10:0; }
 function effCrit(p){ return p.crit+affCritBonus(p); }
 function effDodge(p){ return p.dodge+affDodgeBonus(p); }
 function statusBonusTurns(st){ if(G.battle&&st===G.battle.pst) return 0; return G.player&&G.player.affTier.g>=2?1:0; }
-function heal(p,n){ p.hp=clamp(p.hp+n,0,p.maxHp); }
+function heal(p,n){ p.hp=clamp(p.hp+Math.round(n*healFactor()),0,p.maxHp); }
 function xpNeeded(lvl){ return 18+lvl*14; }
 function gainXp(p,n){ if(p.flags.scholar) n=Math.round(n*1.5); p.xp+=n; let ups=0;
   while(p.xp>=xpNeeded(p.level)){ p.xp-=xpNeeded(p.level); levelUp(p); ups++; } return ups; }
@@ -1217,6 +1239,7 @@ function recomputeSets(p){
 /* ---- item generation ---- */
 function rollRarity(depth){ let w=[Math.max(3,42-depth*2.2),30,13+depth*0.7,4+depth*0.6,Math.max(0,depth*0.45-1)];
   if(G.mods&&G.mods.luck)w=w.map((x,i)=>i>=2?x*1.8:x*0.7);
+  const ht=heatTier(); if(ht>=1)w=w.map((x,i)=>i>=2?x*(1+ht*0.35):x*(1-ht*0.12)); // the Furnace forges richer spoils
   let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<5;i++){ if(r<w[i])return i; r-=w[i]; } return 0; }
 function rollIlvl(depth){ return clamp(depth+rnd(3)-1,1,30); }
 function makeItem(slot,cls,depth,opts){ opts=opts||{};
@@ -1321,6 +1344,12 @@ function depthFactor(){ const d=Math.max(0,G.depth-1); return 1+d*0.18+d*d*0.011
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
+function worldBar(){ const parts=[];
+  if(heatActive()&&G.heat>0){ const t=heatTier(); const lbl=['',' softening',' SPARKS',' PULSING',' UNSTABLE'][t]; const c=['#ffcf4d','#ffcf4d','#ff9a3c','#ff5c6a','#ff2a2a'][t];
+    parts.push(`<span style="color:${c}">&#128293; HEAT ${G.heat}${lbl?' — '+lbl.trim():''}</span>`); }
+  if(miasmaActive()&&G.miasma>0){ const t=miasmaTier(); const lbl=['','watched','WOUNDS RESIST','hungering','SOUL ROT','BLEEDING','DECAYING'][Math.min(6,t)];
+    parts.push(`<span class="purple">&#9763; MIASMA ${G.miasma}${lbl?' — '+lbl:''}</span>`); }
+  return parts.length?`<div class="omentag">${parts.join(' &nbsp;&middot;&nbsp; ')}</div>`:''; }
 
 function makeGroup(depth){
   let count=1; const r=rnd(100);
@@ -1376,7 +1405,7 @@ function renderCorridor(){
   G._affMsg=null;
   const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
   G._zoneMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${zone}${banner}${playerBar(G.player,true)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
@@ -1420,7 +1449,22 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
-function openDoor(i){ SFX.play('door'); G.room=G.doors[i]; if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
+function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
+  // crossing a threshold stokes the Furnace / lets the cold seep deeper
+  addHeat(1); addMiasma(1);
+  if(worldOnEnter()){ return; }   // environmental hazards can be lethal
+  if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
+/* environmental pressure applied on entering a chamber; returns true if it killed you */
+function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,msg='';
+  if(heatActive()){ const t=heatTier();
+    if(t>=4){ dead=hurt(p,8+rnd(6),'heat'); msg='The walls pulse — molten air scorches you!'; }
+    else if(t>=3){ dead=hurt(p,4+rnd(4),'heat'); msg='The Furnace bakes you as you enter.'; } }
+  if(!dead && miasmaActive()){ const t=miasmaTier();
+    if(t>=4){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg='Soul Rot — the crypt gnaws at what you are.'; }
+    if(t>=5){ dead=hurt(p,5+rnd(5),'miasma')||dead; msg='The cold drinks your soul.'; } }
+  if(msg){ G._worldMsg=msg; }
+  if(p.hp<=0||dead){ SFX.play('death'); G.screen='gameover'; render(); return true; }
+  return false; }
 
 /* ============================================================
    ENEMY BUILD / SCALING
@@ -1441,6 +1485,10 @@ function scaleEnemy(unit,depth){
   let e=freshEnemy({name:b.name,sprite:b.sprite,hp:Math.round(b.hp*f*G.mods.eHp),maxHp:Math.round(b.hp*f*G.mods.eHp),
     atk:Math.round(b.atk*f),def:b.def||0,dodgy:b.dodgy,caster:b.caster,poison:b.poison,burnAtk:b.burnAtk,xp:b.xp||6,boss:false});
   if(unit.affix) applyAffix(e,unit.affix);
+  // FURNACE: high heat ignites the locals (molten variants)
+  if(heatActive()&&heatTier()>=1&&!e.burnAtk){ e.burnAtk=[3+heatTier()*2,2,30+heatTier()*12]; if(heatTier()>=3)e.atk=Math.round(e.atk*1.1); }
+  // FROZEN BELOW / DEEP: enemies are armored, hardier, and shrug off flame
+  if(miasmaActive()){ e.frozen=true; e.def=(e.def||0)+3; e.maxHp=Math.round(e.maxHp*1.15); e.hp=e.maxHp; }
   return e;
 }
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-5);
@@ -1506,7 +1554,8 @@ function renderRoom(){
       <p class="muted center" style="font-size:9px">${r.peek} You catch your breath. (+6 HP, +4 MP)</p>
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
+  const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -1514,16 +1563,16 @@ function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1
   else { const dmg=9+rnd(10)+Math.round(G.depth*1.8); p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play('hurt'); if(p.hp<=0){SFX.play('death');G.screen='gameover';return render();} proceed(`Caught! You take ${dmg} escaping.`); } }
 function leaveRoom(){ proceed('You move on.'); }
 function restEmpty(){ heal(G.player,6); G.player.mana=clamp(G.player.mana+4,0,G.player.maxMana); proceed(); }
-function shrine(k){ const p=G.player;
-  if(k==='heal'){ heal(p,Math.round(p.maxHp*0.45)); p.mana=clamp(p.mana+Math.round(p.maxMana*0.45),0,p.maxMana); SFX.play('heal'); }
-  if(k==='power'){ p.atk+=4; p.hp=clamp(p.hp-12,1,p.maxHp); SFX.play('upgrade'); }
+function shrine(k){ const p=G.player; let m='';
+  if(k==='heal'){ if(miasmaActive()&&G.miasma>0){ cleanse(20); m=' The altar burns the corruption from you (-20 miasma).'; } heal(p,Math.round(p.maxHp*0.45)); p.mana=clamp(p.mana+Math.round(p.maxMana*0.45),0,p.maxMana); SFX.play('heal'); }
+  if(k==='power'){ p.atk+=4; p.hp=clamp(p.hp-12,1,p.maxHp); coolHeat(20); SFX.play('upgrade'); }
   if(k==='ward'){ p.def+=3; p.maxHp+=8; heal(p,8); SFX.play('upgrade'); }
-  proceed(); }
+  proceed(m); }
 function takeRelic(i){ const rl=G.room.options[i]; gainRelic(G.player,rl); proceed(`Relic claimed: ${rl.name}!`); }
-function drinkFountain(){ const p=G.player,roll=rnd(100);
-  if(roll<55){ const h=Math.round(p.maxHp*0.45); heal(p,h); p.mana=clamp(p.mana+Math.round(p.maxMana*0.4),0,p.maxMana); SFX.play('heal'); proceed(`Blessed water! +${h} HP and mana restored.`); }
-  else if(roll<80){ const c=Math.round(p.maxHp*0.18); p.hp=clamp(p.hp-c,1,p.maxHp); SFX.play('hurt'); proceed(`Cursed! The water burns for ${c}.`); }
-  else { p.maxHp+=12; heal(p,12); p.atk+=2; SFX.play('upgrade'); proceed('A surge of vigor! +12 max HP, +2 ATK.'); } }
+function drinkFountain(){ const p=G.player,roll=rnd(100); const cl=miasmaActive()&&G.miasma>0; const clTxt=()=>{ if(cl){cleanse(28);coolHeat(15);return ' Purified — the crypt loosens its grip (-28 miasma).';} coolHeat(20); return ''; };
+  if(roll<55){ const h=Math.round(p.maxHp*0.45); heal(p,h); p.mana=clamp(p.mana+Math.round(p.maxMana*0.4),0,p.maxMana); SFX.play('heal'); proceed(`Blessed water! +${h} HP and mana restored.`+clTxt()); }
+  else if(roll<80){ const c=Math.round(p.maxHp*0.18); hurt(p,c,'hazard'); if(p.hp<=0){SFX.play('death');G.screen='gameover';return render();} SFX.play('hurt'); proceed(`Cursed! The water burns for ${c}.`); }
+  else { p.maxHp+=12; heal(p,12); p.atk+=2; if(cl)cleanse(20); SFX.play('upgrade'); proceed('A surge of vigor! +12 max HP, +2 ATK.'+(cl?' (-20 miasma)':'')); } }
 
 /* ---------- EVENTS ---------- */
 function renderEvent(){
@@ -1532,7 +1581,7 @@ function renderEvent(){
     ?`<img class="ev-sprite ${ev.sprite.tint||''}" src="${ev.sprite.src}" alt="${ev.title}" draggable="false">`
     :`<pre class="sprite teal">${ev.art}</pre>`;
   if(r.outcome){
-    app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+    app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
       <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
         ${art}
         <p class="evtext center">${r.outcome}</p>
@@ -1540,7 +1589,7 @@ function renderEvent(){
     return;
   }
   const opts=ev.options.map((o,i)=>`<button class="btn" onclick="chooseEvent(${i})"><span class="k teal">[${i+1}]</span>${o.label}<small>${o.desc}</small></button>`).join('');
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
       ${art}
       <p class="evtext center">${ev.text}</p>${opts}</div>`;
@@ -1561,33 +1610,34 @@ function openChest(){
 /* ---------- MERCHANT ---------- */
 function renderMerchant(){
   const p=G.player;
-  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(SLOTS);
-    G.room.stock={relic:rp.length?pick(rp):null, gear:makeItem(gslot,p.cls,G.depth+1)}; }
-  const st=G.room.stock;
+  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(SLOTS); const pm=(heatActive()&&heatTier()>=2)?1.3:1;
+    G.room.stock={relic:rp.length?pick(rp):null, gear:makeItem(gslot,p.cls,G.depth+1), pm}; }
+  const st=G.room.stock; const mc=b=>Math.round(b*(st.pm||1));
+  const heatNote=(st.pm||1)>1?`<div class="center red" style="font-size:8px">The Furnace's heat has driven prices up.</div>`:'';
   const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
-  const relicBtn=st.relic?item('Relic: '+st.relic.name,70,st.relic.note,"buy('relic')",p.gold>=70):'';
-  const gcost=st.gear?40+st.gear.rarity*22:0;
+  const relicBtn=st.relic?item('Relic: '+st.relic.name,mc(70),st.relic.note,"buy('relic')",p.gold>=mc(70)):'';
+  const gcost=st.gear?mc(40+st.gear.rarity*22):0;
   const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,itemStatsText(st.gear),"buy('gear')",p.gold>=gcost):'';
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p,true)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p,true)}
     <div class="panel fade room-in">
       <img class="ev-sprite tint-amber" src="assets/players/ranger.png" alt="The Merchant" draggable="false">
       <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
       <p class="muted center" style="font-size:9px">"Coin for comfort, traveler."</p>
-      <div class="coinbar"><span class="amber">&#128176; ${p.gold} GOLD</span><span class="teal">&#9670; ${p.essence}</span></div>
-      ${item('Health Potion',25,'+1 potion (heals 40% in battle)',"buy('potion')",p.gold>=25)}
-      ${item('Healing Draught',18,'restore 50% HP now',"buy('heal')",p.gold>=18)}
-      ${item('Mana Tonic',14,'fully restore mana now',"buy('mana')",p.gold>=14)}
-      ${item('Mystery Upgrade',40,'a random permanent upgrade',"buy('upgrade')",p.gold>=40)}
+      <div class="coinbar"><span class="amber">&#128176; ${p.gold} GOLD</span><span class="teal">&#9670; ${p.essence}</span></div>${heatNote}
+      ${item('Health Potion',mc(25),'+1 potion (heals 40% in battle)',"buy('potion')",p.gold>=mc(25))}
+      ${item('Healing Draught',mc(18),'restore 50% HP now',"buy('heal')",p.gold>=mc(18))}
+      ${item('Mana Tonic',mc(14),'fully restore mana now',"buy('mana')",p.gold>=mc(14))}
+      ${item('Mystery Upgrade',mc(40),'a random permanent upgrade',"buy('upgrade')",p.gold>=mc(40))}
       ${gearBtn}${relicBtn}
       <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>${statusFooter()}`;
 }
-function buy(kind){ const p=G.player,st=G.room.stock; let bought=false;
-  if(kind==='potion'&&p.gold>=25){p.gold-=25;p.potions++;SFX.play('potion');bought=true;}
-  else if(kind==='heal'&&p.gold>=18){p.gold-=18;heal(p,Math.round(p.maxHp*0.5));SFX.play('heal');bought=true;}
-  else if(kind==='mana'&&p.gold>=14){p.gold-=14;p.mana=p.maxMana;SFX.play('heal');bought=true;}
-  else if(kind==='upgrade'&&p.gold>=40){p.gold-=40;gainUpgrade(p,pick(UPGRADES));SFX.play('upgrade');bought=true;}
-  else if(kind==='gear'&&st.gear){const c=40+st.gear.rarity*22;if(p.gold>=c){p.gold-=c;equipItem(p,st.gear);st.gear=null;SFX.play('upgrade');bought=true;}}
-  else if(kind==='relic'&&p.gold>=70&&st.relic){p.gold-=70;gainRelic(p,st.relic);st.relic=null;bought=true;}
+function buy(kind){ const p=G.player,st=G.room.stock; let bought=false; const mc=b=>Math.round(b*(st.pm||1));
+  if(kind==='potion'&&p.gold>=mc(25)){p.gold-=mc(25);p.potions++;SFX.play('potion');bought=true;}
+  else if(kind==='heal'&&p.gold>=mc(18)){p.gold-=mc(18);heal(p,Math.round(p.maxHp*0.5));SFX.play('heal');bought=true;}
+  else if(kind==='mana'&&p.gold>=mc(14)){p.gold-=mc(14);p.mana=p.maxMana;SFX.play('heal');bought=true;}
+  else if(kind==='upgrade'&&p.gold>=mc(40)){p.gold-=mc(40);gainUpgrade(p,pick(UPGRADES));SFX.play('upgrade');bought=true;}
+  else if(kind==='gear'&&st.gear){const c=mc(40+st.gear.rarity*22);if(p.gold>=c){p.gold-=c;equipItem(p,st.gear);st.gear=null;SFX.play('upgrade');bought=true;}}
+  else if(kind==='relic'&&p.gold>=mc(70)&&st.relic){p.gold-=mc(70);gainRelic(p,st.relic);st.relic=null;bought=true;}
   if(!bought)SFX.play('fail');
   renderMerchant();
 }
@@ -1630,7 +1680,7 @@ function renderForge(){ const p=G.player;
   const im=p.weapon.proc?'':fb('Imbue weapon with an element',24,'add a random on-hit effect (BURN / POISON / VULN)',`fImbue()`,p.essence>=24);
   const re=slots.map(s=>{const it=p.equip[s];if(!it||it.rarity>=4)return '';const c=30+it.rarity*16;
     return fb(`Reforge ${s.toUpperCase()}: <span class="${RARITY[it.rarity].cls}">${RARITY[it.rarity].name}</span> &rarr; <span class="${RARITY[it.rarity+1].cls}">${RARITY[it.rarity+1].name}</span>`,c,'raise rarity; may grant a passive',`fReforge('${s}')`,p.essence>=c);}).join('');
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in">
       <pre class="sprite amber">  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|</pre>
       <h3 class="center amber" style="margin:8px 0">THE SOUL FORGE</h3>
@@ -1698,7 +1748,7 @@ function renderBattle(){
   const cm=G.mods.skillCost;
   const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm));
     return `<button class="btn" ${p.mana<cost?'disabled':''} onclick="playerSkill('${s.id}')"><span class="k blue">${cost}MP</span>${s.name}${s.aoe?' <span class="amber">(AOE)</span>':''}<small>${s.desc}</small></button>`;}).join('');
-  app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>
+  app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>${worldBar()}
     <div class="panel ${b.anim}" id="scene">
       <div class="enemies-row ${b.intro?'enter-foe':''}">${cells}</div>
       <div class="log">${logHtml}</div>
@@ -1837,8 +1887,9 @@ function fleeBattle(){ const p=G.player,b=G.battle;
   else { blog('You failed to flee!','info'); enemyTurn(); } }
 
 function tickDoT(entity,st,name){ // returns false if entity died
-  if(st.burnT>0){ entity.hp=clamp(entity.hp-st.burn,0,entity.maxHp||entity.hp+st.burn); blog(`Burn sears ${name} for ${st.burn}.`,'dmg'); st.burnT--; }
-  if(st.poisonT>0){ entity.hp=clamp(entity.hp-st.poison,0,entity.maxHp||entity.hp+st.poison); blog(`Poison wracks ${name} for ${st.poison}.`,'dmg'); st.poisonT--; }
+  const isPlayer=(name==='you');
+  if(st.burnT>0){ entity.hp=clamp(entity.hp-st.burn,0,entity.maxHp||entity.hp+st.burn); if(isPlayer)attrib('burn',st.burn); blog(`Burn sears ${name} for ${st.burn}.`,'dmg'); st.burnT--; }
+  if(st.poisonT>0){ entity.hp=clamp(entity.hp-st.poison,0,entity.maxHp||entity.hp+st.poison); if(isPlayer)attrib('poison',st.poison); blog(`Poison wracks ${name} for ${st.poison}.`,'dmg'); st.poisonT--; }
   if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
   return entity.hp>0;
 }
@@ -1866,7 +1917,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
     let lethal=p.hp-dmg<=0;
     if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
-    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
+    else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
     if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
     if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
     if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
@@ -1891,6 +1942,11 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   let gold=(8+rnd(12))+G.depth*2+(b.enemies.length-1)*6;
   b.enemies.forEach(e=>{ if(e.goldBonus)gold+=e.goldBonus; });
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
+  // fighting stokes the Furnace / deepens the cold's hold
+  const elites=b.enemies.filter(e=>e.elite).length;
+  addHeat(2+elites); addMiasma(3+elites);
+  // Dragon Warden's death collapses the world into the cold
+  if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); }
   SFX.play(b.hadBoss?'win':'gold');
   blog('The chamber is clear!','info'); render();
   setTimeout(()=>{ if(b.isFinal){ SFX.play('win'); p.won=true; G.screen='triumph'; return render(); }
@@ -1919,7 +1975,7 @@ function renderReward(){ const p=G.player,pd=G.pending;
       return `<button class="btn" onclick="takeReward(${i})">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)}${curTxt}</small></button>`; }
     if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small></button>`;
     return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small></button>`;}).join('');
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${playerBar(p)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px">Choose one reward:</p>${cards}
       <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button></div>`;
@@ -1958,6 +2014,11 @@ function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
   G.mods.essMul=(G.mods.essMul||1)*1.6; G.mods.luck=1; G.mods.goldMul*=1.3;
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
   nextCorridor(); G.screen='corridor'; render(); }
+function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',hazard:'Hazards',debt:'Time Debt'};
+  const entries=Object.keys(d).filter(k=>d[k]>0).map(k=>[k,d[k]]).sort((a,b)=>b[1]-a[1]);
+  const tot=entries.reduce((s,e)=>s+e[1],0); if(!tot)return '';
+  const rows=entries.map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">${labels[k]||k}</span><span class="red">${Math.round(v/tot*100)}%</span></div>`).join('');
+  return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}</div>`; }
 function renderEnd(win){ const p=G.player;
   const gear=SLOTS.map(s=>{const it=p.equip[s];return it?`<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`:`<div class="slot muted">${s.toUpperCase()}: empty</div>`;}).join('');
   const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}`).join(', ')||'none';
@@ -1969,6 +2030,7 @@ function renderEnd(win){ const p=G.player;
         ${tellTale}<br>
         <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level} &middot; <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
         <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills} &middot; <span class="muted">Gold:</span> ${p.gold}</p>
+      ${win?'':causeOfDeathHtml()}
       <h3 class="amber center" style="font-size:11px;margin:6px 0">YOUR BUILD</h3>
       ${gear}
       <p style="font-size:9px;line-height:2"><span class="muted">Paths:</span> ${paths}<br>
