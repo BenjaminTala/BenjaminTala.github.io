@@ -1317,7 +1317,7 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ return 1+Math.max(0,G.depth-1)*0.188; }
+function depthFactor(){ const d=Math.max(0,G.depth-1); return 1+d*0.15+d*d*0.0058; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
@@ -1443,8 +1443,9 @@ function scaleEnemy(unit,depth){
   if(unit.affix) applyAffix(e,unit.affix);
   return e;
 }
-function cloneBoss(key){ const b=BOSSES[key]; const f=1+Math.max(0,G.depth-5)*0.04;
-  return freshEnemy({...b,hp:Math.round(b.hp*f),maxHp:Math.round(b.hp*f),atk:Math.round(b.atk*f),cry:BOSS_CRY[key]}); }
+function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-5);
+  const hpF=1+e*0.06+e*e*0.0046, atkF=1+e*0.045+e*e*0.0022;
+  return freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key]}); }
 function findBase(n){ return ENEMIES.find(e=>e.name===n); }
 function buildEnemies(room){
   if(room.boss){ const list=[cloneBoss(room.boss)];
