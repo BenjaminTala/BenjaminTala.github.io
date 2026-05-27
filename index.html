@@ -298,7 +298,10 @@
     .iicon.arm.amulet{background-position:-160px 0}.iicon.arm.cloak{background-position:-60px -20px}
   }
   /* ===================== VISUAL REFRESH ===================== */
-  body{background:radial-gradient(circle at 50% 16%, #181534 0%, #0d0c1d 58%, #070611 100%)}
+  body{background:radial-gradient(circle at 50% 16%, #181534 0%, #0d0c1d 58%, #070611 100%);transition:background 1.4s ease}
+  .wmeter{cursor:help;text-shadow:0 0 6px currentColor}
+  .omentag.worldpulse{animation:worldPulse .7s ease-out}
+  @keyframes worldPulse{0%{transform:scale(1);filter:brightness(1)}30%{transform:scale(1.18);filter:brightness(2)}100%{transform:scale(1);filter:brightness(1)}}
   /* subtle CRT scanlines + edge darkening over everything */
   #crt{position:fixed;inset:0;pointer-events:none;z-index:140;
     background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, rgba(0,0,0,0) 1px 3px);opacity:.45}
@@ -1185,15 +1188,18 @@ function miasmaActive(){ return G.abyss || G.collapsed || zoneOf(G.depth)>=2; } 
 function heatTier(){ const h=G.heat; return h>=100?4:h>=75?3:h>=50?2:h>=25?1:0; }
 function miasmaTier(){ const m=G.miasma; return m>=60?6:m>=50?5:m>=40?4:m>=30?3:m>=20?2:m>=10?1:0; }
 function healFactor(){ const t=miasmaTier(); return t>=2?0.5:t>=1?0.78:1; }              // wounds stop closing in the cold
-function addHeat(n){ if(heatActive())G.heat=clamp(G.heat+n,0,140); }
-function addMiasma(n){ if(miasmaActive())G.miasma=clamp(G.miasma+n,0,99); }
+const HEAT_MSG=['','Metal begins to soften. The locals catch fire.','Your breath leaves sparks — the merchants gouge, but the loot runs hot.','The walls pulse. The Furnace begins to burn YOU.','FIRE INSTABILITY — the Furnace is trying to kill you!'];
+const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds no longer close on their own.','The crypt tastes your soul.','SOUL ROT — the cold is eating your very substance.','The cold draws blood with every step.','You are coming undone.'];
+function flashWorld(){ G._worldPulse=1; }
+function addHeat(n){ if(!heatActive())return; const b=heatTier(); G.heat=clamp(G.heat+n,0,140); const a=heatTier(); if(a>b){ G._worldMsg=HEAT_MSG[a]; SFX.play(a>=3?'fire':'skill'); flashWorld(); } }
+function addMiasma(n){ if(!miasmaActive())return; const b=miasmaTier(); G.miasma=clamp(G.miasma+n,0,99); const a=miasmaTier(); if(a>b){ G._worldMsg=MIASMA_MSG[Math.min(6,a)]; SFX.play('frost'); flashWorld(); } }
 function coolHeat(n){ G.heat=clamp(G.heat-n,0,140); }
 function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
 function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
 /* damage the player from a tracked source; returns true if it killed them */
 function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp; p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp); return p.hp<=0; }
 /* TIME DEBT — borrow power now, pay survival later. Answers "how much future do I sacrifice?" */
-function addDebt(n){ G.debt=clamp((G.debt||0)+n,0,150); if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; } }
+function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150); if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
 function tickDebt(){ if(!G.debt)return; const interest=Math.floor(G.debt/30); if(interest>0)G.debt=clamp(G.debt+interest,0,150);
   addMiasma(Math.floor(G.debt/25));               // borrowed time rots the soul
@@ -1312,7 +1318,14 @@ function render(){
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
   const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
   const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display=(G.player&&['corridor','room','event','reward','triumph'].includes(G.screen))?'block':'none'; }
+  setZoneBg();
 }
+const ZONE_BG=['radial-gradient(circle at 50% 15%, #2a1e10 0%, #0d0b16 58%, #070510 100%)',
+  'radial-gradient(circle at 50% 15%, #361410 0%, #120a10 58%, #0a0407 100%)',
+  'radial-gradient(circle at 50% 15%, #0e2640 0%, #0a0e1d 58%, #05080f 100%)',
+  'radial-gradient(circle at 50% 15%, #20123a 0%, #0c0a1d 58%, #060611 100%)'];
+function setZoneBg(){ try{ const inRun=G.player&&['corridor','room','event','reward','battle','triumph','merchant','inventory'].includes(G.screen);
+  document.body.style.background = inRun ? (G.abyss?ZONE_BG[3]:ZONE_BG[zoneOf(G.depth)]) : ''; }catch(e){} }
 function go(s){ G.screen=s; render(); }
 const ROOM_TINT={enemy:'#5a1620',chest:'#5a4410',relic:'#3a1a5a',merchant:'#4a3a12',forge:'#143a3a',echo:'#2a2440',collector:'#4a3a12',shrine:'#3a1a5a',fountain:'#163450',event:'#16403a',empty:'#1c1c30'};
 function playTransition(color){ const t=$('transition'); if(!t||!t.classList)return; t.style.background=`linear-gradient(180deg, ${color} 0%, #050410 92%)`; t.classList.remove('go'); void t.offsetWidth; t.classList.add('go'); }
@@ -1375,11 +1388,13 @@ function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 function worldBar(){ const parts=[];
   if(heatActive()&&G.heat>0){ const t=heatTier(); const lbl=['',' softening',' SPARKS',' PULSING',' UNSTABLE'][t]; const c=['#ffcf4d','#ffcf4d','#ff9a3c','#ff5c6a','#ff2a2a'][t];
-    parts.push(`<span style="color:${c}">&#128293; HEAT ${G.heat}${lbl?' — '+lbl.trim():''}</span>`); }
+    parts.push(`<span class="wmeter clickable" data-info-concept="heat" style="color:${c}">&#128293; HEAT ${G.heat}${lbl?' — '+lbl.trim():''}</span>`); }
   if(miasmaActive()&&G.miasma>0){ const t=miasmaTier(); const lbl=['','watched','WOUNDS RESIST','hungering','SOUL ROT','BLEEDING','DECAYING'][Math.min(6,t)];
-    parts.push(`<span class="purple">&#9763; MIASMA ${G.miasma}${lbl?' — '+lbl:''}</span>`); }
-  if(G.debt>0){ parts.push(`<span class="amber">&#8987; DEBT ${G.debt}${G.collectorEta>0?' — Collector ETA '+G.collectorEta:''}</span>`); }
-  return parts.length?`<div class="omentag">${parts.join(' &nbsp;&middot;&nbsp; ')}</div>`:''; }
+    parts.push(`<span class="wmeter clickable purple" data-info-concept="miasma">&#9763; MIASMA ${G.miasma}${lbl?' — '+lbl:''}</span>`); }
+  if(G.debt>0){ parts.push(`<span class="wmeter clickable amber" data-info-concept="timedebt">&#8987; DEBT ${G.debt}${G.collectorEta>0?' — Collector ETA '+G.collectorEta:''}</span>`); }
+  if(!parts.length)return '';
+  const pulse=G._worldPulse?' worldpulse':''; G._worldPulse=0;
+  return `<div class="omentag${pulse}">${parts.join(' &nbsp;&middot;&nbsp; ')}</div>`; }
 
 function makeGroup(depth){
   let count=1; const r=rnd(100);
@@ -1508,9 +1523,16 @@ function collectorPay(kind){ const p=G.player;
   if(kind==='tribute'){ p.gold=0; p.essence=Math.floor(p.essence/2); hurt(p,Math.round(p.maxHp*0.15),'debt'); G.debt=0; G.collectorEta=0; SFX.play('gold'); if(p.hp<=0){G.screen='gameover';return render();} return proceed('You empty your purse and your veins. The Collector is satisfied — for now.'); }
   if(kind==='refuse'){ G.room={type:'enemy',_enemies:[collectorEnemy()]}; startBattle('You refuse. The Collector comes to take it ALL.'); return; }
   proceed(); }
+function stagePopup(d){ const z=ZONES[zoneOf(d)]; let body=`<span class="${z.color}">${z.lore}</span>`;
+  if(d===6) body+=`<br><br>The Furnace stirs. <b style="color:var(--red)">HEAT</b> now rises as you push deeper — dangerous, but it forges richer loot. Tap the HEAT meter any time to learn how it works.`;
+  if(d===11) body+=`<br><br>A cold older than fire seeps in. <b class="purple">MIASMA</b> now corrupts you — wounds stop closing, and only cleansing at fountains/shrines will save you. Tap the MIASMA meter to learn more.`;
+  showInfo({title:'ENTERING '+z.name,body}); }
 function takeAllRewards(){ const p=G.player,pd=G.pending; if(!pd||!pd.options)return; let n=0;
   pd.options.forEach(o=>{ if(o.kind==='gear'){equipItem(p,o.data);n++;} else if(o.kind==='relic'){if(gainRelic(p,o.data))n++;} else {gainUpgrade(p,o.data);n++;} });
-  const d=10+n*6; addDebt(d); SFX.play('upgrade'); if(pd.boss)p.potions++; G.pending=null; proceed(`You seize it all. The crypt records the debt (+${d} time debt).`); }
+  const d=10+n*6; addDebt(d); SFX.play('upgrade'); if(pd.boss)p.potions++;
+  let seen=false; try{seen=localStorage.getItem('crypt_seen_debt')==='1';}catch(e){}
+  if(!seen){ try{localStorage.setItem('crypt_seen_debt','1');}catch(e){} showInfo('timedebt'); }
+  G.pending=null; proceed(`You seize it all. The crypt records the debt (+${d} time debt).`); }
 function groupPeek(g){ if(g.length===1){const u=g[0];return `A ${u.affix?u.affix.tag+' ':''}${u.base.name.toLowerCase()} lurks within.`;}
   return `A pack of ${g.length} creatures stirs in the dark${g.some(u=>u.affix)?', one of them gleaming with power':''}.`; }
 function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presence':'You sense hostile creatures',
@@ -1522,7 +1544,7 @@ function nextCorridor(){ G.depth++;
     if(floor%4===0){ const key=chance(35)?'devourer':pick(Object.keys(BOSSES)); G.doors=[{type:'enemy',boss:key,peek:'A horror of the deep stirs. It has been waiting.'}]; }
     else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
     return; }
-  if(G.depth===1||G.depth===6||G.depth===11||G.depth===16){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]&&discoverLore(({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]); }
+  if(G.depth===1||G.depth===6||G.depth===11||G.depth===16){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]&&discoverLore(({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]); if(G.depth>1)stagePopup(G.depth); }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
   else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); } }
 /* ROOM ADJACENCY — neighbouring doors bleed into each other */
@@ -1541,7 +1563,8 @@ function renderCorridor(){
   const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
   G._zoneMsg=null;
   const lore=G._loreMsg?`<div class="panel tight center amber fade" style="font-size:9px">${G._loreMsg}</div>`:''; G._loreMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${banner}${playerBar(G.player,true)}
+  const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${wmsg}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
@@ -2200,6 +2223,22 @@ function restart(){ newGame(); render(); }
 /* ---------- shared UI ---------- */
 /* ---------- info popups (concept explanations + chip tooltips) ---------- */
 const INFO_TEXT={
+  heat:{title:'HEAT — THE FURNACE',body:
+    `In the Furnace, every door you open and every fight stokes the <b style="color:var(--red)">HEAT</b>. Heat answers <b>"how fast can I push?"</b><br><br>
+     <span class="muted">The risk:</span> at 25 enemies catch fire; at 50 merchants gouge you; at 75+ the walls themselves <b>burn you each chamber</b>.<br>
+     <span class="muted">The reward:</span> the hotter it runs, the <b class="amber">richer the loot</b> the Furnace forges.<br><br>
+     Push for better gear — but cool down at a fountain or shrine before the walls pulse. When the Dragon Warden falls, the fire dies and Heat no longer matters.`},
+  miasma:{title:'MIASMA — THE COLD',body:
+    `Below the Furnace, a cold older than fire seeps in. <b class="purple">MIASMA</b> rises as you open doors and fight, and answers <b>"how long can I survive?"</b><br><br>
+     It is not damage — it is <b>corruption</b>. At 20 your wounds stop closing (all healing is halved). At 40 it rots your max HP. At 50+ it draws blood every chamber.<br><br>
+     <b>Normal healing no longer saves you down here — you must CLEANSE.</b> Fountains and the altar's prayer purge Miasma. Healing becomes survival management, not topping off HP.`},
+  timedebt:{title:'TIME DEBT — BORROWED POWER',body:
+    `When you <b>BORROW</b> at a reward (take everything at once), you gain <b class="amber">TIME DEBT</b>. It answers <b>"how much future do I sacrifice?"</b><br><br>
+     Debt is a loan against your own survival. While you carry it:<br>
+     &bull; every enemy and boss hits <b>harder</b> (the crypt feeds on what you owe),<br>
+     &bull; it <b>compounds</b> — debt grows a little each chamber (interest),<br>
+     &bull; it feeds <b>Miasma</b> in the cold.<br><br>
+     At 50 debt the <b>COLLECTOR</b> is summoned (you'll see its ETA counting down). When it arrives you must <b>surrender your best item</b>, <b>pay tribute</b> (all gold, half essence, 15% HP), or <b>fight it</b> — winning burns the whole debt away. Borrow when a reward will win you the run now; the bill always comes due.`},
   synergies:{title:'SYNERGIES',body:
     `<b>Named combos that fire automatically</b> when you collect both required relics. Each grants an extra bonus on top of the relics themselves.<br><br>
      <span class="muted">Examples:</span><br>
@@ -2305,6 +2344,8 @@ document.addEventListener('click',e=>{
 });
 /* delegated handler for chip/info-button clicks (tap-friendly on mobile) */
 document.addEventListener('click',e=>{
+  const ic=e.target.closest('[data-info-concept]');
+  if(ic){ showInfo(ic.getAttribute('data-info-concept')); return; }
   const r=e.target.closest('[data-info-relic]');
   if(r){ showRelicInfo(r.getAttribute('data-info-relic')); return; }
   const s=e.target.closest('[data-info-synergy]');
