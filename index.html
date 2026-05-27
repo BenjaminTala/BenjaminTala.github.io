@@ -1147,8 +1147,29 @@ const EVENTS=[
 ];
 
 /* ============================================================
-   STATE
+   LORE CODEX — fragments uncovered at story beats, collected across runs.
+   Pulls the player deeper: find the next piece, learn how it ends.
    ============================================================ */
+const LORE=[
+  {id:'l1',t:'The Descent',x:'They all came for the hoarded power of the crypt. None came back up. You will be the exception — or you will be an Echo for the next fool.'},
+  {id:'l2',t:'The Warm Crypt',x:'The upper halls were a prison, then a tomb, then forgotten. The warmth was never comfort. It was containment. Something down here has been kept warm on purpose.'},
+  {id:'l3',t:'The Furnace',x:'Below the tombs, the heat is deliberate. Someone lit a fire and fed it for an age. Fire is a lock. Heat is a warning. The hotter it burns, the closer you are to the thing it cages.'},
+  {id:'l4',t:'The Warden',x:'The dragon guards no treasure. It guards a seal. "I am not your enemy," it says, "I am the lock." Champions never listen. Champions never do.'},
+  {id:'l5',t:'What the Cold Is',x:'When the Warden falls the fire dies, and a cold older than fire seeps up from below. The furnace was holding the cold OUT. You have just let it in.'},
+  {id:'l6',t:'Miasma',x:'The cold is not weather. It is appetite. It does not freeze the body — it erodes the memory of being alive. Down here, wounds forget how to close.'},
+  {id:'l7',t:'The Echoes',x:'The dead you meet were champions like you. The crypt did not eat their bodies — it kept their last moment, looping, lying. Speak gently. They misremember everything now.'},
+  {id:'l8',t:'Time Debt',x:'Power taken early is existence borrowed late. The Collector keeps perfect accounts. It does not want your gold. It wants the years you will never get to live.'},
+  {id:'l9',t:'The Silent Deep',x:'Beneath everything, reality runs thin. There are no walls here, only the suggestion of them. The Deep is where possibility goes to be unmade.'},
+  {id:'l10',t:'The Devourer',x:'It does not eat flesh. It eats what you might have become. Every champion it takes is un-happened. That is why none of them are remembered — not even by their mothers.'},
+  {id:'l11',t:'The Phantom Forge',x:'The smith hammering starlight was the first champion to reach this depth. It chose to stay, because to leave was to be forgotten. It helps you. It also envies you, terribly.'},
+  {id:'l12',t:'Why You Persist',x:'You return because the crypt let exactly one possibility survive: yours. Each run, a little more of the story stays with you. The crypt is learning you. You are learning it.'},
+  {id:'l13',t:'The Forgotten King',x:'He sat upon the throne to hold the Deep shut with the weight of a crown. He has held it so long he no longer remembers ever refusing the cold its meal.'},
+  {id:'l14',t:'The Last Truth',x:'The crypt opens. Something inside you does not leave. Every champion who escapes carries a sliver of the Deep back into the light. That is how it spreads. That is how it always wins.'},
+];
+function loadLore(){ try{ return JSON.parse(localStorage.getItem('crypt_lore')||'[]'); }catch(e){ return []; } }
+function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg; return true; }
+function loadRecords(){ try{ return Object.assign({deepest:0,runs:0,wins:0},JSON.parse(localStorage.getItem('crypt_records')||'{}')); }catch(e){ return {deepest:0,runs:0,wins:0}; } }
+function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(r.deepest||0,G.depth); try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 let G=null;
 function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
 function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
@@ -1310,6 +1331,8 @@ function renderTitle(){
         20 chambers &middot; 4 zones &middot; slay, forge, and grow OP<br>
         &middot; then dare the endless Abyss beneath.</p>
       <button class="btn center" onclick="go('class')"><span class="blink">&#9654;</span> PRESS START</button>
+      ${(()=>{const r=loadRecords(),l=loadLore().length; if(!r.runs&&!l)return ''; return `<div class="stats" style="font-size:8px;margin-top:10px;border-top:2px solid var(--line);padding-top:8px">
+        <span class="amber">DEEPEST</span> chamber ${r.deepest||0} &middot; <span class="green">WINS</span> ${r.wins||0}/${r.runs||0} &middot; <span class="amber">&#128220; CODEX</span> ${l}/${LORE.length}${(r.deepest||0)>0?'<br><span class="muted">'+((r.wins||0)>0?'The crypt remembers your victory. Can you carry more of its story to the surface?':'Descend deeper than '+r.deepest+' — and live to tell it.')+'</span>':''}</div>`;})()}
     </div>
     <div class="footer">number keys or click &middot; Enter = first option</div>`;
 }
@@ -1341,7 +1364,7 @@ function renderOmen(){
       <img class="ev-sprite tint-purple" src="assets/monsters/ghost.png" alt="Omen Spirit" draggable="false">
       <p class="muted center" style="font-size:9px">Choose one fate:</p>${cards}</div>`;
 }
-function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.player); nextCorridor(); G.screen='corridor'; render(); }
+function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.player); discoverLore('l1'); nextCorridor(); G.screen='corridor'; render(); }
 
 /* ============================================================
    DUNGEON GENERATION
@@ -1419,7 +1442,7 @@ function pickEcho(depth){ const pool=G._echoPool||[]; if(!pool.length)return nul
   // weight toward echoes that died near this depth
   const w=pool.map(e=>1/(1+Math.abs((e.depth||10)-depth)));
   let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<pool.length;i++){ if(r<w[i])return pool[i]; r-=w[i]; } return pool[0]; }
-function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoom(); }
+function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoom(); } discoverLore('l7');
   const cls=CLASSES[ec.cls]?CLASSES[ec.cls].name:'CHAMPION';
   const sprite=`<div class="sprite-player ${ec.cls} dead" style="filter:grayscale(1) brightness(.6) drop-shadow(0 0 10px rgba(120,110,180,.6))"></div>`;
   const gearTxt=ec.item?`${RARITY[ec.item.rarity]?'<span class="'+RARITY[ec.item.rarity].cls+'">'+ec.item.name+'</span>':ec.item.name} Lv${ec.item.ilvl}`:'rusted scraps';
@@ -1468,7 +1491,7 @@ function unequip(p,slot){ const it=p.equip[slot]; if(!it)return null; applyItemS
 function bestItem(p){ let best=null,bs=-1; SLOTS.forEach(s=>{ const it=p.equip[s]; if(it){ const v=it.rarity*100+it.ilvl; if(v>bs){bs=v;best=s;} } }); return best; }
 function collectorEnemy(){ const f=depthFactor()*debtMul(); const hp=Math.round(200*f*0.55), atk=Math.round(18*f*0.5);
   return freshEnemy({name:'THE COLLECTOR',sprite:"  .-=-.\n ( $ $ )\n  )___(\n /|   |\\\n  ^   ^",hp,maxHp:hp,atk,def:6,boss:true,caster:true,xp:160,_collector:1,cry:'"Pay what you owe, champion — or pay with all of it."'}); }
-function renderCollector(){ const p=G.player; const bs=bestItem(p); const it=bs?p.equip[bs]:null;
+function renderCollector(){ const p=G.player; discoverLore('l8'); const bs=bestItem(p); const it=bs?p.equip[bs]:null;
   const gold=p.gold, ess=p.essence; const debt=G.debt;
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in">
@@ -1499,7 +1522,7 @@ function nextCorridor(){ G.depth++;
     if(floor%4===0){ const key=chance(35)?'devourer':pick(Object.keys(BOSSES)); G.doors=[{type:'enemy',boss:key,peek:'A horror of the deep stirs. It has been waiting.'}]; }
     else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
     return; }
-  if(G.depth===1||G.depth===6||G.depth===11||G.depth===16){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; }
+  if(G.depth===1||G.depth===6||G.depth===11||G.depth===16){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]&&discoverLore(({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]); }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
   else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); } }
 /* ROOM ADJACENCY — neighbouring doors bleed into each other */
@@ -1517,7 +1540,8 @@ function renderCorridor(){
   G._affMsg=null;
   const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
   G._zoneMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${banner}${playerBar(G.player,true)}
+  const lore=G._loreMsg?`<div class="panel tight center amber fade" style="font-size:9px">${G._loreMsg}</div>`:''; G._loreMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
@@ -1527,7 +1551,7 @@ function closeInventory(){ G.screen=_invReturn; render(); }
 function setInvTab(t){ G._invTab=t; SFX.play('click'); render(); }
 function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
   const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
-  const tabs=`<div class="invtabs">${tb('gear','GEAR')}${tb('powers','POWERS')}${tb('best','BESTIARY')}</div>`;
+  const tabs=`<div class="invtabs">${tb('gear','GEAR')}${tb('powers','POWERS')}${tb('best','BESTIARY')}${tb('lore','LORE')}</div>`;
   const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
   let body='';
   if(tab==='gear'){
@@ -1549,12 +1573,18 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       <h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
       <h3 class="ivh">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
       <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
-  } else {
+  } else if(tab==='best'){
     const fams=Object.keys(p.slayer).sort((a,b)=>p.slayer[b]-p.slayer[a]);
     const rows=fams.length?fams.map(f=>{const c=p.slayer[f],t=slayerTier(c),nx=t<3?slThreshArr()[t]:null,pct=nx?Math.min(100,c/nx*100):100;
       return `<div class="best-row"><span>${f} <span class="muted">&times;${c}</span>${t>0?` &middot; <span class="amber">SLAYER ${['','I','II','III'][t]} +${Math.round(SLAYER_BONUS[t]*100)}%</span>`:''}<br><span class="muted" style="font-size:8px">${nx?`${c}/${nx} to next tier`:'mastered'}</span></span><span class="best-bar"><i style="width:${pct}%"></i></span></div>`;}).join('')
       :'<div class="slot muted">No kills recorded yet. Hunt to grow your Slayer power.</div>';
     body=`<h3 class="red ivh">BESTIARY &mdash; SLAYER</h3><p class="muted" style="font-size:8px;line-height:1.8">Every kill of a family permanently boosts your damage against it. Tiers at 5 / 12 / 22 kills.</p>${rows}`;
+  } else if(tab==='lore'){
+    const known=loadLore(); const found=LORE.filter(l=>known.includes(l.id)).length;
+    const rows=LORE.map(l=>known.includes(l.id)
+      ?`<div class="slot" style="border-left-color:var(--amber)"><span class="amber">&#128220; ${l.t}</span><br><span style="font-size:8px;line-height:1.8;color:#cfcbef">${l.x}</span></div>`
+      :`<div class="slot muted">&#128274; ??? &mdash; undiscovered</div>`).join('');
+    body=`<h3 class="amber ivh">THE CODEX &mdash; ${found}/${LORE.length}</h3><p class="muted" style="font-size:8px;line-height:1.8">Fragments uncovered at story beats — descending, felling bosses, meeting the dead. They persist across every run.</p>${rows}`;
   }
   app.innerHTML=`<div class="floortag">INVENTORY &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
     <div class="panel fade room-in">${cur}${tabs}${body}
@@ -1679,7 +1709,7 @@ function renderRoom(){
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
   if(chance(base-extra*10)){ SFX.play('door'); proceed('You slip past unseen.'); }
-  else { const dmg=9+rnd(10)+Math.round(G.depth*1.8); p.hp=clamp(p.hp-dmg,0,p.maxHp); SFX.play('hurt'); if(p.hp<=0){SFX.play('death');G.screen='gameover';return render();} proceed(`Caught! You take ${dmg} escaping.`); } }
+  else { const dmg=9+rnd(10)+Math.round(G.depth*1.8); SFX.play('hurt'); if(hurt(p,dmg,'enemy')){SFX.play('death');G.screen='gameover';return render();} proceed(`Caught! You take ${dmg} escaping.`); } }
 function leaveRoom(){ proceed('You move on.'); }
 function restEmpty(){ heal(G.player,6); G.player.mana=clamp(G.player.mana+4,0,G.player.maxMana); proceed(); }
 function shrine(k){ const p=G.player; let m='';
@@ -1791,7 +1821,7 @@ function fUpgrade(s){ SFX.play(forgeUpgrade(s)?'upgrade':'fail'); renderForge();
 function fReforge(s){ SFX.play(forgeReforge(s)?'upgrade':'fail'); renderForge(); }
 function fImbue(){ SFX.play(forgeImbue()?'upgrade':'fail'); renderForge(); }
 function leaveForge(){ leaveRoom(); }
-function renderForge(){ const p=G.player;
+function renderForge(){ const p=G.player; discoverLore('l11');
   const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${sub}</small></button>`;
   const slots=SLOTS;
   const up=slots.map(s=>{const it=p.equip[s];if(!it)return '';const c=14+it.ilvl*2;
@@ -2065,9 +2095,11 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   const elites=b.enemies.filter(e=>e.elite).length;
   addHeat(2+elites); addMiasma(3+elites);
   // Dragon Warden's death collapses the world into the cold
-  if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); }
+  if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); }
+  if(b.enemies.some(e=>e.name===BOSSES.king.name))discoverLore('l13');
+  if(b.enemies.some(e=>e.name===BOSSES.devourer.name))discoverLore('l10');
   // Defeating the Collector burns away your debt
-  if(b.enemies.some(e=>e._collector)){ G.debt=0; G.collectorEta=0; blog('The Collector shatters — your debt dies with it.','lvl'); }
+  if(b.enemies.some(e=>e._collector)){ G.debt=0; G.collectorEta=0; blog('The Collector shatters — your debt dies with it.','lvl'); discoverLore('l8'); }
   SFX.play(b.hadBoss?'win':'gold');
   blog('The chamber is clear!','info'); render();
   setTimeout(()=>{ if(b.isFinal){ SFX.play('win'); p.won=true; G.screen='triumph'; return render(); }
@@ -2131,7 +2163,7 @@ function renderTriumph(){
       <button class="btn center" onclick="startAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>endless &amp; escalating — claim ever-greater power, until it claims you</small></button>
     </div>`;
 }
-function claimVictory(){ SFX.play('win'); G.screen='victory'; render(); }
+function claimVictory(){ SFX.play('win'); discoverLore('l12'); discoverLore('l14'); G.screen='victory'; render(); }
 function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
   G.mods.essMul=(G.mods.essMul||1)*1.6; G.mods.luck=1; G.mods.goldMul*=1.3;
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
@@ -2143,6 +2175,7 @@ function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Dam
   return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}</div>`; }
 function renderEnd(win){ const p=G.player;
   if(!win&&!G._echoSaved){ G._echoSaved=1; try{saveEcho();}catch(e){} }
+  if(!G._recSaved){ G._recSaved=1; try{recordRun(win||(p&&p.won));}catch(e){} }
   const gear=SLOTS.map(s=>{const it=p.equip[s];return it?`<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`:`<div class="slot muted">${s.toUpperCase()}: empty</div>`;}).join('');
   const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}`).join(', ')||'none';
   const wonAbyss=!win&&p.won; const head=win?'VICTORY!':(wonAbyss?'THE ABYSS TAKES YOU':'YOU DIED'); const col=win?'green':(wonAbyss?'purple':'red');
