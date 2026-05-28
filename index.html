@@ -846,6 +846,7 @@ const CLASSES={
       {id:'bolt',name:'Arcane Bolt',cost:10,desc:'Single magic hit, scales w/ mana.'},
       {id:'fire',name:'Fireball',cost:24,aoe:true,desc:'Hit ALL foes + BURN.'},
       {id:'frost',name:'Frost Nova',cost:18,aoe:true,desc:'Dmg ALL + WEAKEN them.'},
+      {id:'glass',name:'Glass Sigil',cost:14,desc:'Pay 15% current HP. Next skill SHATTERS across every foe.'},
     ]},
   warrior:{name:'WARRIOR',color:'red',affinity:'FURY',
     affinityText:'Brutal attacks. Build TANK (defense + Shield Wall) or LIFESTEAL (vampiric gear).',
@@ -856,6 +857,7 @@ const CLASSES={
       {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.9).'},
       {id:'shield',name:'Shield Wall',cost:6,desc:'Take 65% less for 2 turns.'},
       {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'Hit ALL hard, drop guard.'},
+      {id:'last',name:'Last Stand',cost:14,desc:'2 turns: cannot fall below 1 HP. After: VULNERABLE.'},
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
@@ -866,6 +868,7 @@ const CLASSES={
       {id:'aim',name:'Aimed Shot',cost:8,desc:'Single shot, very high crit + BLEED.'},
       {id:'evade',name:'Evade',cost:6,desc:'+45% dodge for 2 turns.'},
       {id:'volley',name:'Volley',cost:12,aoe:true,desc:'3 arrows across the foes.'},
+      {id:'mark',name:'Marked Trail',cost:10,desc:'HUNT the target. Slaying it: +essence, +gold, +ultimate charge.'},
     ]},
 };
 
@@ -1136,6 +1139,20 @@ const EVENTS=[
      {label:'Bet everything',desc:'50/50: double all gold or lose it',run:p=>{if(p.gold<=0)return 'You have nothing to wager.';if(chance(48)){const g=p.gold;p.gold*=2;return `Fortune smiles! Your ${g} becomes ${p.gold} gold!`;}p.gold=0;return 'Disaster — you lose every coin to the cackling imp.';}},
      {label:'Refuse',desc:'Keep your gold',run:p=>'You decline. The imp sulks and disappears.'},
    ]},
+  {id:'mirror2',title:'THE MIRROR CHAMBER',sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  +----+\n  | () |\n  |/||\\|\n  +----+",
+   text:'Another champion stands across the chamber. Your face. Your scars. Your blade — held a heartbeat too late.',
+   options:[
+     {label:'Fuse with it',desc:'-25% max HP &middot; +6 ATK, +8% crit',run:p=>{const c=Math.round(p.maxHp*0.25);p.maxHp=Math.max(20,p.maxHp-c);p.hp=clamp(p.hp,1,p.maxHp);p.atk+=6;p.crit+=8;return `Skin to skin, soul to soul. The mirror is gone — -${c} max HP, +6 ATK, +8% crit.`;}},
+     {label:'Challenge it',desc:'Fight a doppelganger; victory grants a random relic',run:p=>{const hp=Math.round(p.maxHp*1.05);const ene=freshEnemy({name:'Mirror Self',sprite:p.sprite||"  (??)\n /||\\\n  d b",hp,maxHp:hp,atk:Math.max(8,p.atk+2),def:Math.max(2,(p.def||0)+1),xp:38,_mirrorBoon:true});G.room={type:'enemy',_enemies:[ene]};startBattle('The mirror steps out — fight your own ghost!');return false;}},
+     {label:'Shatter it',desc:'+14 essence, but the cold thickens',run:p=>{p.essence+=14;addMiasma(8);return `Glass rains down — +14 ${ESS}. The air sours where your reflection stood.`;}},
+   ]},
+  {id:'falseexit',title:'THE FALSE EXIT',art:"  /========\\\n  ||  ()  ||\n  || EXIT ||\n  || ____ ||\n  \\========/",
+   text:'A door of warm gold light bars the corridor. It promises a way out — every coin you have, every kill you have made, safe and remembered.',
+   options:[
+     {label:'Step through &mdash; end the run now',desc:'Claim victory at current depth. The crypt forgets the rest.',run:p=>{G._falseExit=1;claimVictory();return false;}},
+     {label:'Burn the door',desc:'Refuse &middot; +60% loot for the next 3 rooms',run:p=>{G._luckBoom=3;return 'You smash the gilded threshold. The light flares and dies — your luck swells for the next three rooms.';}},
+     {label:'Touch the threshold',desc:'Risk Miasma; relic if it favors you',run:p=>{if(chance(55)){const r=grantRandomRelic(p);return r?`The gold flares — a relic forms in your hand: ${r}.`:'The gold flares — but you already carry every relic it knows.';}const c=12;addMiasma(12);p.hp=clamp(p.hp-c,1,p.maxHp);return `The threshold drinks from you (-${c} HP, the cold thickens).`;}},
+   ]},
   {id:'mirror',title:'THE CURSED MIRROR',sprite:{src:'assets/players/mage.png',tint:'tint-blue'},art:"  +----+\n  | ?? |\n  | () |\n  +----+",
    text:'A tall mirror shows a warped reflection that moves a heartbeat too late.',
    options:[
@@ -1319,7 +1336,9 @@ function coolHeat(n){ G.heat=clamp(G.heat-n,0,140); }
 function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
 function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
 /* damage the player from a tracked source; returns true if it killed them */
-function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp; p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp); return p.hp<=0; }
+function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp;
+  const b=G.battle; if(b&&b.lastStand>0) amt=Math.min(amt,Math.max(0,before-1));
+  p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp); return p.hp<=0; }
 /* TIME DEBT — borrow power now, pay survival later. Answers "how much future do I sacrifice?" */
 function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150); if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
@@ -1395,8 +1414,27 @@ function recomputeSets(p){
 function rollRarity(depth){ let w=[Math.max(3,42-depth*2.2),30,13+depth*0.7,4+depth*0.6,Math.max(0,depth*0.45-1)];
   if(G.mods&&G.mods.luck)w=w.map((x,i)=>i>=2?x*1.8:x*0.7);
   const ht=heatTier(); if(ht>=1)w=w.map((x,i)=>i>=2?x*(1+ht*0.35):x*(1-ht*0.12)); // the Furnace forges richer spoils
+  if(G._luckBoom>0)w=w.map((x,i)=>i>=2?x*2.2:x*0.5); // false-exit refusal &middot; transient luck spike
   let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<5;i++){ if(r<w[i])return i; r-=w[i]; } return 0; }
 function rollIlvl(depth){ return clamp(depth+rnd(3)-1,1,30); }
+const WEAPON_TRAITS={
+  bleed:  {name:'Bleeding',  short:'BLEED',  desc:'Crits apply heavy BLEED.',            color:'red',    fxKind:'poison'},
+  cursed: {name:'Cursed',    short:'CURSED', desc:'+25% DMG. Each strike adds +1 Miasma.',color:'purple', fxKind:'arcane'},
+  soul:   {name:'Soulbound', short:'SOUL',   desc:'+0.4% DMG per kill this run (cap 32%).',color:'amber',fxKind:'crit'},
+  furnace:{name:'Furnace-forged',short:'FURNACE',desc:'+0.5% DMG per Heat point (cap 50%).',color:'red',fxKind:'fire'},
+  frost:  {name:'Frost-touched',short:'FROST',  desc:'+0.7% DMG per Miasma point (cap 56%).',color:'blue',fxKind:'frost'},
+  debt:   {name:'Debt-bound', short:'DEBT',  desc:'+0.5% DMG per Time Debt (cap 50%).',  color:'purple', fxKind:'arcane'},
+  echo:   {name:'Echo-marked',short:'ECHO',  desc:'+30% DMG once you take an Echo this run.',color:'teal',fxKind:'arcane'},
+};
+const WEAPON_TRAIT_KEYS=Object.keys(WEAPON_TRAITS);
+function weaponTraitMult(p){ const t=p.weapon&&p.weapon.trait; if(!t)return 1;
+  if(t==='cursed') return 1.25;
+  if(t==='soul')   return 1+Math.min(0.32,(p.kills||0)*0.004);
+  if(t==='furnace')return 1+Math.min(0.50,(G.heat||0)*0.005);
+  if(t==='frost')  return 1+Math.min(0.56,(G.miasma||0)*0.007);
+  if(t==='debt')   return 1+Math.min(0.50,(G.debt||0)*0.005);
+  if(t==='echo')   return p.flags.echoTaken?1.30:1;
+  return 1; }
 function makeItem(slot,cls,depth,opts){ opts=opts||{};
   let rarity=opts.rarity!=null?opts.rarity:rollRarity(depth);
   const ilvl=opts.ilvl!=null?opts.ilvl:rollIlvl(depth);
@@ -1410,13 +1448,19 @@ function makeItem(slot,cls,depth,opts){ opts=opts||{};
     if(passive.stat)for(const k in passive.stat)stats[k]=(stats[k]||0)+passive.stat[k];
     name=(passive.prefix||'')+name+(passive.suffix||''); }
   const item={slot,name,type:base.type,rarity,ilvl,stats,aff:base.aff||null,set:set||base.set||null};
-  if(slot==='weapon'){ item.dmg=stats.dmg||0; if(passive&&passive.proc)item.proc=passive.proc; }
+  if(slot==='weapon'){ item.dmg=stats.dmg||0; if(passive&&passive.proc)item.proc=passive.proc;
+    // WEAPON ARCHETYPE TRAIT — late-game weapons grow weird, tempting bad decisions.
+    if(opts.trait){ item.trait=opts.trait; }
+    else if(!item.proc && rarity>=2 && chance(22+Math.min(38,depth*2))){ item.trait=pick(WEAPON_TRAIT_KEYS); }
+  }
   if(passive&&passive.flag)item.passiveFlag=passive.flag;
   if(passive)item.passiveDesc=passive.desc;
   return item;
 }
 const STAT_LBL={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT',dodge:'DODGE',lifesteal:'LS',regen:'RGN'};
-function itemExtraText(it){ let s=''; if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`; if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`; return s; }
+function itemExtraText(it){ let s=''; if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`;
+  if(it.trait&&WEAPON_TRAITS[it.trait]){ const t=WEAPON_TRAITS[it.trait]; s+=` &middot; <span class="${t.color}">&#10070; ${t.name}</span><small class="muted" style="display:block">${t.desc}</small>`; }
+  if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`; return s; }
 function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stats||{}),...(cur?Object.keys(cur.stats||{}):[])])];
   const parts=keys.map(k=>{ const nv=it.stats[k]||0, ov=(cur&&cur.stats[k])||0, d=nv-ov;
     const dt=!cur?'':d>0?` <span class="green">&#9650;${d}</span>`:d<0?` <span class="red">&#9660;${-d}</span>`:'';
@@ -1427,6 +1471,7 @@ function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'
   for(const k in it.stats){ parts.push(`+${it.stats[k]} ${lbl[k]||k}`); }
   let s=parts.join(', ');
   if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`;
+  if(it.trait&&WEAPON_TRAITS[it.trait]){ const t=WEAPON_TRAITS[it.trait]; s+=` &middot; <span class="${t.color}">&#10070; ${t.name}</span>`; }
   if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`;
   return s; }
 
@@ -1622,9 +1667,10 @@ function echoChoice(kind){ const p=G.player,ec=G.room.echo;
     // weapons must match the current champion's class — reskin from another class's run
     if(it&&it.slot==='weapon'&&ec.cls&&ec.cls!==p.cls){ it=makeItem('weapon',p.cls,Math.max(1,it.ilvl),{rarity:it.rarity,ilvl:it.ilvl}); }
     if(it)equipItem(p,it);
+    addFlag(p,'echoTaken');
     const c=Math.round(p.maxHp*0.08); hurt(p,c,'hazard'); addMiasma(10); SFX.play('upgrade'); if(p.hp<=0){G.screen='gameover';return render();}
     G.room.outcome=`You pry the ${(it&&it.name)||'gear'} from cold fingers and don it. The dead resent the theft (-${c} HP, the cold thickens).`; render(); return; }
-  if(kind==='trade'&&ec.relic){ const gained=gainRelic(p,RELICS.find(r=>r.name===ec.relic)); addMiasma(12); G.room.outcome=gained?`You take the ${ec.relic}. Something follows it into you (the cold thickens).`:`You already carry the ${ec.relic}; you leave it.`; render(); return; }
+  if(kind==='trade'&&ec.relic){ const gained=gainRelic(p,RELICS.find(r=>r.name===ec.relic)); addFlag(p,'echoTaken'); addMiasma(12); G.room.outcome=gained?`You take the ${ec.relic}. Something follows it into you (the cold thickens).`:`You already carry the ${ec.relic}; you leave it.`; render(); return; }
   proceed(); }
 /* ---------- THE COLLECTOR (Time Debt comes due) ---------- */
 function unequip(p,slot){ const it=p.equip[slot]; if(!it)return null; applyItemStats(p,it,-1); if(it.passiveFlag)removeFlag(p,it.passiveFlag); p.equip[slot]=null;
@@ -1666,6 +1712,7 @@ function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presen
   chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
   merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',echo:'A cold presence — someone died here',collector:'A toll-keeper of brass and shadow',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
 function nextCorridor(){ G.depth++;
+  if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
   if(G._forceCollector){ G._forceCollector=0; G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
   if(G.abyss){ const floor=G.depth-RUN_LENGTH;
     if(floor%4===0){ const key=chance(35)?'devourer':pick(Object.keys(BOSSES)); G.doors=[{type:'enemy',boss:key,peek:'A horror of the deep stirs. It has been waiting.'}]; }
@@ -2038,7 +2085,7 @@ function renderBattle(){
       ${spriteHtml}
       <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
-      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
+      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.hunted?'<span class="chip c-burn" title="Hunted: bounty on death">&#127993; HUNTED</span>':'')+(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
       ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}</div>`;
   }).join('');
   const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
@@ -2048,6 +2095,8 @@ function renderBattle(){
   const pStatus=(b.barrier>0?`<span class="chip c-guard">BARRIER ${b.barrier}</span>`:'')
     +(b.pdefTurns>0?`<span class="chip c-guard">GUARD ${b.pdefTurns}</span>`:'')
     +(b.evadeTurns>0?`<span class="chip c-pois">EVADE ${b.evadeTurns}</span>`:'')
+    +(b.lastStand>0?`<span class="chip c-burn">LAST STAND ${b.lastStand}</span>`:'')
+    +(b.glassNext?`<span class="chip c-vuln" title="Next skill will shatter across all enemies">SIGIL READY</span>`:'')
     +(b.guardDown>0?`<span class="chip c-vuln">EXPOSED</span>`:'')+stChips(b.pst);
   const cm=G.mods.skillCost;
   const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm));
@@ -2092,6 +2141,7 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   if(f.executioner&&e.hp<=e.maxHp*et)m*=2;
   if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15;
   m*=slayerMult(e);
+  m*=weaponTraitMult(p);
   if(e.st.vulnT>0)m*=1.25;
   return m; }
 function rollCrit(){ return chance(effCrit(G.player)); }
@@ -2118,6 +2168,11 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   // SOUL ESSENCE: kill currency for the Forge
   let ess=2+Math.round((e.xp||6)/4); if(e.elite)ess+=5; if(e.boss)ess+=34; ess=Math.round(ess*(G.mods.essMul||1));
   p.essence+=ess; blog(`+${ess} ${ESS} essence.`,'info');
+  // MARKED TRAIL bounty
+  if(e.hunted){ const bg=14+rnd(20),be=10,bc=22; p.gold+=bg; p.essence+=be; const b=G.battle; if(b) gainCharge(bc);
+    blog(`Hunted prey falls — +${bg} gold, +${be} ${ESS}, ultimate surges.`,'crit'); }
+  // MIRROR CHAMBER reward
+  if(e._mirrorBoon){ const r=grantRandomRelic(p); if(r) blog(`Your reflection bursts into shards — relic forms: ${r}.`,'crit'); }
   if(e.elite&&chance(35)){ p.potions++; blog('It dropped a Health Potion!','heal'); }
   if(p.flags.bloodpact){ let h=Math.round(p.maxHp*0.08); if(p.flags.synSanguine)h*=2; heal(p,h); blog(`Blood Pact heals ${h}.`,'heal'); }
   if(p.flags.bloodKill){ const h=Math.round(p.maxHp*0.06); heal(p,h); }
@@ -2137,6 +2192,9 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapo
   SFX.play(c?'crit':'hit');
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
   const e=b.enemies[idx];
+  // WEAPON TRAITS — cursed pollutes, bleed cuts on crit
+  if(p.weapon.trait==='cursed'){ if(miasmaActive()) addMiasma(1); else addHeat(1); }
+  if(p.weapon.trait==='bleed' && c && e && e.hp>0){ addPoison(e.st,6,3); blog(`${e.name} BLEEDS!`,'info'); }
   // Avatar of Wrath: cleave splash to other foes
   if(p.affTier.w>=3 && done>0){ const cl=Math.max(1,Math.round(done*0.3));
     b.enemies.forEach((o,j)=>{ if(j!==idx&&o.hp>0){ o.hp=clamp(o.hp-cl,0,o.maxHp); blog(`Cleave hits ${o.name} for ${cl}.`,'dmg'); if(o.hp<=0)onEnemyDeath(o); } }); }
@@ -2177,7 +2235,7 @@ function aoeHit(fn){ G.battle.enemies.forEach((e,i)=>{ if(e.hp>0) fn(i); }); }
 function spendMana(cost){ const p=G.player; p.mana-=cost; let frac=0; if(p.flags.soulSiphon)frac=0.5; if(p.flags.synOver)frac=1.0; if(frac){ heal(p,Math.max(1,Math.round(cost*frac))); } }
 function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>x.id===id); if(!s||b.over)return;
   const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; spendMana(cost); ensureTarget();
-  _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow'}[id]||'hit';
+  _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow',glass:'arcane',last:'hit',mark:'arrow'}[id]||'hit';
   const mm=p.maxMana;
   switch(id){
     case 'bolt':{SFX.play('skill');let d=10+Math.round(mm*0.14)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
@@ -2193,6 +2251,20 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
       else { let d=(p.atk+p.weapon.dmg)*1.58;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,5,3); } break;}
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
+    case 'glass':{SFX.play('skill');const c=Math.max(1,Math.round(p.hp*0.15));p.hp=clamp(p.hp-c,1,p.maxHp);b.glassNext=1;blog(`Glass Sigil etched in your own blood (-${c} HP). Your next skill will SHATTER.`,'crit');break;}
+    case 'last':{SFX.play('skill');b.lastStand=2;b.lastVuln=2;blog('LAST STAND — you cannot fall for 2 turns!','crit');break;}
+    case 'mark':{SFX.play('arrow');const me=b.enemies[b.target];if(me&&me.hp>0){me.hunted=1;blog(`${me.name} is HUNTED — slay it for bounty.`,'crit');}else{blog('No living target to mark.','info');} break;}
+  }
+  // GLASS SIGIL echo: after any non-AOE skill, splash arcane damage across the other foes.
+  if(b.glassNext && id!=='glass'){
+    const skill=p.skills.find(x=>x.id===id);
+    if(skill && !skill.aoe){
+      b.glassNext=0;
+      const echo=Math.max(6,Math.round((p.atk+p.weapon.dmg)*0.55+(p.maxMana||0)*0.08));
+      let any=false;
+      b.enemies.forEach((e,i)=>{ if(i!==b.target && e.hp>0){ any=true; dealToEnemy(i,echo,'Sigil shatters across',false); }});
+      if(any) blog('The sigil rings out — the spell tears across the room!','crit');
+    }
   }
   gainCharge(24); afterPlayer(); }
 function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.30); heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
@@ -2232,6 +2304,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const frac=e.manaburn?0.45:0.6; const ab=Math.min(p.mana,Math.ceil(dmg*frac)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
     if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.10)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
     let lethal=p.hp-dmg<=0;
+    if(lethal&&b.lastStand>0){ dmg=Math.max(0,p.hp-1); lethal=false; blog('LAST STAND holds — the blow cannot fell you!','crit'); }
     if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
     else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
     if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
@@ -2245,6 +2318,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   b.enemies.forEach(e=>{ if(e.st.weakT>0)e.st.weakT--; if(e.st.vulnT>0)e.st.vulnT--; });
   if(b.pst.vulnT>0)b.pst.vulnT--;
   if(b.pdefTurns>0)b.pdefTurns--; if(b.evadeTurns>0)b.evadeTurns--; if(b.guardDown>0)b.guardDown--;
+  if(b.lastStand>0){ b.lastStand--; if(b.lastStand===0 && b.lastVuln>0){ addVuln(b.pst,b.lastVuln); b.lastVuln=0; blog('Last Stand fades — you are VULNERABLE.','info'); } }
   p.mana=clamp(p.mana+p.regen,0,p.maxMana);
   flash('playerHit');
   if(p.hp<=0){ b.over=true; SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
