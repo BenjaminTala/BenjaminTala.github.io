@@ -766,7 +766,7 @@ const BOSS_DEATHCRY={ warden:'"Fool... you opened the furnace. The cold below wa
 const CLASSES={
   mage:{name:'MAGE',color:'purple',affinity:'ARCANE',
     affinityText:'Spell power scales with MAX MANA. Mana also soaks incoming damage (Mana Shield) and refills fast.',
-    hp:94,mana:124,atk:5,def:0,dodge:0,crit:5,lifesteal:0,regen:16,
+    hp:100,mana:128,atk:6,def:1,dodge:0,crit:9,lifesteal:0,regen:18,
     weapon:{name:'Apprentice Wand',dmg:5,type:'magic'},
     sprite:"   /\\\n  (oo)\n <(  )>\n   ||\n  _||_",
     skills:[
@@ -786,7 +786,7 @@ const CLASSES={
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
-    hp:122,mana:30,atk:10,def:3,dodge:25,crit:18,lifesteal:0,regen:5,
+    hp:124,mana:30,atk:11,def:4,dodge:27,crit:21,lifesteal:0,regen:5,
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
@@ -833,7 +833,7 @@ const AFFIXES=[
 const COUNTERS={
   stoic:      {prefix:'Stoic ',      short:'TOUGH',       label:'shrugs off raw force (you deal ~40% less)', apply:e=>{e.resist=0.6;}},
   coldblooded:{prefix:'Coldblooded ',short:'CRIT-WARD',   label:'crits glance off it (crit bonus halved)',   apply:e=>{e.noCrit=1;}},
-  relentless: {prefix:'Relentless ', short:'UNERRING',    label:'its blows are hard to evade (-32% dodge vs it)', apply:e=>{e.pierceDodge=32;}},
+  relentless: {prefix:'Relentless ', short:'UNERRING',    label:'its blows are hard to evade (-22% dodge vs it)', apply:e=>{e.pierceDodge=22;}},
   bloodless:  {prefix:'Bloodless ',  short:'BLOODLESS',   label:'no blood to drain (your lifesteal fails)',  apply:e=>{e.bloodless=1;}},
   manasever:  {prefix:'Mana-Sever ', short:'MANA-EATER',  label:'devours your mana and pierces the Mana Shield', apply:e=>{e.manaburn=1;}},
   warded:     {prefix:'Warded ',     short:'STATUS-WARD', label:'resists burn & poison (DoT halved)',         apply:e=>{e.statusWard=1;}},
@@ -1194,6 +1194,34 @@ function loadLore(){ try{ return JSON.parse(localStorage.getItem('crypt_lore')||
 function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg; return true; }
 function loadRecords(){ try{ return Object.assign({deepest:0,runs:0,wins:0},JSON.parse(localStorage.getItem('crypt_records')||'{}')); }catch(e){ return {deepest:0,runs:0,wins:0}; } }
 function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(r.deepest||0,G.depth); try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+/* atmospheric whispers — drip the world into the player run by run */
+const WHISPERS={
+  0:['You hear something turn over in its sleep, far below.','Dust falls in still air. The crypt is listening.','A name is scratched into the stone — you do not know it. Yet.','The torches here are newer than the tombs.','A single boot lies forgotten. Its owner did not walk back this way.'],
+  1:['Iron sweats. The Furnace is testing you.','A draught carries the smell of cooked metal.','Something hammers in time with your heart.','The walls remember being warmer than this.','A handprint, melted into the stone, fingers spread wide.'],
+  2:['Your breath is the loudest sound in the world now.','Frost forms on the rim of your eye.','A whisper, barely there: "you opened it."','Wounds you do not remember taking weep slowly.','You think you saw your own reflection turn a corner ahead.'],
+  3:['Reality grows thin like worn cloth.','You step where there is no floor and do not fall.','You catch yourself thinking thoughts that are not yours.','The Deep has been waiting a very long time. It is patient.','A voice that sounds like yours says: "we are almost home."'],
+};
+function whisperFor(d){ if(G.abyss)return pick(WHISPERS[3]); return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
+/* boss bios — shown the first time you meet each boss across all your runs */
+const BOSS_BIO={
+  ogre:'An old warlord who chose this crypt over a soft death. He keeps the gate as a kindness — to himself.',
+  gobking:'The last of his kin who could read. He has no kingdom left, only loyal teeth.',
+  spider:'Her children are old enough to walk now. She is hungry from the long wait.',
+  warden:"The dragon was not the prison's evil. It was the lock. It says so, and it is right.",
+  necro:'Holds court over a parliament that no longer remembers being alive.',
+  titan:'Stone hauled into this shape by hands that have since forgotten how.',
+  tyrant:'It rules the dark by the simple right of being there longest.',
+  demon:'Brought down here in chains by a champion none remember. It outlived them.',
+  lich:'Studied immortality for so long it forgot to study mercy.',
+  flameknight:'Asked to die for a kingdom that no longer existed, and refused.',
+  king:'He sat. The Deep stayed shut. He has been sitting for an age and a half.',
+  dragon:"The crypt's warden once, then the prison itself.",
+  devourer:'It does not eat flesh. It eats every future that ever could have been.',
+};
+function showBossIntro(key){ if(!BOSS_BIO[key]||!BOSSES[key])return; let seen=[];
+  try{seen=JSON.parse(localStorage.getItem('crypt_seen_boss')||'[]');}catch(e){}
+  if(seen.includes(key))return; seen.push(key); try{localStorage.setItem('crypt_seen_boss',JSON.stringify(seen));}catch(e){}
+  showInfo({title:BOSSES[key].name,body:`<i class="red">${BOSS_CRY[key]||''}</i><br><br>${BOSS_BIO[key]}`}); }
 let G=null;
 function defaultMods(){ return {eDmg:1,eHp:1,pDmg:1,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
 function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
@@ -1517,7 +1545,12 @@ function echoChoice(kind){ const p=G.player,ec=G.room.echo;
     else if(!corrupt){ heal(p,Math.round(p.maxHp*0.08)); line=`"${ec.line}" Its peace settles on you (small heal).`; }
     else { line=`"${ec.line}" ...but the dead misremember. Trust it at your peril.`; }
     G.room.outcome=line; SFX.play('chest'); render(); return; }
-  if(kind==='take'&&ec.item){ try{ equipItem(p,JSON.parse(JSON.stringify(ec.item))); }catch(e){} const c=Math.round(p.maxHp*0.08); hurt(p,c,'hazard'); addMiasma(10); SFX.play('upgrade'); if(p.hp<=0){G.screen='gameover';return render();} G.room.outcome=`You pry the ${ec.item.name} from cold fingers and don it. The dead resent the theft (-${c} HP, the cold thickens).`; render(); return; }
+  if(kind==='take'&&ec.item){ let it=null; try{ it=JSON.parse(JSON.stringify(ec.item)); }catch(e){}
+    // weapons must match the current champion's class — reskin from another class's run
+    if(it&&it.slot==='weapon'&&ec.cls&&ec.cls!==p.cls){ it=makeItem('weapon',p.cls,Math.max(1,it.ilvl),{rarity:it.rarity,ilvl:it.ilvl}); }
+    if(it)equipItem(p,it);
+    const c=Math.round(p.maxHp*0.08); hurt(p,c,'hazard'); addMiasma(10); SFX.play('upgrade'); if(p.hp<=0){G.screen='gameover';return render();}
+    G.room.outcome=`You pry the ${(it&&it.name)||'gear'} from cold fingers and don it. The dead resent the theft (-${c} HP, the cold thickens).`; render(); return; }
   if(kind==='trade'&&ec.relic){ const gained=gainRelic(p,RELICS.find(r=>r.name===ec.relic)); addMiasma(12); G.room.outcome=gained?`You take the ${ec.relic}. Something follows it into you (the cold thickens).`:`You already carry the ${ec.relic}; you leave it.`; render(); return; }
   proceed(); }
 /* ---------- THE COLLECTOR (Time Debt comes due) ---------- */
@@ -1567,7 +1600,8 @@ function nextCorridor(){ G.depth++;
     return; }
   if(G.depth===1||G.depth===6||G.depth===11||G.depth===16){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]&&discoverLore(({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]); if(G.depth>1)stagePopup(G.depth); }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
-  else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); } }
+  else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); }
+  G._whisper = chance(28) ? whisperFor(G.depth) : null; }
 /* ROOM ADJACENCY — neighbouring doors bleed into each other */
 function adjacency(doors){ for(let i=0;i<doors.length-1;i++){ const a=doors[i],b=doors[i+1]; pairAdj(a,b); pairAdj(b,a); } }
 function pairAdj(a,b){ // a is influenced by neighbour b
@@ -1587,6 +1621,7 @@ function renderCorridor(){
   const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${wmsg}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
+      ${G._whisper?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
 let _invReturn='corridor';
@@ -1680,7 +1715,7 @@ function scaleEnemy(unit,depth){
 }
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-5); const dm=debtMul();
   const hpF=(1+e*0.07+e*e*0.0072)*dm, atkF=(1+e*0.05+e*e*0.0034)*dm;
-  const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key]});
+  const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key],_key:key});
   if(!boss._collector)maybeCounter(boss,true);
   return boss; }
 function findBase(n){ return ENEMIES.find(e=>e.name===n); }
@@ -1899,7 +1934,7 @@ function startBattle(intro){
   G.log=[];
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
-  const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE) blog(bossE.cry,'crit');
+  const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE){ blog(bossE.cry,'crit'); if(bossE._key)showBossIntro(bossE._key); }
   G.battle.intro=true;
   G.screen='battle'; render(); playTransition(G.battle.hadBoss?'#6e0d1a':'#3a1622');
 }
@@ -2071,8 +2106,8 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
       aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.6:1.35)+rnd(5);let c=rollCrit();if(c)d*=1.4;dealToEnemy(i,d,'Whirlwind rends',c);});
       if(k){ const h=Math.round(p.maxHp*0.05); heal(p,h); blog(`The cyclone restores ${h} HP.`,'heal'); } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
-    case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.25;let c=chance(effCrit(p)+15);if(c)d*=1.9;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
-      else { let d=(p.atk+p.weapon.dmg)*1.45;let c=chance(effCrit(p)+25);if(c)d*=1.9;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,4,2); } break;}
+    case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.35;let c=chance(effCrit(p)+22);if(c)d*=2.0;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
+      else { let d=(p.atk+p.weapon.dmg)*1.58;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,5,3); } break;}
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
   }
