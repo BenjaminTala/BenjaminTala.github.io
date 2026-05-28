@@ -397,7 +397,9 @@
   .ff-portrait .ffbar{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:5px;font-size:7px}
   .ff-portrait .ffbar .lbl{color:var(--muted);font-size:7px;letter-spacing:1px}
   .ff-portrait .ffbar .num{font-size:7px;min-width:42px;text-align:right;color:var(--ink)}
-  .ff-portrait .ffbar .track{height:7px;background:#0a0a18;border:1px solid #1c2040}
+  .ff-portrait .ffbar .track{height:7px;background:#0a0a18;border:1px solid #1c2040;padding:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 1px 2px rgba(0,0,0,.6);position:relative;overflow:hidden}
+  .ff-portrait .ffbar .fill{height:100%;transition:width .35s ease;position:relative;box-shadow:0 0 4px currentColor}
+  .ff-portrait .ffbar .fill::after{content:'';position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0));pointer-events:none}
   .ff-cmd{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
     border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20;
     padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;align-content:start}
