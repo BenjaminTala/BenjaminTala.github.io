@@ -828,6 +828,27 @@ const AFFIXES=[
   {tag:'Toxic',    hp:1.4,atk:1.1,def:1, poison:[6,3,70], desc:'poisons you'},
   {tag:'Brutal',   hp:1.6,atk:1.3,def:2, desc:'huge & strong'},
 ];
+/* COUNTER-AFFIXES — partial answers to your build. The deeper you commit to one
+   axis, the more often the crypt grows something that resists it (never 100%). */
+const COUNTERS={
+  stoic:      {prefix:'Stoic ',      short:'TOUGH',       label:'shrugs off raw force (you deal ~40% less)', apply:e=>{e.resist=0.6;}},
+  coldblooded:{prefix:'Coldblooded ',short:'CRIT-WARD',   label:'crits glance off it (crit bonus halved)',   apply:e=>{e.noCrit=1;}},
+  relentless: {prefix:'Relentless ', short:'UNERRING',    label:'its blows are hard to evade (-32% dodge vs it)', apply:e=>{e.pierceDodge=32;}},
+  bloodless:  {prefix:'Bloodless ',  short:'BLOODLESS',   label:'no blood to drain (your lifesteal fails)',  apply:e=>{e.bloodless=1;}},
+  manasever:  {prefix:'Mana-Sever ', short:'MANA-EATER',  label:'devours your mana and pierces the Mana Shield', apply:e=>{e.manaburn=1;}},
+  warded:     {prefix:'Warded ',     short:'STATUS-WARD', label:'resists burn & poison (DoT halved)',         apply:e=>{e.statusWard=1;}},
+};
+function pickCounter(p){ if(!p)return {key:null,score:0};
+  const s={ stoic:p.affTier.w*3.5+(p.flags.glassCannon?3:0)+(p.flags.berserker?2:0)+Math.max(0,(p.atk-12)/2),
+    coldblooded:Math.max(0,(effCrit(p)-25)/3),
+    relentless:Math.max(0,(effDodge(p)-25)/3),
+    bloodless:Math.max(0,(p.lifesteal-15)/3),
+    manasever:(p.cls==='mage'?4:0)+(p.flags.gearManaShield?3:0)+Math.max(0,(p.maxMana-100)/40),
+    warded:(p.flags.toxic?3:0)+(p.flags.frostbrand?2:0)+(p.flags.sunder?2:0)+((p.weapon&&p.weapon.proc)?3:0)+(p.affTier.g>=2?2:0) };
+  let best=null,bv=0; for(const k in s){ if(s[k]>bv){bv=s[k];best=k;} } return {key:best,score:bv}; }
+function maybeCounter(e,bossier){ const c=pickCounter(G.player); if(!c.key)return;
+  const ch=clamp((c.score-3)*(bossier?4.5:3.5),0,bossier?38:25); if(!chance(ch))return;
+  COUNTERS[c.key].apply(e); e.name=COUNTERS[c.key].prefix+e.name; e.counter=c.key; e.xp=(e.xp||6)+8; e.goldBonus=(e.goldBonus||0)+6; }
 
 /* ============================================================
    BOSSES  (pools per zone, picked at random each run)
@@ -1654,11 +1675,14 @@ function scaleEnemy(unit,depth){
   if(heatActive()&&heatTier()>=1&&!e.burnAtk){ e.burnAtk=[3+heatTier()*2,2,30+heatTier()*12]; if(heatTier()>=3)e.atk=Math.round(e.atk*1.1); }
   // FROZEN BELOW / DEEP: enemies are armored, hardier, and shrug off flame
   if(miasmaActive()){ e.frozen=true; e.def=(e.def||0)+3; e.maxHp=Math.round(e.maxHp*1.15); e.hp=e.maxHp; }
+  maybeCounter(e,false);
   return e;
 }
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-5); const dm=debtMul();
   const hpF=(1+e*0.07+e*e*0.0072)*dm, atkF=(1+e*0.05+e*e*0.0034)*dm;
-  return freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key]}); }
+  const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key]});
+  if(!boss._collector)maybeCounter(boss,true);
+  return boss; }
 function findBase(n){ return ENEMIES.find(e=>e.name===n); }
 function buildEnemies(room){
   let list;
@@ -1906,7 +1930,7 @@ function renderBattle(){
       <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
       ${spriteHtml}
-      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':stChips(e.st)}</div>
+      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
       ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}</div>`;
   }).join('');
   const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
@@ -1981,12 +2005,13 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   if(p.flags.bloodKill){ const h=Math.round(p.maxHp*0.06); heal(p,h); }
   if(p.flags.synOver){ p.mana=clamp(p.mana+8,0,p.maxMana); } }
 function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.player; if(!e||e.hp<=0)return 0;
-  dmg=Math.max(1,Math.round(dmg*playerDamageMult(e)-(e.def||0)));
+  let m=playerDamageMult(e); if(e.resist)m*=e.resist; if(crit&&e.noCrit)m*=0.6;   // counter-affixes
+  dmg=Math.max(1,Math.round(dmg*m-(e.def||0)));
   e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx;
-  (b.floats=b.floats||[]).push({idx,text:''+dmg,cls:crit?'crit':'dmg'});
+  (b.floats=b.floats||[]).push({idx,text:''+dmg+(e.resist?' &#128737;':''),cls:crit?'crit':'dmg'});
   pushFx(idx, crit?'crit':(_fxKind||'hit'));
   blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${b.enemies.length>1?` [${e.name}]`:''}`,crit?'crit':'dmg');
-  if(p.lifesteal>0){ const ls=Math.max(1,Math.round(dmg*p.lifesteal/100)); heal(p,ls); blog(`You drain ${ls} HP.`,'heal'); }
+  if(p.lifesteal>0&&!e.bloodless){ const ls=Math.max(1,Math.round(dmg*p.lifesteal/100)); heal(p,ls); blog(`You drain ${ls} HP.`,'heal'); }
   if(crit&&p.affTier.g>=3){ p.mana=clamp(p.mana+5,0,p.maxMana); }
   if(e.hp<=0) onEnemyDeath(e);
   return dmg; }
@@ -2059,9 +2084,9 @@ function fleeBattle(){ const p=G.player,b=G.battle;
   else { blog('You failed to flee!','info'); enemyTurn(); } }
 
 function tickDoT(entity,st,name){ // returns false if entity died
-  const isPlayer=(name==='you');
-  if(st.burnT>0){ entity.hp=clamp(entity.hp-st.burn,0,entity.maxHp||entity.hp+st.burn); if(isPlayer)attrib('burn',st.burn); blog(`Burn sears ${name} for ${st.burn}.`,'dmg'); st.burnT--; }
-  if(st.poisonT>0){ entity.hp=clamp(entity.hp-st.poison,0,entity.maxHp||entity.hp+st.poison); if(isPlayer)attrib('poison',st.poison); blog(`Poison wracks ${name} for ${st.poison}.`,'dmg'); st.poisonT--; }
+  const isPlayer=(name==='you'); const ward=(!isPlayer&&entity.statusWard)?0.5:1;   // Warded enemies shrug off DoT
+  if(st.burnT>0){ const d=Math.max(1,Math.round(st.burn*ward)); entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('burn',d); blog(`Burn sears ${name} for ${d}.`,'dmg'); st.burnT--; }
+  if(st.poisonT>0){ const d=Math.max(1,Math.round(st.poison*ward)); entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('poison',d); blog(`Poison wracks ${name} for ${d}.`,'dmg'); st.poisonT--; }
   if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
   return entity.hp>0;
 }
@@ -2079,14 +2104,15 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if(e.boss&&e.hp<=e.maxHp*0.35){dmg=Math.round(dmg*1.4);}            // enrage
     if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
     dmg=Math.round(dmg*G.mods.eDmg);
-    const dodgeChance=Math.min(66,effDodge(p)+(b.evadeTurns>0?b.evade:0));
+    const dodgeChance=Math.max(0,Math.min(66,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
     if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
     let red=(b.pdefTurns>0?b.pdef:0);
     dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.7)));
     if(b.guardDown>0)dmg=Math.round(dmg*1.3);
     if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
     if(b.barrier>0&&dmg>0){ const ab=Math.min(b.barrier,dmg); b.barrier-=ab; dmg-=ab; blog(`Barrier absorbs ${ab}.`,'info'); }
-    if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const ab=Math.min(p.mana,Math.ceil(dmg*0.6)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
+    if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const frac=e.manaburn?0.45:0.6; const ab=Math.min(p.mana,Math.ceil(dmg*frac)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
+    if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.10)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
     let lethal=p.hp-dmg<=0;
     if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
     else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
