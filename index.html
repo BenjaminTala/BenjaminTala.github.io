@@ -1096,7 +1096,7 @@ const RELICS=[
   {id:'frostbrand',name:'Frostbrand',aff:{g:2},note:'basic attacks WEAKEN foes',apply:p=>{addFlag(p,'frostbrand');}},
   {id:'sunder',name:'Sunderer',aff:{w:1,g:1},note:'basic attacks apply VULNERABLE',apply:p=>{addFlag(p,'sunder');}},
   {id:'regenrelic',name:'Trollblood',aff:{v:2},note:'regenerate 4% HP each combat turn',apply:p=>{addFlag(p,'combatRegen');}},
-  {id:'second',name:'Phoenix Feather',aff:{v:2},note:'survive a lethal blow once per battle',apply:p=>{addFlag(p,'secondWind');}},
+  {id:'second',name:'Phoenix Feather',aff:{v:2},note:'survive a lethal blow once per run',apply:p=>{addFlag(p,'secondWind');}},
   {id:'scholar',name:"Scholar's Lens",aff:{g:1,v:1},note:'+50% XP gained',apply:p=>{addFlag(p,'scholar');}},
   {id:'giant',name:'Giant Growth',aff:{v:2},note:'+30% max HP',apply:p=>{const g=Math.round(p.maxHp*0.3);p.maxHp+=g;heal(p,g);}},
   {id:'crit',name:'Eagle Eye',aff:{g:2},note:'+18% crit, crits deal more',apply:p=>{p.crit+=18;addFlag(p,'bigCrit');}},
@@ -2615,7 +2615,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
       if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.12)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
       let lethal=p.hp-dmg<=0;
       if(lethal&&b.lastStand>0){ dmg=Math.max(0,p.hp-1); lethal=false; blog('LAST STAND holds — the blow cannot fell you!','crit'); }
-      if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
+      if(lethal&&p.flags.secondWind&&!p._phoenixUsed){ p._phoenixUsed=1; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away — one charge, this run.)','lvl'); }
       else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
       if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
       if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
