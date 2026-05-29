@@ -2513,6 +2513,15 @@ function flash(kind){ const scene=$('scene');
 function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   // carry ultimate charge to the next fight
   p._charge=clamp(b.charge||0,0,100);
+  // ECHO LOOT — if you killed an Echo, the gear it carried (and its relic) drops to you.
+  // Weapons from a different class are reskinned to your own, same rarity/ilvl.
+  const echoEnemyKilled=b.enemies.find(e=>e._echo);
+  if(echoEnemyKilled){ const ec=echoEnemyKilled._echo;
+    if(ec.item){ let it=null; try{ it=JSON.parse(JSON.stringify(ec.item)); }catch(e){}
+      if(it&&it.slot==='weapon'&&ec.cls&&ec.cls!==p.cls){ it=makeItem('weapon',p.cls,Math.max(1,it.ilvl),{rarity:it.rarity,ilvl:it.ilvl}); }
+      if(it){ equipItem(p,it); blog(`You loot the echo's ${it.name} (Lv${it.ilvl}).`,'lvl'); } }
+    if(ec.relic){ const r=RELICS.find(x=>x.name===ec.relic); if(r){ const gained=gainRelic(p,r); if(gained) blog(`You take the echo's relic: ${ec.relic}.`,'lvl'); } }
+  }
   let gold=(8+rnd(12))+G.depth*2+(b.enemies.length-1)*6;
   b.enemies.forEach(e=>{ if(e.goldBonus)gold+=e.goldBonus; });
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
