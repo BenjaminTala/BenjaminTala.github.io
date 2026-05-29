@@ -79,6 +79,20 @@
   #vignette{position:fixed;inset:0;pointer-events:none;z-index:150;opacity:0;transition:opacity .3s;box-shadow:inset 0 0 110px 36px rgba(255,30,50,.55)}
   #vignette.on{opacity:1;animation:vigpulse 1.1s ease-in-out infinite}
   @keyframes vigpulse{0%,100%{opacity:.5}50%{opacity:.95}}
+  /* WORLD FEEL — Heat and Miasma tint the whole interface. They should never be invisible. */
+  body.world-hot   #app{filter:hue-rotate(-8deg) saturate(1.15) brightness(1.04); box-shadow:inset 0 0 80px rgba(255,90,30,.10)}
+  body.world-hot::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;background:radial-gradient(ellipse at 50% 110%,rgba(255,90,30,.10) 0%,transparent 60%);animation:hotShimmer 4s ease-in-out infinite alternate}
+  body.world-sear  #app{filter:hue-rotate(-14deg) saturate(1.35) brightness(1.06); box-shadow:inset 0 0 120px rgba(255,60,30,.18)}
+  body.world-sear::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,60,30,.22) 0%,transparent 65%);animation:hotShimmer 2.8s ease-in-out infinite alternate}
+  @keyframes hotShimmer{from{opacity:.55}to{opacity:1}}
+  body.world-cold  #app{filter:hue-rotate(12deg) saturate(.85) brightness(.96); box-shadow:inset 0 0 80px rgba(120,140,200,.10)}
+  body.world-cold::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;background:radial-gradient(ellipse at 50% -10%,rgba(160,180,220,.10) 0%,transparent 60%)}
+  body.world-rot   #app{filter:hue-rotate(24deg) saturate(.7) brightness(.92) contrast(1.06); box-shadow:inset 0 0 120px rgba(140,90,200,.18)}
+  body.world-rot::after{background:radial-gradient(ellipse at 50% -10%,rgba(180,120,220,.18) 0%,transparent 70%);animation:rotPulse 5s ease-in-out infinite}
+  body.world-undone #app{filter:hue-rotate(36deg) saturate(.55) brightness(.86) contrast(1.12); box-shadow:inset 0 0 160px rgba(160,80,220,.30); animation:undoneSway 6s ease-in-out infinite alternate}
+  body.world-undone::after{background:radial-gradient(ellipse at 50% -10%,rgba(200,140,240,.28) 0%,transparent 80%);animation:rotPulse 3.2s ease-in-out infinite}
+  @keyframes rotPulse{0%,100%{opacity:.4}50%{opacity:.9}}
+  @keyframes undoneSway{from{transform:translateX(-1px)}to{transform:translateX(1px)}}
   .enemy-cell.target{border-color:var(--amber);background:#00000055}
   .enemy-cell.dead{opacity:.25;filter:grayscale(1)}
   .enemy-cell pre.sprite{font-size:9px;color:var(--red)}
@@ -829,18 +843,18 @@ const BOSS_CRY={
   ogre:'"FRESH MEAT FOR THE WARLORD!"', gobking:'"Kill it! Kill it for the King!"', spider:'"My children are so hungry..."',
   necro:'"You will serve me in death."', titan:'"...INTRUDER. CRUSH. CRUSH."', tyrant:'"This crypt is MINE, little champion."',
   demon:'"Your soul will burn for a thousand years."', lich:'"Flesh is such a fleeting indulgence."', flameknight:'"Ash to ash, hero."',
-  dragon:'"I kept the door closed. I hoped — this time — it would be different."',
-  king:'"Every champion reaches this place. Every champion is the same champion."',
-  devourer:'"AT LAST... ANOTHER PIECE COMES HOME."',
-  warden:'"Turn back, champion. I am not your enemy — I am the lock."',
+  dragon:'"Every time you reach me, you think you are the first."',
+  king:'"You should not be tired yet. You will be."',
+  devourer:'"...closer. I have been so quiet. ...come closer."',
+  warden:'"You mistake mercy for obstruction. You always do."',
   remembered:'"Do you understand now? ... No? Good. Then you still have a chance."',
 };
 const BOSS_DEATHCRY={
-  warden:'"Fool... you opened the furnace. The cold below was never sealed for YOUR sake."',
-  dragon:'"Fool... you opened the furnace. We are not done with this, you and I."',
-  king:'"Sit, then. Wear the crown. I have grown so tired of waiting."',
-  devourer:'"...so much of me is missing. So much of me... is YOU."',
-  remembered:'"Now you know. I am sorry. ...I will see you next time."',
+  warden:'"...I tried. I will try again."',
+  dragon:'"...not yet. Not like this. Not again."',
+  king:'"Sit, then. Wear the crown. I am so tired."',
+  devourer:'"...I have been waiting so long. I am never done waiting."',
+  remembered:'"...you should have stayed asleep. I will see you next time."',
 };
 
 /* ============================================================
@@ -1601,7 +1615,15 @@ const ZONE_BG=['radial-gradient(circle at 50% 15%, #2a1e10 0%, #0d0b16 58%, #070
   'radial-gradient(circle at 50% 15%, #0e2640 0%, #0a0e1d 58%, #05080f 100%)',
   'radial-gradient(circle at 50% 15%, #20123a 0%, #0c0a1d 58%, #060611 100%)'];
 function setZoneBg(){ try{ const inRun=G.player&&['corridor','room','event','reward','battle','triumph','merchant','inventory'].includes(G.screen);
-  document.body.style.background = inRun ? (G.abyss?ZONE_BG[3]:ZONE_BG[zoneOf(G.depth)]) : ''; }catch(e){} }
+  document.body.style.background = inRun ? (G.abyss?ZONE_BG[3]:ZONE_BG[zoneOf(G.depth)]) : '';
+  // Heat and Miasma should be felt — apply body classes that tint the whole UI.
+  const ht=heatActive()?heatTier():0, mt=miasmaActive()?miasmaTier():0;
+  document.body.classList.toggle('world-hot',  ht>=2);
+  document.body.classList.toggle('world-sear', ht>=3);
+  document.body.classList.toggle('world-cold', mt>=2);
+  document.body.classList.toggle('world-rot',  mt>=4);
+  document.body.classList.toggle('world-undone',mt>=5);
+}catch(e){} }
 function go(s){ G.screen=s; render(); }
 const ROOM_TINT={enemy:'#5a1620',chest:'#5a4410',relic:'#3a1a5a',merchant:'#4a3a12',forge:'#143a3a',echo:'#2a2440',collector:'#4a3a12',shrine:'#3a1a5a',fountain:'#163450',event:'#16403a',empty:'#1c1c30'};
 function playTransition(color){ const t=$('transition'); if(!t||!t.classList)return; t.style.background=`linear-gradient(180deg, ${color} 0%, #050410 92%)`; t.classList.remove('go'); void t.offsetWidth; t.classList.add('go'); }
@@ -1686,22 +1708,103 @@ function rollAffix(depth){
   let p=4+depth*1.1; p*=G.mods.eliteMul;
   return chance(p)?pick(AFFIXES):null;
 }
+// Door peeks — sensory, ambiguous. The player should suspect, not know.
+const PEEKS={
+  enemy:[
+    'Scratching. Steady, patient scratching.',
+    'Something paces. It stops when you stop.',
+    'A wet, rhythmic sound. Breathing. Or chewing.',
+    'A growl that lasts longer than one breath.',
+    'Iron and salt. Whatever is past this door is bleeding.',
+    'You hear knuckles drumming on stone.',
+  ],
+  chest:[
+    'The smell of old gold and oiled cloth.',
+    'A glint past the threshold. A coin? A tooth?',
+    'Hinges. The unmistakable sound of hinges that have not moved in a long time.',
+    'Coins scattered near the threshold, as if dropped on the way out.',
+    'A heavy wooden corner, just visible past the dark.',
+  ],
+  event:[
+    'You hear voices. Or something that wants to be voices.',
+    'Someone is in there. They are not surprised to hear you.',
+    'A draught carries a word you almost recognise. Then another.',
+    'A door covered in old wax seals — every one of them broken.',
+    'Sobbing. Or a kind of laughter that has forgotten how to be either.',
+    'The room is lit. Someone has been here recently. Someone is still here.',
+  ],
+  relic:[
+    'A faint pressure in the air. Old power, badly stored.',
+    'A plinth, empty-looking. Your eye keeps refusing to focus on it.',
+    'A humming, very quiet, in a key you do not know.',
+    'A cold weight in the air. Whatever rests here remembers being worshipped.',
+  ],
+  merchant:[
+    'A warm glow. The smell of pipe smoke that has no business being down here.',
+    'Quiet humming. Someone at work, ignoring the dark.',
+    'Lamplight, and the clink of coins being counted by patient fingers.',
+    'A figure waits, lined up like he has been there a thousand years.',
+  ],
+  forge:[
+    'A hammer ringing on metal that should not exist any more.',
+    'Heat. Real heat — not the Furnace. A working forge.',
+    'Sparks falling from somewhere overhead. Someone is at an anvil.',
+    'The smell of quenched iron. Someone is finishing a blade.',
+  ],
+  shrine:[
+    'A faint glow. The kind that comes from things that have been prayed to for a long time.',
+    'A cracked altar, dark from old offerings.',
+    'Old incense. Something here still listens. Barely.',
+    'A statue, face worn smooth from too many forehead-touches.',
+  ],
+  fountain:[
+    'Running water. Down here. That should not be possible.',
+    'A shimmer. The smell of wet stone, very clean.',
+    'A bowl of water, too still. It does not catch the torchlight properly.',
+    'Glassy ripples, with no wind. No movement. No reason.',
+  ],
+  empty:[
+    'Cold stone. No sound. A moment to remember you are alive.',
+    'Empty. As far as you can see. As far as you can see.',
+    'Quiet. The crypt is taking a breath.',
+    'A long, plain corridor. Suspiciously plain.',
+    'Nothing here. So why does it feel like something is here.',
+  ],
+  echo:[
+    'A figure slumps against the far wall. It does not breathe.',
+    'Someone is sitting in there. They have been sitting a long time.',
+    'A familiar silhouette. You cannot place it.',
+    'A champion stopped here. They never started again.',
+  ],
+  boss:[
+    'Something is waiting in there. It has been waiting for you specifically.',
+    'A pressure on your chest you cannot explain. Whatever is past this door knows your face.',
+    'No sound at all. The kind of silence that has teeth.',
+    'A presence — bored, patient, terrible.',
+  ],
+  bossFinal:[
+    'A world-ending sound. Whatever is past this is older than the cold.',
+    'A presence so large the air bends around it. You should be more afraid than you are.',
+  ],
+  echoPeek:'A figure slumps against the far wall. It does not breathe.',
+};
+function peek(kind){ return pick(PEEKS[kind]||['']); }
 function makeRoom(depth){
   if(BOSS_CHAMBERS[depth]!==undefined){ const key=pick(BOSS_POOL[BOSS_CHAMBERS[depth]]);
-    return {type:'enemy',boss:key,peek:depth===RUN_LENGTH?'A world-ending roar shakes the crypt...':'Something powerful stirs beyond this door.'}; }
-  if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(8)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:'A figure slumps against the far wall. It does not breathe.'}; }
+    return {type:'enemy',boss:key,peek:peek(depth===RUN_LENGTH?'bossFinal':'boss')}; }
+  if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(8)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:peek('echo')}; }
   const greedy=G.mods.greedy;
   const r=rnd(100);
   if(r<(greedy?32:36)){ const g=makeGroup(depth); return {type:'enemy',group:g,peek:groupPeek(g)}; }
-  if(r<(greedy?48:46)) return {type:'chest',peek:pick(['A glint of gold catches your eye.','An old chest sits in the corner.','A latched strongbox waits.'])};
+  if(r<(greedy?48:46)) return {type:'chest',peek:peek('chest')};
   // Mystery events are common — NPCs and their cryptic dialogue carry the story.
-  if(r<70) return {type:'event',ev:pickEvent(),peek:'You hear voices ahead. Or something that wants to be voices.'};
-  if(r<78) return {type:'relic',peek:'An ancient pedestal hums with power.'};
-  if(r<(greedy?88:84)) return {type:'merchant',peek:'A hooded figure beckons from the shadows.'};
-  if(r<90) return {type:'forge',peek:'The ring of a phantom hammer echoes ahead.'};
-  if(r<95) return {type:'shrine',peek:'A faint glow pulses from a cracked altar.'};
-  if(r<98) return {type:'fountain',peek:'A strange, shimmering fountain bubbles here.'};
-  return {type:'empty',peek:'Cold, empty stone. A moment to breathe.'};
+  if(r<70) return {type:'event',ev:pickEvent(),peek:peek('event')};
+  if(r<78) return {type:'relic',peek:peek('relic')};
+  if(r<(greedy?88:84)) return {type:'merchant',peek:peek('merchant')};
+  if(r<90) return {type:'forge',peek:peek('forge')};
+  if(r<95) return {type:'shrine',peek:peek('shrine')};
+  if(r<98) return {type:'fountain',peek:peek('fountain')};
+  return {type:'empty',peek:peek('empty')};
 }
 function pickEvent(){
   let avail=EVENTS.filter(e=>!G.seenEvents.includes(e.id));
@@ -1836,11 +1939,13 @@ function takeAllRewards(){ const p=G.player,pd=G.pending; if(!pd||!pd.options)re
   let seen=false; try{seen=localStorage.getItem('crypt_seen_debt')==='1';}catch(e){}
   if(!seen){ try{localStorage.setItem('crypt_seen_debt','1');}catch(e){} showInfo('timedebt'); }
   G.pending=null; proceed(`You seize it all. The crypt records the debt (+${d} time debt).`); }
-function groupPeek(g){ if(g.length===1){const u=g[0];return `A ${u.affix?u.affix.tag+' ':''}${u.base.name.toLowerCase()} lurks within.`;}
-  return `A pack of ${g.length} creatures stirs in the dark${g.some(u=>u.affix)?', one of them gleaming with power':''}.`; }
-function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presence':'You sense hostile creatures',
-  chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
-  merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',echo:'A cold presence — someone died here',collector:'A toll-keeper of brass and shadow',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
+function groupPeek(g){
+  // Sensory only — the player should hear it before they see it.
+  if(g.length===1){ const u=g[0]; return peek('enemy')+(u.affix?' Something about it is wrong.':''); }
+  return 'Several. Moving in the dark together.'+(g.some(u=>u.affix)?' One of them feels heavier than the rest.':'');
+}
+// Door hint is just the room's sensory peek — players should suspect, not know.
+function doorHint(room){ return room.peek||'A door. Closed.'; }
 function nextCorridor(){ G.depth++;
   if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
   if(G._forceCollector){ G._forceCollector=0; G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
@@ -2335,7 +2440,11 @@ function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.
   if(crit&&p.affTier.g>=3){ p.mana=clamp(p.mana+5,0,p.maxMana); }
   if(e.hp<=0) onEnemyDeath(e);
   return dmg; }
-function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(b.shadowCrit){c=true;b.shadowCrit=0;} if(b.titheCrits>0){c=true;b.titheCrits--;} if(c)d*=critMult();
+function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
+  // Miasma rots aim — at tier 3+ there is a real chance your blow goes wide.
+  const mt=miasmaActive()?miasmaTier():0;
+  if(mt>=3 && chance(Math.min(28,(mt-2)*7))){ SFX.play('dodge'); blog(`Your arm forgets the strike for a moment — you miss.`,'info'); return; }
+  let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(b.shadowCrit){c=true;b.shadowCrit=0;} if(b.titheCrits>0){c=true;b.titheCrits--;} if(c)d*=critMult();
   SFX.play(c?'crit':'hit');
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
   const e=b.enemies[idx];
@@ -2361,7 +2470,10 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapo
   stormfury(c,isExtra); }
 function stormfury(crit,isExtra){ const p=G.player,b=G.battle;
   if(crit&&p.flags.synStorm&&!isExtra&&living().length){ blog('Stormfury — the crit echoes!','crit'); ensureTarget(); basicHit(b.target,true); } }
-function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math.round(n*1.4); else n=Math.round(n*0.70); b.charge=clamp((b.charge||0)+n,0,100); }
+function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math.round(n*1.4); else n=Math.round(n*0.70);
+  // Miasma chokes the ultimate — the crypt does not want you to be remembered.
+  const mt=miasmaActive()?miasmaTier():0; if(mt>=3) n=Math.round(n*(1-Math.min(0.40,mt*0.07)));
+  b.charge=clamp((b.charge||0)+n,0,100); }
 function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foes for massive magic + heavy BURN'},
   warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
   ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
@@ -2427,8 +2539,13 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
   }
   gainCharge(24); afterPlayer(); }
 function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--;
-  const pct=0.40+(p.potionBonus||0); const h=Math.round(p.maxHp*pct);
-  heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
+  // Miasma rots healing — at high tiers, potions return less of their promise.
+  const rot=miasmaActive()?Math.min(0.45,miasmaTier()*0.07):0;
+  const pct=Math.max(0.10,(0.40+(p.potionBonus||0))*(1-rot));
+  const h=Math.round(p.maxHp*pct);
+  heal(p,h); SFX.play('potion');
+  const rotMsg=rot>=0.15?` (the cold drinks part of it)`:'';
+  blog(`You quaff a potion. +${h} HP${rotMsg}.`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
 function fleeBattle(){ const p=G.player,b=G.battle;
   if(b.hadBoss){ blog('There is no escape from this foe!','info'); return render(); }
   if(p.cls==='ranger'?chance(82):chance(55)){
@@ -2448,9 +2565,23 @@ function tickDoT(entity,st,name){ // returns false if entity died
   if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
   return entity.hp>0;
 }
+// Hallucination lines fire at high Miasma — flavor only, no mechanical effect.
+const HALLUCINATIONS=[
+  'A face you do not recognise mouths your name from the edge of your eye.',
+  'Your weapon is weightless for a heartbeat, then heavy again.',
+  'Someone is breathing in your other ear.',
+  'A second shadow follows yours, an instant late.',
+  'The walls remember being warmer than this. So do you.',
+  'You catch yourself thinking thoughts that are not yours.',
+  'A voice that sounds like yours says: "we are almost home."',
+  'You blink and your enemy is one step closer than it should be.',
+  'You taste copper. You have not been hit.',
+  'Something in the floor opens an eye, then closes it.',
+];
 function afterPlayer(){ const b=G.battle;
   b.enemies.forEach(e=>{ if(e.hp>0){ tickDoT(e,e.st,e.name); if(e.hp<=0)onEnemyDeath(e); } });
   if(allDead()){ winBattle(); return; }
+  if(miasmaActive() && miasmaTier()>=3 && chance(11)) blog(pick(HALLUCINATIONS),'info');
   render(); setTimeout(enemyTurn,560); }
 function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   if(b.hollowSkip>0){ b.hollowSkip--; blog('The world is pausing — your enemies miss this beat.','info'); render(); return; }
@@ -2471,6 +2602,8 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
       if(hit>0){ label=`${e.name} follows up`; dmg=Math.round(dmg*0.85); }
       if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
       dmg=Math.round(dmg*G.mods.eDmg);
+      // Miasma thins the body — at tier 2+ the world hits you a little harder.
+      const mt2=miasmaActive()?miasmaTier():0; if(mt2>=2) dmg=Math.round(dmg*(1+Math.min(0.25,mt2*0.045)));
       const dodgeChance=Math.max(0,Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
       if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
       let red=(b.pdefTurns>0?b.pdef:0);
