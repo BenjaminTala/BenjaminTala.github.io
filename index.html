@@ -1405,10 +1405,10 @@ const HEAT_MSG=['','Metal begins to soften. The locals catch fire.','Your breath
 const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds no longer close on their own.','The crypt tastes your soul.','SOUL ROT — the cold is eating your very substance.','The cold draws blood with every step.','You are coming undone.'];
 // MIASMA FLASHBACKS — as the seal weakens, fragments of an older conversation surface. One-shot per run.
 const FLASHBACKS=[
-  {at:15, line:'A memory — not yours. <i>"...seal it. Now. While we still can."</i>'},
-  {at:25, line:'A memory — not yours. <i>"He cannot be destroyed. Not by gods, not by fire."</i>'},
-  {at:40, line:'A memory — not yours? <i>"Then divide him. Split him into pieces small enough to forget."</i>'},
-  {at:55, line:'The voice was yours. <i>"...I volunteered."</i>'},
+  {at:8,  line:'A memory — not yours? <i>"...seal it. Now. While we still can."</i>'},
+  {at:18, line:'A memory — not yours? <i>"He cannot be destroyed. Not by gods, not by fire."</i>'},
+  {at:32, line:'A memory — not yours? <i>"Then divide him. Split him into pieces small enough to forget."</i>'},
+  {at:48, line:'The voice was yours. <i>"...I volunteered."</i>'},
 ];
 function flashWorld(){ G._worldPulse=1; }
 function addHeat(n){ if(!heatActive())return; const b=heatTier(); G.heat=clamp(G.heat+n,0,140); const a=heatTier(); if(a>b){ G._worldMsg=HEAT_MSG[a]; SFX.play(a>=3?'fire':'skill'); flashWorld(); } }
@@ -1595,6 +1595,7 @@ function renderTitle(){
       <p class="muted" style="font-size:8px;line-height:2">
         20 chambers &middot; 4 zones &middot; slay, forge, and grow OP<br>
         &middot; then dare the endless Abyss beneath.</p>
+      <p class="muted center" style="font-size:7px;letter-spacing:1px;opacity:.7;margin-top:6px">&middot; the crypt does not ask your name &middot;</p>
       <button class="btn center" onclick="go('class')"><span class="blink">&#9654;</span> PRESS START</button>
       ${(()=>{const r=loadRecords(),l=loadLore().length; if(!r.runs&&!l)return ''; return `<div class="stats" style="font-size:8px;margin-top:10px;border-top:2px solid var(--line);padding-top:8px">
         <span class="amber">DEEPEST</span> chamber ${r.deepest||0} &middot; <span class="green">WINS</span> ${r.wins||0}/${r.runs||0} &middot; <span class="amber">&#128220; CODEX</span> ${l}/${LORE.length}${(r.deepest||0)>0?'<br><span class="muted">'+((r.wins||0)>0?'The crypt remembers your victory. Can you carry more of its story to the surface?':'Descend deeper than '+r.deepest+' — and live to tell it.')+'</span>':''}</div>`;})()}
@@ -2087,6 +2088,7 @@ function renderMerchant(){
       <img class="ev-sprite tint-amber" src="assets/players/ranger.png" alt="The Merchant" draggable="false">
       <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
       <p class="muted center" style="font-size:9px">"Coin for comfort, traveler."</p>
+      <p class="muted center" style="font-size:7px;opacity:.7">He does not ask your name. He never does.</p>
       <div class="coinbar"><span class="amber">&#128176; ${p.gold} GOLD</span><span class="teal">&#9670; ${p.essence}</span></div>${heatNote}
       ${item('Health Potion',mc(25),'+1 potion (heals 40% in battle)',"buy('potion')",p.gold>=mc(25))}
       ${item('Healing Draught',mc(18),'restore 50% HP now',"buy('heal')",p.gold>=mc(18))}
@@ -2454,6 +2456,8 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   if(b.enemies.some(e=>e.name===BOSSES.king.name)){ blog(BOSS_DEATHCRY.king,'crit'); discoverLore('l13'); }
   if(b.enemies.some(e=>e.name===BOSSES.devourer.name)){ blog(BOSS_DEATHCRY.devourer,'crit'); discoverLore('l10'); discoverLore('l15'); }
   if(b.enemies.some(e=>e.name===BOSSES.remembered.name)){ blog(BOSS_DEATHCRY.remembered,'crit'); discoverLore('l15'); discoverLore('l16'); G._rememberedSlain=1; }
+  // Whoever the chamber-20 boss was — king, dragon, or otherwise — the lie cracks here. The Triumph screen reflects it.
+  if(b.isFinal){ discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
   // Defeating the Collector burns away your debt
   if(b.enemies.some(e=>e._collector)){ G.debt=0; G.collectorEta=0; blog('The Collector shatters — your debt dies with it.','lvl'); discoverLore('l8'); }
   SFX.play(b.hadBoss?'win':'gold');
@@ -2515,6 +2519,7 @@ function renderTriumph(){
       <pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>
       <p class="evtext center">The crypt's last guardian lies broken at your feet. You have what you came for — glory, and survival.<br><br>
         But a cold wind rises from a stair that should not exist, spiralling down past the throne. <span class="red">The Devourer</span> still hungers below.</p>
+      <p class="center purple fade" style="font-size:9px;letter-spacing:.6px;margin:10px 4px 4px;opacity:.85"><i>&#9763; You have done this many times. You will do it again.</i></p>
       <button class="btn center" onclick="claimVictory()"><span class="k">&#9819;</span>RETIRE A LEGEND<small>end the run victorious &amp; keep your glory</small></button>
       <button class="btn center" onclick="startAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>endless &amp; escalating — claim ever-greater power, until it claims you</small></button>
     </div>`;
