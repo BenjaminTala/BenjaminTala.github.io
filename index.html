@@ -80,11 +80,22 @@
   #vignette.on{opacity:1;animation:vigpulse 1.1s ease-in-out infinite}
   @keyframes vigpulse{0%,100%{opacity:.5}50%{opacity:.95}}
   /* WORLD FEEL — Heat and Miasma tint the whole interface. They should never be invisible. */
-  body.world-hot   #app{filter:hue-rotate(-8deg) saturate(1.15) brightness(1.04); box-shadow:inset 0 0 80px rgba(255,90,30,.10)}
-  body.world-hot::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;background:radial-gradient(ellipse at 50% 110%,rgba(255,90,30,.10) 0%,transparent 60%);animation:hotShimmer 4s ease-in-out infinite alternate}
-  body.world-sear  #app{filter:hue-rotate(-14deg) saturate(1.35) brightness(1.06); box-shadow:inset 0 0 120px rgba(255,60,30,.18)}
-  body.world-sear::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,60,30,.22) 0%,transparent 65%);animation:hotShimmer 2.8s ease-in-out infinite alternate}
+  body.world-warm  #app{filter:hue-rotate(-5deg) saturate(1.08); box-shadow:inset 0 0 60px rgba(255,140,60,.08)}
+  body.world-hot   #app{filter:hue-rotate(-10deg) saturate(1.22) brightness(1.04); box-shadow:inset 0 0 120px rgba(255,90,30,.22)}
+  body.world-hot::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;
+    background:radial-gradient(ellipse at 50% 110%,rgba(255,110,40,.22) 0%,transparent 55%),
+               radial-gradient(circle at 18% 30%,rgba(255,180,80,.08) 0%,transparent 18%),
+               radial-gradient(circle at 82% 70%,rgba(255,180,80,.08) 0%,transparent 18%);
+    animation:hotShimmer 2.6s ease-in-out infinite alternate}
+  body.world-sear  #app{filter:hue-rotate(-16deg) saturate(1.55) brightness(1.08) contrast(1.05); box-shadow:inset 0 0 180px rgba(255,40,20,.34)}
+  body.world-sear::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,50,20,.38) 0%,transparent 65%),
+               radial-gradient(circle at 20% 40%,rgba(255,160,80,.18) 0%,transparent 22%),
+               radial-gradient(circle at 80% 60%,rgba(255,160,80,.18) 0%,transparent 22%);
+    animation:hotShimmer 1.4s ease-in-out infinite alternate}
+  body.world-furnace #app{filter:hue-rotate(-22deg) saturate(1.8) brightness(1.10) contrast(1.10); box-shadow:inset 0 0 240px rgba(255,30,10,.45); animation:furnaceFlicker 0.16s steps(2) infinite}
+  body.world-furnace::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,40,10,.55) 0%,transparent 70%);animation:hotShimmer 0.9s ease-in-out infinite alternate}
   @keyframes hotShimmer{from{opacity:.55}to{opacity:1}}
+  @keyframes furnaceFlicker{0%{filter:hue-rotate(-22deg) saturate(1.8) brightness(1.10) contrast(1.10)}50%{filter:hue-rotate(-22deg) saturate(1.95) brightness(1.18) contrast(1.16)}}
   body.world-cold  #app{filter:hue-rotate(12deg) saturate(.85) brightness(.96); box-shadow:inset 0 0 80px rgba(120,140,200,.10)}
   body.world-cold::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;background:radial-gradient(ellipse at 50% -10%,rgba(160,180,220,.10) 0%,transparent 60%)}
   body.world-rot   #app{filter:hue-rotate(24deg) saturate(.7) brightness(.92) contrast(1.06); box-shadow:inset 0 0 120px rgba(140,90,200,.18)}
@@ -1452,7 +1463,7 @@ function showBossIntro(key){ if(!BOSS_BIO[key]||!BOSSES[key])return;
 function showBossDeath(key){ if(!BOSS_DEATHCRY[key]||!BOSSES[key])return;
   showInfo({title:BOSSES[key].name+' — falls',body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_DEATHCRY[key]}</p>`}); }
 let G=null;
-function defaultMods(){ return {eDmg:1.15,eHp:1.10,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.30,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
+function defaultMods(){ return {eDmg:1.06,eHp:1.06,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.22,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
 function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
   heat:0,miasma:0,collapsed:0,dmgBy:{},debt:0,collectorEta:0,_forceCollector:0}; }
 newGame();
@@ -1668,8 +1679,10 @@ function setZoneBg(){ try{ const inRun=G.player&&['corridor','room','event','rew
   document.body.style.background = inRun ? (G.abyss?ZONE_BG[3]:ZONE_BG[zoneOf(G.depth)]) : '';
   // Heat and Miasma should be felt — apply body classes that tint the whole UI.
   const ht=heatActive()?heatTier():0, mt=miasmaActive()?miasmaTier():0;
-  document.body.classList.toggle('world-hot',  ht>=2);
-  document.body.classList.toggle('world-sear', ht>=3);
+  document.body.classList.toggle('world-warm',   ht===1);
+  document.body.classList.toggle('world-hot',    ht===2);
+  document.body.classList.toggle('world-sear',   ht===3);
+  document.body.classList.toggle('world-furnace',ht>=4);
   document.body.classList.toggle('world-cold', mt>=2);
   document.body.classList.toggle('world-rot',  mt>=4);
   document.body.classList.toggle('world-undone',mt>=5);
@@ -1842,18 +1855,18 @@ function peek(kind){ return pick(PEEKS[kind]||['']); }
 function makeRoom(depth){
   if(BOSS_CHAMBERS[depth]!==undefined){ const key=pick(BOSS_POOL[BOSS_CHAMBERS[depth]]);
     return {type:'enemy',boss:key,peek:peek(depth===RUN_LENGTH?'bossFinal':'boss')}; }
-  if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(8)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:peek('echo')}; }
+  if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(4)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:peek('echo')}; }
   const greedy=G.mods.greedy;
   const r=rnd(100);
-  if(r<(greedy?32:36)){ const g=makeGroup(depth); return {type:'enemy',group:g,peek:groupPeek(g)}; }
-  if(r<(greedy?48:46)) return {type:'chest',peek:peek('chest')};
-  // Mystery events are common — NPCs and their cryptic dialogue carry the story.
-  if(r<70) return {type:'event',ev:pickEvent(),peek:peek('event')};
-  if(r<78) return {type:'relic',peek:peek('relic')};
-  if(r<(greedy?88:84)) return {type:'merchant',peek:peek('merchant')};
-  if(r<90) return {type:'forge',peek:peek('forge')};
-  if(r<95) return {type:'shrine',peek:peek('shrine')};
-  if(r<98) return {type:'fountain',peek:peek('fountain')};
+  // Combat dominates. Lore is rare and special — meeting someone should mean something.
+  if(r<(greedy?58:62)){ const g=makeGroup(depth); return {type:'enemy',group:g,peek:groupPeek(g)}; }
+  if(r<(greedy?72:74)) return {type:'chest',peek:peek('chest')};
+  if(r<82) return {type:'relic',peek:peek('relic')};
+  if(r<90) return {type:'event',ev:pickEvent(),peek:peek('event')};
+  if(r<(greedy?94:93)) return {type:'merchant',peek:peek('merchant')};
+  if(r<95) return {type:'forge',peek:peek('forge')};
+  if(r<97) return {type:'shrine',peek:peek('shrine')};
+  if(r<99) return {type:'fountain',peek:peek('fountain')};
   return {type:'empty',peek:peek('empty')};
 }
 function pickEvent(){
@@ -2091,14 +2104,16 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
 function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
   // crossing a threshold stokes the Furnace / lets the cold seep deeper / debt compounds
-  addHeat(1); addMiasma(1); tickDebt();
+  addHeat(2); addMiasma(1); tickDebt();
   if(worldOnEnter()){ return; }   // environmental hazards can be lethal
   if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
 /* environmental pressure applied on entering a chamber; returns true if it killed you */
 function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,msg='';
   if(heatActive()){ const t=heatTier();
-    if(t>=4){ const d=12+rnd(8); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; molten air SCORCHES you (-${d} HP).`; }
-    else if(t>=3){ const d=6+rnd(5); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; the Furnace bakes you (-${d} HP).`; } }
+    if(t>=4){ const d=12+rnd(8); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT MAX &mdash; the walls pulse and molten air SCORCHES you (-${d} HP).`; }
+    else if(t>=3){ const d=5+rnd(4); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; the Furnace bakes you (-${d} HP).`; }
+    else if(t>=2 && chance(60)){ const d=2+rnd(2); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; sparks lash you (-${d} HP).`; }
+    else if(t>=1 && chance(30)){ const d=1+rnd(2); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; the heat presses on you (-${d} HP).`; } }
   if(!dead && miasmaActive()){ const t=miasmaTier();
     if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg=`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`; }
     if(t>=4){ const d=4+rnd(5); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; }
@@ -2126,8 +2141,22 @@ function scaleEnemy(unit,depth){
   let e=freshEnemy({name:b.name,sprite:b.sprite,hp:Math.round(b.hp*f*G.mods.eHp),maxHp:Math.round(b.hp*f*G.mods.eHp),
     atk:Math.round(b.atk*f),def:b.def||0,dodgy:b.dodgy,caster:b.caster,poison:b.poison,burnAtk:b.burnAtk,xp:b.xp||6,boss:false});
   if(unit.affix) applyAffix(e,unit.affix);
-  // FURNACE: high heat ignites the locals (molten variants)
-  if(heatActive()&&heatTier()>=1&&!e.burnAtk){ e.burnAtk=[3+heatTier()*2,2,30+heatTier()*12]; if(heatTier()>=3)e.atk=Math.round(e.atk*1.1); }
+  // FURNACE: Heat actively transforms the locals — visible at every tier.
+  if(heatActive()){ const ht=heatTier();
+    if(ht>=1){
+      if(!e.burnAtk) e.burnAtk=[3+ht*2,2,28+ht*14];
+      else e.burnAtk=[e.burnAtk[0]+ht,e.burnAtk[1],Math.min(85,e.burnAtk[2]+ht*8)];
+      // At Heat 50+ the name carries the threat so the player can see it.
+      if(ht>=2 && !e.name.match(/Ashen|Molten|Blazing|Living Furnace/)){
+        const prefix=ht>=4?'Blazing ':ht>=3?'Molten ':'Ashen ';
+        e.name=prefix+e.name;
+      }
+      // At Heat 50+ everyone hits harder.
+      if(ht>=2) e.atk=Math.round(e.atk*(1+(ht-1)*0.08));
+      // At Heat 75+ they're tougher too.
+      if(ht>=3){ e.hp=Math.round(e.hp*1.1); e.maxHp=e.hp; }
+    }
+  }
   // FROZEN BELOW / DEEP: enemies are armored, hardier, and shrug off flame
   if(miasmaActive()){ e.frozen=true; e.def=(e.def||0)+3; e.maxHp=Math.round(e.maxHp*1.15); e.hp=e.maxHp; }
   maybeCounter(e,false);
@@ -2136,6 +2165,14 @@ function scaleEnemy(unit,depth){
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-10); const dm=debtMul();
   const hpF=(1+e*0.07+e*e*0.0058)*dm, atkF=(1+e*0.05+e*e*0.0033)*dm;
   const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key],_key:key});
+  // FURNACE BOSSES feed on Heat. Walk in hot and they hit harder, hold more HP, ignite you.
+  if(heatActive() && heatTier()>=3 && (key==='warden'||key==='dragon')){
+    const m=1+(heatTier()-2)*0.20;
+    boss.atk=Math.round(boss.atk*m); boss.hp=Math.round(boss.hp*m); boss.maxHp=boss.hp;
+    if(!boss.burnAtk) boss.burnAtk=[12,3,65];
+    else boss.burnAtk=[boss.burnAtk[0]+4,boss.burnAtk[1],Math.min(90,boss.burnAtk[2]+15)];
+    boss._heatFed=heatTier();
+  }
   if(!boss._collector)maybeCounter(boss,true);
   return boss; }
 function findBase(n){ return ENEMIES.find(e=>e.name===n); }
@@ -2359,6 +2396,7 @@ function startBattle(intro){
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
   const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE){ blog(bossE.cry,'crit'); if(bossE._key)showBossIntro(bossE._key); }
+  const heatFed=enemies.find(e=>e._heatFed); if(heatFed){ blog(`&#128293; The Furnace howls &mdash; its keeper feeds on the heat you carried in. (+${Math.round((heatFed-2)*20)}% HP & ATK)`,'crit'); }
   G.battle.intro=true;
   G.screen='battle'; render(); playTransition(G.battle.hadBoss?'#6e0d1a':'#3a1622');
 }
@@ -2720,7 +2758,7 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
   // fighting stokes the Furnace / deepens the cold's hold
   const elites=b.enemies.filter(e=>e.elite).length;
-  addHeat(2+elites); addMiasma(3+elites);
+  addHeat(3+elites*2); addMiasma(3+elites);
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); G._pendingBossDeath='warden'; }
   if(b.enemies.some(e=>e.name===BOSSES.dragon.name)){ blog(BOSS_DEATHCRY.dragon,'crit'); discoverLore('l4'); if(!p.memory||p.memory.id!=='hoard') grantMemory(p,'hoard'); G._pendingBossDeath='dragon'; }
