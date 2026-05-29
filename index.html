@@ -111,7 +111,15 @@
   .hr{border:none;border-top:2px dashed var(--line);margin:14px 0}
   .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.menu-grid .btn{margin:0}
   .footer{text-align:center;color:var(--dim);font-size:8px;margin-top:8px}
-  .evtext{font-size:10px;line-height:2;color:#cfcbef;margin:10px 0}
+  .evtext{font-size:11px;line-height:2;color:#dcd6ff;margin:10px 0}
+  /* SHOUT — for important lines players must not skim past. Used by boss intros, lore reveals, NPC truths. */
+  .shout{display:inline-block;background:linear-gradient(180deg,rgba(255,207,77,.18),rgba(255,207,77,.06));padding:2px 6px;border-left:3px solid var(--amber);color:#ffe9a0;letter-spacing:.5px;font-weight:bold}
+  .shout-red{display:inline-block;background:linear-gradient(180deg,rgba(255,90,90,.18),rgba(255,90,90,.06));padding:2px 6px;border-left:3px solid var(--red);color:#ffb0b0;letter-spacing:.5px;font-weight:bold}
+  .shout-purple{display:inline-block;background:linear-gradient(180deg,rgba(192,108,255,.18),rgba(192,108,255,.06));padding:2px 6px;border-left:3px solid var(--purple);color:#e0c0ff;letter-spacing:.5px;font-weight:bold}
+  /* Combat log MUST be readable. Bigger, denser, easier on the eyes. */
+  .log{font-size:9.5px!important;line-height:1.65!important}
+  .log .crit{color:#ffd54a;font-weight:bold;text-shadow:0 0 4px rgba(255,213,74,.5)}
+  .log .lvl{color:#7cff6b;font-weight:bold}
   ::selection{background:var(--amber);color:#000}
   /* mobile/touch */
   .btn,.tgt,.btn *{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -119,9 +127,12 @@
   .btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   /* audio toggles */
   #audio-toggles{position:fixed;top:6px;right:6px;z-index:200;display:flex;gap:4px;font-family:'Press Start 2P',monospace}
-  #inv-fab{position:fixed;top:6px;left:6px;z-index:200;font-family:'Press Start 2P',monospace}
-  #inv-fab button{font-family:inherit;font-size:8px;background:var(--panel);color:var(--amber);border:2px solid var(--line);padding:6px 8px;cursor:pointer;letter-spacing:1px;touch-action:manipulation}
-  #inv-fab button:hover{border-color:var(--amber)}
+  #inv-fab{position:fixed;top:8px;left:8px;z-index:200;font-family:'Press Start 2P',monospace}
+  #inv-fab button{font-family:inherit;font-size:10px;background:linear-gradient(180deg,#3a2810,#1a1408);color:var(--amber);border:2px solid var(--amber);padding:8px 12px;cursor:pointer;letter-spacing:2px;touch-action:manipulation;
+    box-shadow:0 0 0 1px #000, 0 0 14px rgba(255,207,77,.35), inset 0 0 8px rgba(255,207,77,.10);
+    animation:invPulse 2.2s ease-in-out infinite}
+  #inv-fab button:hover{border-color:#fff;color:#fff;background:linear-gradient(180deg,#5a3818,#2a1c10);box-shadow:0 0 0 1px #000, 0 0 22px rgba(255,207,77,.7)}
+  @keyframes invPulse{0%,100%{box-shadow:0 0 0 1px #000, 0 0 12px rgba(255,207,77,.35), inset 0 0 8px rgba(255,207,77,.10)}50%{box-shadow:0 0 0 1px #000, 0 0 22px rgba(255,207,77,.6), inset 0 0 8px rgba(255,207,77,.18)}}
   .coinbar{display:flex;justify-content:center;gap:14px;align-items:center;margin:6px 0 12px;font-size:14px;letter-spacing:1px}
   .coinbar .amber{text-shadow:0 0 10px rgba(255,207,77,.6)}
   .coinbar .teal{text-shadow:0 0 10px rgba(76,224,208,.5)}
@@ -452,7 +463,7 @@
   <button id="btn-music" type="button" onclick="toggleMusic()" aria-label="Toggle music">&#9834; ON</button>
   <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
 </div>
-<div id="inv-fab" style="display:none"><button type="button" onclick="openInventory()" aria-label="Open inventory">&#9776; INV</button></div>
+<div id="inv-fab" style="display:none"><button type="button" onclick="openInventory()" aria-label="Open inventory">&#9776; INVENTORY</button></div>
 <div id="crt"></div>
 <div id="transition"></div>
 <div id="vignette"></div>
@@ -773,8 +784,8 @@ const BOSS_SPRITE={
   'OGRE WARLORD':'golem','GOBLIN KING':'goblin','BROODMOTHER':'sahagin',
   'THE NECROMANCER':'demonlord','STONE TITAN':'golem','CAVE TYRANT':'golem',
   'DEMON LORD':'demonlord','THE LICH':'demonlord','FLAME KNIGHT':'demon',
-  'THE CRYPT DRAGON':'dragon','THE FORGOTTEN KING':'demonlord','THE DRAGON WARDEN':'dragon','THE DEVOURER':'demonlord',
-  'THE CHAMPION WHO REMEMBERED':'ghost',
+  'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'demonlord','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
+  'THE THOUSANDTH CHAMPION':'ghost','THE PALE DEVOURER':'ghost',
 };
 const AFFIX_TAGS=['Armored','Frenzied','Vampiric','Toxic','Brutal'];
 function stripAffix(name){
@@ -848,6 +859,7 @@ const BOSS_CRY={
   devourer:'"...closer. I have been so quiet. ...come closer."',
   warden:'"You mistake mercy for obstruction. You always do."',
   remembered:'"Do you understand now? ... No? Good. Then you still have a chance."',
+  paledevourer:'',
 };
 const BOSS_DEATHCRY={
   warden:'"...I tried. I will try again."',
@@ -855,6 +867,7 @@ const BOSS_DEATHCRY={
   king:'"Sit, then. Wear the crown. I am so tired."',
   devourer:'"...I have been waiting so long. I am never done waiting."',
   remembered:'"...you should have stayed asleep. I will see you next time."',
+  paledevourer:'',
 };
 
 /* ============================================================
@@ -960,11 +973,12 @@ const BOSSES={
   demon: {name:'DEMON LORD',hp:275,atk:20,def:5,boss:true,burnAtk:[6,3,45],xp:170,sprite:"  \\,,,,/\n  (X  X)\n  ( vv )\n /|^^^|\\\n  W   W"},
   lich:  {name:'THE LICH',hp:250,atk:18,def:4,boss:true,caster:true,poison:[7,4,55],xp:170,adds:['Wraith'],sprite:"   .^.\n  (o o)\n  (_-_)\n  /| |\\\n  '| |'"},
   flameknight:{name:'FLAME KNIGHT',hp:260,atk:20,def:7,boss:true,burnAtk:[6,3,55],xp:170,sprite:"  ,---,\n  |[o]|\n  |###|\n /|# #|\\\n  |___|"},
-  dragon:{name:'THE CRYPT DRAGON',hp:370,atk:23,def:8,boss:true,burnAtk:[7,3,50],xp:260,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ x   x /\n   ) ___ (\n  /_/   \\_\\\n (_)     (_)"},
-  king:  {name:'THE FORGOTTEN KING',hp:350,atk:22,def:7,boss:true,caster:true,poison:[8,4,55],xp:260,sprite:"   _mWm_\n  /=====\\\n  |o   o|\n  | --- |\n /|=====|\\\n  J|   |L"},
+  dragon:{name:'VHALRION, FIRST OF THE CHAINED',hp:370,atk:23,def:8,boss:true,burnAtk:[7,3,50],xp:260,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ x   x /\n   ) ___ (\n  /_/   \\_\\\n (_)     (_)"},
+  king:  {name:'VAREKH, THE KING BENEATH WINTER',hp:350,atk:22,def:7,boss:true,caster:true,poison:[8,4,55],xp:260,sprite:"   _mWm_\n  /=====\\\n  |o   o|\n  | --- |\n /|=====|\\\n  J|   |L"},
   devourer:{name:'THE DEVOURER',hp:520,atk:28,def:9,boss:true,burnAtk:[8,3,40],poison:[8,3,40],xp:400,sprite:"  .vVVVv.\n ( O   O )\n (  \\_/  )\n  )vvvvv(\n /_______\\"},
-  warden:{name:'THE DRAGON WARDEN',hp:300,atk:21,def:7,boss:true,burnAtk:[8,3,60],xp:200,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ o   o /\n   )=====(\n  /_/   \\_\\\n (_) SEAL(_)"},
-  remembered:{name:'THE CHAMPION WHO REMEMBERED',hp:480,atk:25,def:8,boss:true,caster:true,xp:380,sprite:"   .---.\n  ( o o )\n   \\ ~ /\n   /| |\\\n   J | L\n   _| |_"},
+  warden:{name:'AZH-RATH, KEEPER OF THE FURNACE DOOR',hp:300,atk:21,def:7,boss:true,burnAtk:[8,3,60],xp:200,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ o   o /\n   )=====(\n  /_/   \\_\\\n (_) SEAL(_)"},
+  remembered:{name:'THE THOUSANDTH CHAMPION',hp:480,atk:25,def:8,boss:true,caster:true,xp:380,sprite:"   .---.\n  ( o o )\n   \\ ~ /\n   /| |\\\n   J | L\n   _| |_"},
+  paledevourer:{name:'THE PALE DEVOURER',hp:900,atk:38,def:12,boss:true,caster:true,burnAtk:[10,3,30],poison:[10,3,30],xp:800,sprite:"   . . .\n  .     .\n .       .\n  .     .\n   . . ."},
 };
 /* ch5 random; ch10 is ALWAYS the Dragon Warden (its death collapses the world); ch15 random; ch20 final */
 const BOSS_POOL=[['ogre','gobking','spider'],['warden'],['demon','lich','flameknight'],['king']];
@@ -1152,6 +1166,37 @@ const EVENTS=[
   // ===== MYSTERY DRIP =====
   // Each carries a 'zone' field so pickEvent biases by where you are. Side-effects are deliberately small;
   // the real currency these trade in is *narrative suspicion*. Read carefully — the answer is not in zone 1.
+  // === LIVING INHABITANTS ===
+  // These NPCs live in the crypt. Some are older than the descent. They have their own business
+  // here, their own grief, their own gods. Most do not particularly care about you.
+  {id:'lantern',title:'THE LANTERN KEEPER',zone:0,sprite:{src:'assets/players/mage.png',tint:'tint-amber'},art:"  .o.o.o.\n  | | | |\n  ( \" )\n  )===( \n  /| |\\",
+   text:'An old man passes you, carrying an iron frame strung with hundreds of tiny lanterns. Each one burns a different colour. He stops to look at you the way one looks at weather.',
+   options:[
+     {label:'"What are the lanterns?"',desc:'Listen',run:p=>{discoverLore('l17');return '<span class="shout">"I light one every time somebody dies."</span> He glances at his frame. "Most of these are not yours. Most are not anybody you have met."';}},
+     {label:'Buy a lantern (-30 gold)',desc:'+10 max HP, the lantern is warm',run:p=>{if(p.gold<30)return 'He looks at your purse and says nothing. The silence is somehow worse.';p.gold-=30;p.maxHp+=10;heal(p,10);return 'You take a small green lantern. It is heavier than it should be. Something in it settles, like a sleeper turning over. (+10 max HP)';}},
+     {label:'"How many have you lit?"',desc:'Press him',run:p=>{discoverLore('l17');return '"Stopped counting around the Sixth Expedition." A long pause. "There was one after that. We do not talk about it."';}},
+   ]},
+  {id:'cardinal',title:'THE CARDINAL WITHOUT A FACE',zone:1,sprite:{src:'assets/players/warrior.png',tint:'tint-gold'},art:"  ,---,\n  |   |\n  )...(\n  /|=|\\\n  d   b",
+   text:'A priest in robes of beaten gold stands at a small stone altar. His hood is up. Where his face should be, there is nothing — not darkness, not skin. Nothing.',
+   options:[
+     {label:'"Which god do you serve?"',desc:'Ask',run:p=>{discoverLore('l19');return '"A patient one." He does not turn his head. <span class="shout">"She does not enter the lower chambers."</span> A pause. <span class="shout-red">"I would not, if I were her."</span>';}},
+     {label:'Make an offering (-25 gold)',desc:'+12 max HP, partial heal',run:p=>{if(p.gold<25)return 'He says nothing about your empty purse. It is somehow worse than disapproval.';p.gold-=25;p.maxHp+=12;heal(p,Math.round(p.maxHp*0.18));return 'The coin is gone before it reaches the altar. You feel briefly, terribly observed. (+12 max HP)';}},
+     {label:'Step around him',desc:'No questions',run:p=>'He does not move. He does not turn. You walk past. The hairs on your neck do not settle for some time.'},
+   ]},
+  {id:'wsmith',title:'THE WEEPING SMITH',zone:2,sprite:{src:'assets/monsters/golem.png',tint:'tint-amber'},art:"  ,---,\n  |( )|\n  )===( \n /|fire|\\\n  d   b",
+   text:'A blacksmith sits at a cold anvil. He is not making anything. He is taking blade after blade from a stack at his feet and snapping each one with his bare hands. He is crying.',
+   options:[
+     {label:'"Why are you breaking them?"',desc:'Ask',run:p=>{discoverLore('l19');return '<span class="shout">"They always bring them back."</span> He does not look up. He keeps snapping. <span class="shout">"Fire wins against everything."</span> A pause. <span class="shout-red">"Except that."</span>';}},
+     {label:'"Whose swords were these?"',desc:'Press',run:p=>{discoverLore('l18');return '"Champions." He says it without looking up. "Like you. Some of them were even good." He keeps snapping.';}},
+     {label:'Give him a piece to destroy',desc:'-1 armor piece, +random upgrade',run:p=>{const slots=['head','chest','legs','boots','ring'].filter(s=>p.equip[s]);if(!slots.length)return 'He shakes his head at your bare hands.';const slot=pick(slots);const it=p.equip[slot];unequip(p,slot);const up=pick(UPGRADES);gainUpgrade(p,up);return `He takes your ${it.name} and breaks it across his knee. Something old comes loose. (${up.note})`;}},
+   ]},
+  {id:'cartog',title:'THE LAST CARTOGRAPHER',zone:1,sprite:{src:'assets/players/ranger.png',tint:'tint-grey'},art:"  ,---,\n  |~~~|\n  ( o )\n  )===( \n  d   b",
+   text:'An old explorer sits with a map spread across his knees. The lines on the map move when you are not looking directly at them.',
+   options:[
+     {label:'"What are you mapping?"',desc:'Ask',run:p=>{discoverLore('l18');return '"This." He gestures at the wall. "It is not where it was yesterday." He goes back to his sketching, unbothered.';}},
+     {label:'"Have you mapped the bottom?"',desc:'Press',run:p=>{discoverLore('l19');return '<span class="shout">"Once."</span> He does not look up. <span class="shout-red">"Never again."</span> He does not say why.';}},
+     {label:'Buy a partial map (-40 gold)',desc:'Next 2 corridors hit louder loot',run:p=>{if(p.gold<40)return 'He shrugs without looking up.';p.gold-=40;G._luckBoom=2;return 'The lines on the paper he gives you twitch and resettle as you watch. The next two chambers feel... helpful.';}},
+   ]},
   {id:'priest',title:'THE DYING PRIEST',zone:0,sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  .--.\n ( || )\n  )/\\(\n  |  |",
    text:'A robed man slumps against a half-broken shrine. He looks up and his eyes widen — with relief.',
    options:[
@@ -1169,7 +1214,7 @@ const EVENTS=[
   {id:'burnedkt',title:'THE BURNED KNIGHT',zone:1,sprite:{src:'assets/players/warrior.png',tint:'tint-red'},art:"  ,---,\n  [o_o]\n  )/|\\(\n  /| |\\",
    text:'A knight in fire-blackened plate sits against a column. He raises his head — and goes very still.',
    options:[
-     {label:'"Who are you?"',desc:'Press him',run:p=>{return '"I know you." He chokes on the words. "No — that is impossible. It cannot be." He refuses to look at you again.';}},
+     {label:'"Who are you?"',desc:'Press him',run:p=>{return '<span class="shout-red">"I know you."</span> He chokes on the words. <span class="shout-red">"No &mdash; that is impossible. It cannot be."</span> He refuses to look at you again.';}},
      {label:'"I have never been here before."',desc:'Insist &middot; he may teach you',run:p=>{p.atk+=2;let extra='';if(!p.memory && chance(55)){grantMemory(p,'ember');extra=' He sketches a flame-sigil in the ash; you feel it lodge in your hands.';}return '"...of course you have not." His voice is gentle. He hands you the hilt of a snapped sword. (+2 ATK)'+extra;}},
      {label:'Leave him to his armor',desc:'Walk past',run:p=>'You step past. Behind you, you hear him laugh once, quietly, in disbelief.'},
    ]},
@@ -1183,7 +1228,7 @@ const EVENTS=[
   {id:'frozenchild',title:'THE FROZEN CHILD',zone:2,sprite:{src:'assets/players/ranger.png',tint:'tint-blue'},art:"   o\n  /|\\\n   |\n  / \\",
    text:'A child stands ankle-deep in frost, staring at you with patient, unsurprised eyes. They do not seem cold.',
    options:[
-     {label:'"You\'re back."',desc:'Wait — what?',run:p=>{addMiasma(4);return '"You always come back. We have done this so many times now." They smile, sadly. The child is gone before you can speak again. (the cold thickens)';}},
+     {label:'"You\'re back."',desc:'Wait — what?',run:p=>{addMiasma(4);return '<span class="shout-purple">"You always come back. We have done this so many times now."</span> They smile, sadly. The child is gone before you can speak again. (the cold thickens)';}},
      {label:'"I don\'t know you."',desc:'Insist &middot; they may teach you',run:p=>{heal(p,Math.round(p.maxHp*0.12));let extra='';if(!p.memory && chance(55)){grantMemory(p,'hollow');extra=' Before they vanish, they show you how to step outside a moment.';}return '"...oh." The child looks down. "I am sorry. I thought you were ready." They press warm hands to your wound and walk into the wall. (heal)'+extra;}},
      {label:'Walk through them',desc:'They were never there',run:p=>{addMiasma(8);return 'There was no child. Of course there was no child. The Miasma is doing its work. (the cold thickens)';}},
    ]},
@@ -1191,7 +1236,7 @@ const EVENTS=[
    text:'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.',
    options:[
      {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3);return '"A record of every champion who came this far." She turns the ledger. Your name is there. Yours. In your handwriting. (+8 max mana, the cold thickens)';}},
-     {label:'"Have you remembered yet?"',desc:'She asked you',run:p=>'"...then there is still time." She does not look sad. She looks tired. She closes the ledger and is gone.'},
+     {label:'"Have you remembered yet?"',desc:'She asked you',run:p=>'<span class="shout-purple">"...then there is still time."</span> She does not look sad. She looks tired. She closes the ledger and is gone.'},
      {label:'Leave her',desc:'No questions',run:p=>'You walk on. The desk and the scholar are not behind you when you glance back.'},
    ]},
   {id:'elderecho',title:'AN ELDER ECHO',zone:3,sprite:{src:'assets/monsters/ghost.png',tint:'tint-purple'},art:"  .---.\n ( ??? )\n  )___(\n  /| |\\",
@@ -1365,6 +1410,10 @@ const LORE=[
   {id:'l14',t:'The Last Truth',x:'The crypt opens. Something inside you does not leave. Every champion who escapes carries a sliver of the Deep back into the light. That is how it spreads. That is how it always wins.'},
   {id:'l15',t:'The Lie You Were Told',x:'A Champion did not enter the Crypt to slay the Devourer. The Champion IS the Devourer — split apart in an age before language, sealed in pieces, sent back as a stranger to itself. Every descent is the same pilgrimage: you, looking for the rest of you, and not knowing what you will find.'},
   {id:'l16',t:'Why You Persist (the real reason)',x:'Time Debt is borrowed from a future Champion who will pay for it. Echoes are previous attempts that almost made it. Miasma is the seal weakening as you near the rest of yourself. The Dragon is begging you not to open the door. The Forgotten King is what you become if you sit. The Devourer is what waits if you finish the journey. The Champion Who Remembered is the only one of you who chose to stop.'},
+  {id:'l17',t:'The Seventh Expedition',x:'There are records of six descents in the upper archives. The seventh is mentioned only in the margins, in the same hand, getting smaller. Nobody knows what happened to them. Nobody quite knows what happened to the records, either.'},
+  {id:'l18',t:'Chambers Older Than the Crypt',x:'Some rooms down here are carved from a darker stone than the rest of the crypt. The cartographer claims those chambers do not stay in the same place between maps. The smith claims they were here before the door was. Whoever is right, the implication is unkind.'},
+  {id:'l19',t:'Rumours of the Pale',x:'The smith says fire wins against everything except one thing. The cardinal says her god does not enter the lower chambers. The cartographer mapped the bottom once and refuses to do so again. None of them say the same name for it. None of them say its name aloud.'},
+  {id:'l20',t:'The Thing Before',x:'The Devourer was not born — it was discovered. The crypt was built around a fragment of something older: a cold place that existed before fire, before stars, before any of this. The dragon was not warding the Devourer. The dragon was warding what the Devourer was carved from.'},
 ];
 function loadLore(){ try{ return JSON.parse(localStorage.getItem('crypt_lore')||'[]'); }catch(e){ return []; } }
 function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg; return true; }
@@ -1394,15 +1443,16 @@ const BOSS_BIO={
   dragon:"The crypt's warden once, then the prison itself.",
   devourer:'It does not eat flesh. It eats every future that ever could have been.',
   remembered:'A figure that waits at the bottom. It does not introduce itself, and it does not need to: it speaks as if it has known you for centuries. Believe what it says, or do not.',
+  paledevourer:'',
 };
 function showBossIntro(key){ if(!BOSS_BIO[key]||!BOSSES[key])return;
   // Per-run gate: every new run reintroduces every boss you face. The lines should be impossible to miss.
   G._seenBoss=G._seenBoss||{}; if(G._seenBoss[key])return; G._seenBoss[key]=1;
-  showInfo({title:BOSSES[key].name,body:`<i class="red">${BOSS_CRY[key]||''}</i><br><br>${BOSS_BIO[key]}`}); }
+  showInfo({title:BOSSES[key].name,body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_CRY[key]||''}</p><p style="font-size:10px;line-height:1.9;color:#cfcbef;margin-top:10px">${BOSS_BIO[key]}</p>`}); }
 function showBossDeath(key){ if(!BOSS_DEATHCRY[key]||!BOSSES[key])return;
-  showInfo({title:BOSSES[key].name+' — falls',body:`<i class="red">${BOSS_DEATHCRY[key]}</i>`}); }
+  showInfo({title:BOSSES[key].name+' — falls',body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_DEATHCRY[key]}</p>`}); }
 let G=null;
-function defaultMods(){ return {eDmg:1.00,eHp:1.04,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.15,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
+function defaultMods(){ return {eDmg:1.15,eHp:1.10,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.30,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
 function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
   heat:0,miasma:0,collapsed:0,dmgBy:{},debt:0,collectorEta:0,_forceCollector:0}; }
 newGame();
@@ -1681,7 +1731,7 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ const d=Math.max(0,G.depth-1); return 1+d*0.085+d*d*0.0055; }
+function depthFactor(){ const d=Math.max(0,G.depth-1); return 1+d*0.10+d*d*0.0065; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
@@ -1951,12 +2001,17 @@ function nextCorridor(){ G.depth++;
   if(G._forceCollector){ G._forceCollector=0; G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
   if(G.abyss){ const floor=G.depth-RUN_LENGTH;
     if(floor%4===0){
-      let key;
-      // Past floor 12 of the Abyss, the Remembered begins to appear — first as rare, then certain on the deepest run
-      if(floor>=24 && !G._rememberedSlain) key='remembered';
+      let key, peek;
+      // Past floor 30 of the Abyss, something colder than the Devourer waits.
+      // Some champions hear of it before they meet it. Most never do.
+      if(floor>=30 && !G._paleSlain) key='paledevourer';
+      else if(floor>=18 && chance(10) && !G._paleSlain) key='paledevourer';
+      else if(floor>=24 && !G._rememberedSlain) key='remembered';
       else if(floor>=12 && chance(28) && !G._rememberedSlain) key='remembered';
-      else key=chance(35)?'devourer':pick(Object.keys(BOSSES).filter(k=>k!=='remembered'));
-      const peek=key==='remembered'?'A familiar silhouette waits at the end of the corridor. It has been waiting longer than you have been alive.':'A horror of the deep stirs. It has been waiting.';
+      else key=chance(35)?'devourer':pick(Object.keys(BOSSES).filter(k=>k!=='remembered'&&k!=='paledevourer'));
+      if(key==='paledevourer') peek='The cold hurts before the door opens.';
+      else if(key==='remembered') peek='A familiar silhouette waits at the end of the corridor. It has been waiting longer than you have been alive.';
+      else peek='A horror of the deep stirs. It has been waiting.';
       G.doors=[{type:'enemy',boss:key,peek}]; }
     else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
     return; }
@@ -2079,7 +2134,7 @@ function scaleEnemy(unit,depth){
   return e;
 }
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-10); const dm=debtMul();
-  const hpF=(1+e*0.06+e*e*0.0042)*dm, atkF=(1+e*0.042+e*e*0.0025)*dm;
+  const hpF=(1+e*0.07+e*e*0.0058)*dm, atkF=(1+e*0.05+e*e*0.0033)*dm;
   const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key],_key:key});
   if(!boss._collector)maybeCounter(boss,true);
   return boss; }
@@ -2672,6 +2727,7 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   if(b.enemies.some(e=>e.name===BOSSES.king.name)){ blog(BOSS_DEATHCRY.king,'crit'); discoverLore('l13'); if(!p.memory||p.memory.id!=='decree') grantMemory(p,'decree'); G._pendingBossDeath='king'; }
   if(b.enemies.some(e=>e.name===BOSSES.devourer.name)){ blog(BOSS_DEATHCRY.devourer,'crit'); discoverLore('l10'); discoverLore('l15'); if(!p.memory||p.memory.id!=='devour') grantMemory(p,'devour'); G._pendingBossDeath='devourer'; }
   if(b.enemies.some(e=>e.name===BOSSES.remembered.name)){ blog(BOSS_DEATHCRY.remembered,'crit'); discoverLore('l15'); discoverLore('l16'); G._rememberedSlain=1; if(!p.memory||p.memory.id!=='curse') grantMemory(p,'curse'); G._pendingBossDeath='remembered'; }
+  if(b.enemies.some(e=>e.name===BOSSES.paledevourer.name)){ blog('The thing in the room is gone. The room is colder for having held it.','crit'); discoverLore('l19'); discoverLore('l20'); G._paleSlain=1; }
   if(b.enemies.some(e=>e.name===BOSSES.warden.name) && (!p.memory||p.memory.id!=='ember')){ grantMemory(p,'ember'); }
   // Whoever the chamber-20 boss was — king, dragon, or otherwise — the lie cracks here. The Triumph screen reflects it.
   if(b.isFinal){ discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
