@@ -1681,7 +1681,7 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ const d=Math.max(0,G.depth-1); return 1+d*0.09+d*d*0.003; }
+function depthFactor(){ const d=Math.max(0,G.depth-1); return 1+d*0.085+d*d*0.0055; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
@@ -2079,7 +2079,7 @@ function scaleEnemy(unit,depth){
   return e;
 }
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-10); const dm=debtMul();
-  const hpF=(1+e*0.04+e*e*0.00225)*dm, atkF=(1+e*0.03+e*e*0.00125)*dm;
+  const hpF=(1+e*0.06+e*e*0.0042)*dm, atkF=(1+e*0.042+e*e*0.0025)*dm;
   const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key],_key:key});
   if(!boss._collector)maybeCounter(boss,true);
   return boss; }
@@ -2735,15 +2735,19 @@ function proceed(msg){
 }
 function renderTriumph(){
   app.innerHTML=`<h1 class="title" style="color:var(--amber)">THE THRONE FALLS</h1>
-    <div class="subtitle">Chamber ${G.depth} conquered</div>
+    <div class="subtitle">YOU WON &middot; Chamber ${G.depth}/${RUN_LENGTH}</div>
     <div class="panel center fade">
       <pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>
-      <p class="evtext center">The crypt's last guardian lies broken at your feet. You have what you came for — glory, and survival.<br><br>
-        But a cold wind rises from a stair that should not exist, spiralling down past the throne. <span class="red">The Devourer</span> still hungers below.</p>
+      <p class="evtext center"><b class="amber">The crypt's last guardian lies broken at your feet.</b> Your run is over — you can retire as a legend, with everything you carry.<br><br>
+        Below the throne, a stair that should not exist spirals down into the dark. The Abyss. Bottomless. Optional. <b class="red">Choose only if you want to gamble what you just earned.</b></p>
       <p class="center purple fade" style="font-size:9px;letter-spacing:.6px;margin:10px 4px 4px;opacity:.85"><i>&#9763; You have done this many times. You will do it again.</i></p>
-      <button class="btn center" onclick="claimVictory()"><span class="k">&#9819;</span>RETIRE A LEGEND<small>end the run victorious &amp; keep your glory</small></button>
-      <button class="btn center" onclick="startAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>endless &amp; escalating — claim ever-greater power, until it claims you</small></button>
+      <button class="btn center amber" onclick="claimVictory()"><span class="k">&#9819;</span>&#9654; RETIRE A LEGEND <span class="muted">(end the run, keep your glory)</span><small>RECOMMENDED &middot; the proper ending</small></button>
+      <button class="btn center" onclick="confirmAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>OPTIONAL ENDLESS MODE &middot; no exit, no win, only how deep you fall</small></button>
     </div>`;
+}
+function confirmAbyss(){
+  if(!confirm('THE ABYSS IS ENDLESS. There is no final boss, no victory screen — only escalating bosses until you die. You will lose everything you have built when it kills you. Are you sure?')) return;
+  startAbyss();
 }
 function claimVictory(){ SFX.play('win'); discoverLore('l12'); discoverLore('l14'); G.screen='victory'; render(); }
 function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
