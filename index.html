@@ -1352,7 +1352,7 @@ const LORE=[
   {id:'l1',t:'The Descent',x:'They all came for the hoarded power of the crypt. None came back up. You will be the exception — or you will be an Echo for the next fool.'},
   {id:'l2',t:'The Warm Crypt',x:'The upper halls were a prison, then a tomb, then forgotten. The warmth was never comfort. It was containment. Something down here has been kept warm on purpose.'},
   {id:'l3',t:'The Furnace',x:'Below the tombs, the heat is deliberate. Someone lit a fire and fed it for an age. Fire is a lock. Heat is a warning. The hotter it burns, the closer you are to the thing it cages.'},
-  {id:'l4',t:'The Warden',x:'The dragon is older than the crypt around it. It calls itself a lock, not a guardian. Champions never quite know what to make of that — and they do not get the chance to ask twice.'},
+  {id:'l4',t:'The Warden',x:'The dragon is older than the crypt around it. It does not move from its door. It does not call itself a guardian — it calls itself something gentler, which is somehow worse. Champions never quite know what to make of that, and they do not get the chance to ask twice.'},
   {id:'l5',t:'What the Cold Is',x:'When the Warden falls the fire dies, and a cold older than fire seeps up from below. The furnace was holding the cold OUT. You have just let it in.'},
   {id:'l6',t:'Miasma',x:'The cold is not weather. It is appetite. It does not freeze the body — it erodes the memory of being alive. Down here, wounds forget how to close.'},
   {id:'l7',t:'The Echoes',x:'The dead you meet were champions like you. The crypt did not eat their bodies — it kept their last moment, looping, lying. Speak gently. They misremember everything now.'},
@@ -1383,7 +1383,7 @@ const BOSS_BIO={
   ogre:'An old warlord who chose this crypt over a soft death. He keeps the gate as a kindness — to himself.',
   gobking:'The last of his kin who could read. He has no kingdom left, only loyal teeth.',
   spider:'Her children are old enough to walk now. She is hungry from the long wait.',
-  warden:"Asleep in front of a very old door. It calls itself the lock — but creatures down here say a lot of things. Champions who pause to listen rarely come back to argue.",
+  warden:"Older than the crypt around it. It sleeps in front of one specific door and will not let it open. It does not move. It does not eat. It does not blink. Champions who pause to ask what it is doing there rarely come back to argue.",
   necro:'Holds court over a parliament that no longer remembers being alive.',
   titan:'Stone hauled into this shape by hands that have since forgotten how.',
   tyrant:'It rules the dark by the simple right of being there longest.',
@@ -1400,7 +1400,7 @@ function showBossIntro(key){ if(!BOSS_BIO[key]||!BOSSES[key])return;
   G._seenBoss=G._seenBoss||{}; if(G._seenBoss[key])return; G._seenBoss[key]=1;
   showInfo({title:BOSSES[key].name,body:`<i class="red">${BOSS_CRY[key]||''}</i><br><br>${BOSS_BIO[key]}`}); }
 function showBossDeath(key){ if(!BOSS_DEATHCRY[key]||!BOSSES[key])return;
-  showInfo({title:BOSSES[key].name+' — falls',body:`<i class="red">${BOSS_DEATHCRY[key]}</i><br><br>${BOSS_BIO[key]||''}`}); }
+  showInfo({title:BOSSES[key].name+' — falls',body:`<i class="red">${BOSS_DEATHCRY[key]}</i>`}); }
 let G=null;
 function defaultMods(){ return {eDmg:1.00,eHp:1.04,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.15,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
 function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
@@ -2042,12 +2042,12 @@ function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
 /* environmental pressure applied on entering a chamber; returns true if it killed you */
 function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,msg='';
   if(heatActive()){ const t=heatTier();
-    if(t>=4){ dead=hurt(p,12+rnd(8),'heat'); msg='The walls pulse — molten air SCORCHES you!'; }
-    else if(t>=3){ dead=hurt(p,6+rnd(5),'heat'); msg='The Furnace bakes you as you enter.'; } }
+    if(t>=4){ const d=12+rnd(8); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; molten air SCORCHES you (-${d} HP).`; }
+    else if(t>=3){ const d=6+rnd(5); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; the Furnace bakes you (-${d} HP).`; } }
   if(!dead && miasmaActive()){ const t=miasmaTier();
-    if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg='Soul Rot — the crypt gnaws at what you are.'; }
-    if(t>=4){ dead=hurt(p,4+rnd(5),'miasma')||dead; msg='The cold drinks your soul.'; }
-    if(t>=5){ dead=hurt(p,8+rnd(7),'miasma')||dead; msg='You are coming undone.'; } }
+    if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg=`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`; }
+    if(t>=4){ const d=4+rnd(5); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; }
+    if(t>=5){ const d=8+rnd(7); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; } }
   if(msg){ G._worldMsg=msg; }
   if(p.hp<=0||dead){ SFX.play('death'); G.screen='gameover'; render(); return true; }
   return false; }
@@ -2541,11 +2541,14 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
 function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--;
   // Miasma rots healing — at high tiers, potions return less of their promise.
   const rot=miasmaActive()?Math.min(0.45,miasmaTier()*0.07):0;
-  const pct=Math.max(0.10,(0.40+(p.potionBonus||0))*(1-rot));
+  const base=Math.max(0.10,(0.40+(p.potionBonus||0)));
+  const pct=base*(1-rot);
   const h=Math.round(p.maxHp*pct);
+  const lost=Math.round(p.maxHp*base)-h;
   heal(p,h); SFX.play('potion');
-  const rotMsg=rot>=0.15?` (the cold drinks part of it)`:'';
-  blog(`You quaff a potion. +${h} HP${rotMsg}.`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
+  blog(`You quaff a potion. +${h} HP.`,'heal');
+  if(lost>0) blog(`&#9763; MIASMA &mdash; the cold drinks ${lost} HP from the cure.`,'info');
+  (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
 function fleeBattle(){ const p=G.player,b=G.battle;
   if(b.hadBoss){ blog('There is no escape from this foe!','info'); return render(); }
   if(p.cls==='ranger'?chance(82):chance(55)){
@@ -2603,7 +2606,9 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
       if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
       dmg=Math.round(dmg*G.mods.eDmg);
       // Miasma thins the body — at tier 2+ the world hits you a little harder.
-      const mt2=miasmaActive()?miasmaTier():0; if(mt2>=2) dmg=Math.round(dmg*(1+Math.min(0.25,mt2*0.045)));
+      const mt2=miasmaActive()?miasmaTier():0;
+      if(mt2>=2){ const before=dmg; dmg=Math.round(dmg*(1+Math.min(0.25,mt2*0.045)));
+        if(chance(22) && dmg>before) blog(`&#9763; MIASMA &mdash; the cold lets it land harder (+${dmg-before}).`,'dmg'); }
       const dodgeChance=Math.max(0,Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
       if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
       let red=(b.pdefTurns>0?b.pdef:0);
