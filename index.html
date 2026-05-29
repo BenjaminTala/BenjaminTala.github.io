@@ -358,6 +358,79 @@
   @keyframes enterFoe{0%{opacity:0;transform:translateY(-26px) scale(1.1)}55%{opacity:1;transform:translateY(4px)}100%{transform:none}}
   .enter-pop{animation:enterPop .5s cubic-bezier(.2,.7,.3,1.5)}
   @keyframes enterPop{0%{opacity:0;transform:scale(.2) rotate(-8deg)}60%{opacity:1;transform:scale(1.12) rotate(2deg)}100%{transform:none}}
+  /* ===================== FF-STYLE BATTLE LAYOUT ===================== */
+  #scene.ff{display:grid;grid-template-rows:minmax(170px,1fr) auto auto;gap:6px;padding:8px;
+    background:linear-gradient(180deg,#0a0814 0%,#0d0a18 55%,#1a1226 100%);
+    border:2px solid #322856;box-shadow:0 0 0 1px #000,inset 0 0 28px rgba(120,80,200,.18)}
+  .ff-stage{display:flex;align-items:flex-end;justify-content:center;gap:14px;min-height:170px;
+    padding:18px 6px 6px;position:relative;
+    background:radial-gradient(ellipse at 50% 95%,rgba(120,80,200,.16) 0%,transparent 65%);
+    border-bottom:1px dashed #2a2046}
+  .ff-stage .enemy-cell{display:flex;flex-direction:column;align-items:center;gap:3px;
+    max-width:150px;min-width:84px;position:relative;padding:0 2px}
+  .ff-stage .enemy-cell.dead{opacity:.32;filter:grayscale(1)}
+  .ff-stage .enemy-cell.target::before{content:'';position:absolute;top:-14px;left:50%;
+    transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;
+    border-right:7px solid transparent;border-top:10px solid var(--amber);
+    filter:drop-shadow(0 0 4px var(--amber));animation:ffArrow .8s ease-in-out infinite alternate}
+  @keyframes ffArrow{from{transform:translate(-50%,0)}to{transform:translate(-50%,4px)}}
+  .ff-stage .enemy-cell .bar.mini{width:100%;max-width:140px;margin-top:2px}
+  .ff-stage .enemy-cell .bar.mini .lbl{font-size:7px}
+  .ff-stage .enemy-cell .tgt{margin-top:3px;font-size:7px;padding:2px 8px;background:#10142a;
+    border:1px solid #2a3a6a;color:var(--muted);cursor:pointer;letter-spacing:1px}
+  .ff-stage .enemy-cell .tgt.on{border-color:var(--amber);color:var(--amber);background:#1a1428}
+  .ff-narrator{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
+    border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20,0 0 0 1px #000;
+    padding:8px 10px;min-height:62px;max-height:88px;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:flex-end;position:relative}
+  .ff-narrator::before{content:'';position:absolute;top:4px;left:4px;right:4px;bottom:4px;
+    border:1px solid #1a2244;pointer-events:none}
+  .ff-narrator .log{font-size:9px;line-height:1.6;background:none;padding:0;border:0;max-height:none}
+  .ff-bottom{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:6px}
+  .ff-portrait{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
+    border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20;padding:8px;
+    display:flex;flex-direction:column;gap:4px;position:relative;min-height:0}
+  .ff-portrait .pname{font-size:9px;color:var(--amber);letter-spacing:1px;line-height:1.2}
+  .ff-portrait .pclass{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+  .ff-portrait .pwrap{margin:2px 0;align-self:center;position:relative}
+  .ff-portrait .pwrap .sprite-player{max-height:56px}
+  .ff-portrait .ffbar{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:5px;font-size:7px}
+  .ff-portrait .ffbar .lbl{color:var(--muted);font-size:7px;letter-spacing:1px}
+  .ff-portrait .ffbar .num{font-size:7px;min-width:42px;text-align:right;color:var(--ink)}
+  .ff-portrait .ffbar .track{height:7px;background:#0a0a18;border:1px solid #1c2040;padding:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 1px 2px rgba(0,0,0,.6);position:relative;overflow:hidden}
+  .ff-portrait .ffbar .fill{height:100%;transition:width .35s ease;position:relative;box-shadow:0 0 4px currentColor}
+  .ff-portrait .ffbar .fill::after{content:'';position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0));pointer-events:none}
+  .ff-cmd{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
+    border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20;
+    padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;align-content:start}
+  .ff-cmd .cmd{background:#10142a;border:1px solid #2a3a6a;color:var(--ink);
+    padding:6px 8px;font:inherit;font-size:9px;text-align:left;cursor:pointer;
+    display:flex;align-items:flex-start;gap:6px;transition:all .12s;line-height:1.3}
+  .ff-cmd .cmd:hover:not(:disabled){background:#1a2042;border-color:var(--amber);
+    color:var(--amber);transform:translateX(2px)}
+  .ff-cmd .cmd:disabled{opacity:.4;cursor:not-allowed}
+  .ff-cmd .cmd .k{font-size:11px;min-width:13px}
+  .ff-cmd .cmd .lbl{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .ff-cmd .cmd small{font-size:7px;color:var(--muted);font-weight:normal;letter-spacing:0;text-transform:none}
+  .ff-cmd .cmd:hover:not(:disabled) small{color:#e0d0a0}
+  .ff-cmd .cmd.ult{grid-column:1/-1;background:linear-gradient(90deg,#2a1340,#3a1858);
+    border-color:#6c3cbf;color:#d6b8ff}
+  .ff-cmd .cmd.ult.ready{animation:ultPulse 1.2s ease-in-out infinite;
+    border-color:#c06cff;color:#fff;background:linear-gradient(90deg,#3a1858,#5a2880)}
+  @keyframes ultPulse{0%,100%{box-shadow:0 0 0 0 rgba(192,108,255,.55)}
+    50%{box-shadow:0 0 0 6px rgba(192,108,255,0)}}
+  .ff-cmd .cmd.flee{grid-column:1/-1;color:var(--muted)}
+  .ff-cmd hr{grid-column:1/-1;border:0;border-top:1px dashed #2a3a6a;margin:2px 0}
+  @media (max-width:640px){
+    #scene.ff{grid-template-rows:minmax(130px,1fr) auto auto;padding:5px}
+    .ff-stage{min-height:130px;gap:8px;padding:14px 4px 4px}
+    .ff-stage .enemy-cell{min-width:64px;max-width:110px}
+    .ff-bottom{grid-template-columns:1fr;gap:4px}
+    .ff-portrait{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+    .ff-portrait .pname,.ff-portrait .pclass{flex:1 0 50%}
+    .ff-portrait .pwrap{order:-1}
+    .ff-portrait .ffbar{flex:1 1 100%}
+  }
 </style>
 </head>
 <body>
@@ -687,6 +760,7 @@ const BOSS_SPRITE={
   'THE NECROMANCER':'demonlord','STONE TITAN':'golem','CAVE TYRANT':'golem',
   'DEMON LORD':'demonlord','THE LICH':'demonlord','FLAME KNIGHT':'demon',
   'THE CRYPT DRAGON':'dragon','THE FORGOTTEN KING':'demonlord','THE DRAGON WARDEN':'dragon','THE DEVOURER':'demonlord',
+  'THE CHAMPION WHO REMEMBERED':'ghost',
 };
 const AFFIX_TAGS=['Armored','Frenzied','Vampiric','Toxic','Brutal'];
 function stripAffix(name){
@@ -755,10 +829,19 @@ const BOSS_CRY={
   ogre:'"FRESH MEAT FOR THE WARLORD!"', gobking:'"Kill it! Kill it for the King!"', spider:'"My children are so hungry..."',
   necro:'"You will serve me in death."', titan:'"...INTRUDER. CRUSH. CRUSH."', tyrant:'"This crypt is MINE, little champion."',
   demon:'"Your soul will burn for a thousand years."', lich:'"Flesh is such a fleeting indulgence."', flameknight:'"Ash to ash, hero."',
-  dragon:'"NONE LEAVE THE CRYPT ALIVE."', king:'"I was king before your gods drew breath."', devourer:'"AT LAST... ANOTHER SOUL TO DEVOUR."',
+  dragon:'"I kept the door closed. I hoped — this time — it would be different."',
+  king:'"Every champion reaches this place. Every champion is the same champion."',
+  devourer:'"AT LAST... ANOTHER PIECE COMES HOME."',
   warden:'"Turn back, champion. I am not your enemy — I am the lock."',
+  remembered:'"Do you understand now? ... No? Good. Then you still have a chance."',
 };
-const BOSS_DEATHCRY={ warden:'"Fool... you opened the furnace. The cold below was never sealed for YOUR sake."' };
+const BOSS_DEATHCRY={
+  warden:'"Fool... you opened the furnace. The cold below was never sealed for YOUR sake."',
+  dragon:'"Fool... you opened the furnace. We are not done with this, you and I."',
+  king:'"Sit, then. Wear the crown. I have grown so tired of waiting."',
+  devourer:'"...so much of me is missing. So much of me... is YOU."',
+  remembered:'"Now you know. I am sorry. ...I will see you next time."',
+};
 
 /* ============================================================
    CLASSES
@@ -773,6 +856,7 @@ const CLASSES={
       {id:'bolt',name:'Arcane Bolt',cost:10,desc:'Single magic hit, scales w/ mana.'},
       {id:'fire',name:'Fireball',cost:24,aoe:true,desc:'Hit ALL foes + BURN.'},
       {id:'frost',name:'Frost Nova',cost:18,aoe:true,desc:'Dmg ALL + WEAKEN them.'},
+      {id:'glass',name:'Glass Sigil',cost:14,desc:'Pay 15% current HP. Next skill SHATTERS across every foe.'},
     ]},
   warrior:{name:'WARRIOR',color:'red',affinity:'FURY',
     affinityText:'Brutal attacks. Build TANK (defense + Shield Wall) or LIFESTEAL (vampiric gear).',
@@ -783,6 +867,7 @@ const CLASSES={
       {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.9).'},
       {id:'shield',name:'Shield Wall',cost:6,desc:'Take 65% less for 2 turns.'},
       {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'Hit ALL hard, drop guard.'},
+      {id:'last',name:'Last Stand',cost:14,desc:'2 turns: cannot fall below 1 HP. After: VULNERABLE.'},
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
@@ -793,6 +878,7 @@ const CLASSES={
       {id:'aim',name:'Aimed Shot',cost:8,desc:'Single shot, very high crit + BLEED.'},
       {id:'evade',name:'Evade',cost:6,desc:'+45% dodge for 2 turns.'},
       {id:'volley',name:'Volley',cost:12,aoe:true,desc:'3 arrows across the foes.'},
+      {id:'mark',name:'Marked Trail',cost:10,desc:'HUNT the target. Slaying it: +essence, +gold, +ultimate charge.'},
     ]},
 };
 
@@ -867,6 +953,7 @@ const BOSSES={
   king:  {name:'THE FORGOTTEN KING',hp:350,atk:22,def:7,boss:true,caster:true,poison:[8,4,55],xp:260,sprite:"   _mWm_\n  /=====\\\n  |o   o|\n  | --- |\n /|=====|\\\n  J|   |L"},
   devourer:{name:'THE DEVOURER',hp:520,atk:28,def:9,boss:true,burnAtk:[8,3,40],poison:[8,3,40],xp:400,sprite:"  .vVVVv.\n ( O   O )\n (  \\_/  )\n  )vvvvv(\n /_______\\"},
   warden:{name:'THE DRAGON WARDEN',hp:300,atk:21,def:7,boss:true,burnAtk:[8,3,60],xp:200,sprite:"   /\\   /\\\n  /  \\_/  \\\n  \\ o   o /\n   )=====(\n  /_/   \\_\\\n (_) SEAL(_)"},
+  remembered:{name:'THE CHAMPION WHO REMEMBERED',hp:480,atk:25,def:8,boss:true,caster:true,xp:380,sprite:"   .---.\n  ( o o )\n   \\ ~ /\n   /| |\\\n   J | L\n   _| |_"},
 };
 /* ch5 random; ch10 is ALWAYS the Dragon Warden (its death collapses the world); ch15 random; ch20 final */
 const BOSS_POOL=[['ogre','gobking','spider'],['warden'],['demon','lich','flameknight'],['king']];
@@ -1049,6 +1136,66 @@ const OMENS=[
    each option: {label, desc, run(p)-> outcome string | false(=battle started)}
    ============================================================ */
 const EVENTS=[
+  // ===== MYSTERY DRIP =====
+  // Each carries a 'zone' field so pickEvent biases by where you are. Side-effects are deliberately small;
+  // the real currency these trade in is *narrative suspicion*. Read carefully — the answer is not in zone 1.
+  {id:'priest',title:'THE DYING PRIEST',zone:0,sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  .--.\n ( || )\n  )/\\(\n  |  |",
+   text:'A robed man slumps against a half-broken shrine. He looks up and his eyes widen — with relief.',
+   options:[
+     {label:'"Father — are you hurt?"',desc:'Tend to him &middot; +1 potion',run:p=>{p.potions++;return '"Another champion. Good. The last three never returned. Do not be the fourth." He presses a cold vial into your hand and is still. (+1 potion)';}},
+     {label:'"What is down here?"',desc:'Press him &middot; he says little',run:p=>'"What is always down here." He shrugs as if you should know. "Just descend." He will say no more.'},
+     {label:'Leave him to his god',desc:'Walk past &middot; small gold',run:p=>{const g=8+rnd(12);p.gold+=g;return `You leave him to his rattle. A small purse slips from his sleeve — ${g} gold.`;}},
+   ]},
+  {id:'oldmerc',title:'THE OLD MERCHANT',zone:0,sprite:{src:'assets/monsters/goblin.png',tint:'tint-gold'},art:"  .---.\n ( o-o )\n  )===( \n  |$$$|",
+   text:'A bent old trader rummages through a chest, then peers up at you. He does not greet you. He just looks.',
+   options:[
+     {label:'"Have we met?"',desc:'Buy a curio — 14 gold',run:p=>{if(p.gold<14)return 'He glances at your empty purse and looks away.';p.gold-=14;p.maxHp+=8;heal(p,8);return '"You have the look. Same eyes as the others." He hands you a strange charm. (+8 max HP)';}},
+     {label:'"Other champions came through?"',desc:'Listen',run:p=>'"All of them, son. Same face, different cloak." He laughs at his own joke. You do not.'},
+     {label:'Walk away',desc:'No purchase',run:p=>'You leave. He does not ask your name. Nobody ever does, you realize.'},
+   ]},
+  {id:'burnedkt',title:'THE BURNED KNIGHT',zone:1,sprite:{src:'assets/players/warrior.png',tint:'tint-red'},art:"  ,---,\n  [o_o]\n  )/|\\(\n  /| |\\",
+   text:'A knight in fire-blackened plate sits against a column. He raises his head — and goes very still.',
+   options:[
+     {label:'"Who are you?"',desc:'Press him',run:p=>{return '"I know you." He chokes on the words. "No — that is impossible. It cannot be." He refuses to look at you again.';}},
+     {label:'"I have never been here before."',desc:'Insist',run:p=>{p.atk+=2;return '"...of course you have not." His voice is gentle. He hands you the hilt of a snapped sword. (+2 ATK)';}},
+     {label:'Leave him to his armor',desc:'Walk past',run:p=>'You step past. Behind you, you hear him laugh once, quietly, in disbelief.'},
+   ]},
+  {id:'cultist',title:'THE DRAGON CULTIST',zone:1,sprite:{src:'assets/monsters/demon.png',tint:'tint-amber'},art:"  ,___,\n  ( ^ )\n  /\\=/\\\n  d   b",
+   text:'A figure in scaled robes kneels at the lip of the Furnace, palms up. They do not turn to look at you.',
+   options:[
+     {label:'"What are you praying for?"',desc:'Listen',run:p=>'"That you will turn back." The cultist does not raise their head. "The Warden will never let you pass." A pause. "...not again."'},
+     {label:'"Not AGAIN? What does that mean?"',desc:'Demand an answer',run:p=>'They go silent. The silence is the answer.'},
+     {label:'Kick them aside',desc:'+8 gold, -6 HP',run:p=>{const c=6;p.hp=clamp(p.hp-c,1,p.maxHp);p.gold+=8;return `You shove past. The cultist topples in. Their purse — ${8} gold — lies abandoned (-${c} HP, scuffle).`;}},
+   ]},
+  {id:'frozenchild',title:'THE FROZEN CHILD',zone:2,sprite:{src:'assets/players/ranger.png',tint:'tint-blue'},art:"   o\n  /|\\\n   |\n  / \\",
+   text:'A child stands ankle-deep in frost, staring at you with patient, unsurprised eyes. They do not seem cold.',
+   options:[
+     {label:'"You\'re back."',desc:'Wait — what?',run:p=>{addMiasma(4);return '"You always come back. We have done this so many times now." They smile, sadly. The child is gone before you can speak again. (the cold thickens)';}},
+     {label:'"I don\'t know you."',desc:'Insist',run:p=>{heal(p,Math.round(p.maxHp*0.12));return '"...oh." The child looks down. "I am sorry. I thought you were ready." They press warm hands to your wound and walk into the wall. (heal)';}},
+     {label:'Walk through them',desc:'They were never there',run:p=>{addMiasma(8);return 'There was no child. Of course there was no child. The Miasma is doing its work. (the cold thickens)';}},
+   ]},
+  {id:'scholar',title:'THE FROZEN SCHOLAR',zone:2,sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  [_=_]\n  ( o )\n  )===( \n  /| |\\",
+   text:'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.',
+   options:[
+     {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3);return '"A record of every champion who came this far." She turns the ledger. Your name is there. Yours. In your handwriting. (+8 max mana, the cold thickens)';}},
+     {label:'"Have you remembered yet?"',desc:'She asked you',run:p=>'"...then there is still time." She does not look sad. She looks tired. She closes the ledger and is gone.'},
+     {label:'Leave her',desc:'No questions',run:p=>'You walk on. The desk and the scholar are not behind you when you glance back.'},
+   ]},
+  {id:'elderecho',title:'AN ELDER ECHO',zone:3,sprite:{src:'assets/monsters/ghost.png',tint:'tint-purple'},art:"  .---.\n ( ??? )\n  )___(\n  /| |\\",
+   text:'An old, old echo waits at a crossroads in the dark. It is not surprised to see you. It is counting.',
+   options:[
+     {label:'"How many times has it been?"',desc:'Ask',run:p=>{addMiasma(6);return '"...I lost the number around three hundred. After that I only counted in zones." It tilts its head. "We have been doing this for a while, you and I." (the cold thickens)';}},
+     {label:'"I am the first."',desc:'Insist',run:p=>{return '"That is what every one of us says." It does not argue further. It just waits for you to leave.';}},
+     {label:'Cut it down',desc:'Lay the echo to rest &middot; +essence',run:p=>{p.essence+=12;return `You cut the echo down. It does not resist. "Good," it says, very quietly. "Good." (+12 ${ESS})`;}},
+   ]},
+  {id:'lostchamp',title:'A LOST CHAMPION',zone:3,sprite:{src:'assets/players/warrior.png',tint:'tint-shadow'},art:"  .---,\n  ( ?? )\n  /|##|\\\n   |  |\n  _|  |_",
+   text:'A champion stands at the lip of the Deep, looking down. They do not turn when you arrive.',
+   options:[
+     {label:'"Who were you?"',desc:'Ask',run:p=>'"We all thought we were heroes." They say it softly, without bitterness. "Even now. Even here." They will not say more.'},
+     {label:'"What is at the bottom?"',desc:'Press',run:p=>{discoverLore('l15');return '"...the rest of you." They glance at you for the first time. "Go on. We have been waiting."';}},
+     {label:'Step away from the edge',desc:'Take their relic if you can',run:p=>{const r=grantRandomRelic(p);return r?`You pull them back from the lip. They press a relic into your hands and sit. (relic: ${r})`:'You pull them back. They thank you with a relic you already carry — and refuse to take it back.';}},
+   ]},
+  // ===== ORIGINAL EVENTS =====
   {id:'knight',title:'THE WOUNDED KNIGHT',sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
    text:'A dying knight slumps against the wall. "Please... mend me, and take my blade."',
    options:[
@@ -1062,6 +1209,20 @@ const EVENTS=[
      {label:'Bet 30 gold',desc:'50/50: win 60 or lose 30',run:p=>{if(p.gold<30)return 'You jingle empty pockets. The imp cackles and vanishes.';p.gold-=30;if(chance(50)){p.gold+=60;return 'The dice come up sevens! You pocket 60 gold.';}return 'Snake eyes. The imp snatches your coins and giggles away.';}},
      {label:'Bet everything',desc:'50/50: double all gold or lose it',run:p=>{if(p.gold<=0)return 'You have nothing to wager.';if(chance(48)){const g=p.gold;p.gold*=2;return `Fortune smiles! Your ${g} becomes ${p.gold} gold!`;}p.gold=0;return 'Disaster — you lose every coin to the cackling imp.';}},
      {label:'Refuse',desc:'Keep your gold',run:p=>'You decline. The imp sulks and disappears.'},
+   ]},
+  {id:'mirror2',title:'THE MIRROR CHAMBER',sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  +----+\n  | () |\n  |/||\\|\n  +----+",
+   text:'Another champion stands across the chamber. Your face. Your scars. Your blade — held a heartbeat too late.',
+   options:[
+     {label:'Fuse with it',desc:'-25% max HP &middot; +6 ATK, +8% crit',run:p=>{const c=Math.round(p.maxHp*0.25);p.maxHp=Math.max(20,p.maxHp-c);p.hp=clamp(p.hp,1,p.maxHp);p.atk+=6;p.crit+=8;return `Skin to skin, soul to soul. The mirror is gone — -${c} max HP, +6 ATK, +8% crit.`;}},
+     {label:'Challenge it',desc:'Fight a doppelganger; victory grants a random relic',run:p=>{const hp=Math.round(p.maxHp*1.05);const ene=freshEnemy({name:'Mirror Self',sprite:p.sprite||"  (??)\n /||\\\n  d b",hp,maxHp:hp,atk:Math.max(8,p.atk+2),def:Math.max(2,(p.def||0)+1),xp:38,_mirrorBoon:true});G.room={type:'enemy',_enemies:[ene]};startBattle('The mirror steps out — fight your own ghost!');return false;}},
+     {label:'Shatter it',desc:'+14 essence, but the cold thickens',run:p=>{p.essence+=14;addMiasma(8);return `Glass rains down — +14 ${ESS}. The air sours where your reflection stood.`;}},
+   ]},
+  {id:'falseexit',title:'THE FALSE EXIT',art:"  /========\\\n  ||  ()  ||\n  || EXIT ||\n  || ____ ||\n  \\========/",
+   text:'A door of warm gold light bars the corridor. It promises a way out — every coin you have, every kill you have made, safe and remembered.',
+   options:[
+     {label:'Step through &mdash; end the run now',desc:'Claim victory at current depth. The crypt forgets the rest.',run:p=>{G._falseExit=1;claimVictory();return false;}},
+     {label:'Burn the door',desc:'Refuse &middot; +60% loot for the next 3 rooms',run:p=>{G._luckBoom=3;return 'You smash the gilded threshold. The light flares and dies — your luck swells for the next three rooms.';}},
+     {label:'Touch the threshold',desc:'Risk Miasma; relic if it favors you',run:p=>{if(chance(55)){const r=grantRandomRelic(p);return r?`The gold flares — a relic forms in your hand: ${r}.`:'The gold flares — but you already carry every relic it knows.';}const c=12;addMiasma(12);p.hp=clamp(p.hp-c,1,p.maxHp);return `The threshold drinks from you (-${c} HP, the cold thickens).`;}},
    ]},
   {id:'mirror',title:'THE CURSED MIRROR',sprite:{src:'assets/players/mage.png',tint:'tint-blue'},art:"  +----+\n  | ?? |\n  | () |\n  +----+",
    text:'A tall mirror shows a warped reflection that moves a heartbeat too late.',
@@ -1189,6 +1350,8 @@ const LORE=[
   {id:'l12',t:'Why You Persist',x:'You return because the crypt let exactly one possibility survive: yours. Each run, a little more of the story stays with you. The crypt is learning you. You are learning it.'},
   {id:'l13',t:'The Forgotten King',x:'He sat upon the throne to hold the Deep shut with the weight of a crown. He has held it so long he no longer remembers ever refusing the cold its meal.'},
   {id:'l14',t:'The Last Truth',x:'The crypt opens. Something inside you does not leave. Every champion who escapes carries a sliver of the Deep back into the light. That is how it spreads. That is how it always wins.'},
+  {id:'l15',t:'The Lie You Were Told',x:'A Champion did not enter the Crypt to slay the Devourer. The Champion IS the Devourer — split apart in an age before language, sealed in pieces, sent back as a stranger to itself. Every descent is the same pilgrimage: you, looking for the rest of you, and not knowing what you will find.'},
+  {id:'l16',t:'Why You Persist (the real reason)',x:'Time Debt is borrowed from a future Champion who will pay for it. Echoes are previous attempts that almost made it. Miasma is the seal weakening as you near the rest of yourself. The Dragon is begging you not to open the door. The Forgotten King is what you become if you sit. The Devourer is what waits if you finish the journey. The Champion Who Remembered is the only one of you who chose to stop.'},
 ];
 function loadLore(){ try{ return JSON.parse(localStorage.getItem('crypt_lore')||'[]'); }catch(e){ return []; } }
 function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg; return true; }
@@ -1217,6 +1380,7 @@ const BOSS_BIO={
   king:'He sat. The Deep stayed shut. He has been sitting for an age and a half.',
   dragon:"The crypt's warden once, then the prison itself.",
   devourer:'It does not eat flesh. It eats every future that ever could have been.',
+  remembered:'A champion who reached the bottom and stayed. The only one who remembers what the others were — what YOU were. It is sorry. It will stop you anyway.',
 };
 function showBossIntro(key){ if(!BOSS_BIO[key]||!BOSSES[key])return; let seen=[];
   try{seen=JSON.parse(localStorage.getItem('crypt_seen_boss')||'[]');}catch(e){}
@@ -1239,14 +1403,27 @@ function miasmaTier(){ const m=G.miasma; return m>=60?6:m>=50?5:m>=40?4:m>=30?3:
 function healFactor(){ const t=miasmaTier(); return t>=2?0.5:t>=1?0.78:1; }              // wounds stop closing in the cold
 const HEAT_MSG=['','Metal begins to soften. The locals catch fire.','Your breath leaves sparks — the merchants gouge, but the loot runs hot.','The walls pulse. The Furnace begins to burn YOU.','FIRE INSTABILITY — the Furnace is trying to kill you!'];
 const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds no longer close on their own.','The crypt tastes your soul.','SOUL ROT — the cold is eating your very substance.','The cold draws blood with every step.','You are coming undone.'];
+// MIASMA FLASHBACKS — as the seal weakens, fragments of an older conversation surface. One-shot per run.
+const FLASHBACKS=[
+  {at:8,  line:'A memory — not yours? <i>"...seal it. Now. While we still can."</i>'},
+  {at:18, line:'A memory — not yours? <i>"He cannot be destroyed. Not by gods, not by fire."</i>'},
+  {at:32, line:'A memory — not yours? <i>"Then divide him. Split him into pieces small enough to forget."</i>'},
+  {at:48, line:'The voice was yours. <i>"...I volunteered."</i>'},
+];
 function flashWorld(){ G._worldPulse=1; }
 function addHeat(n){ if(!heatActive())return; const b=heatTier(); G.heat=clamp(G.heat+n,0,140); const a=heatTier(); if(a>b){ G._worldMsg=HEAT_MSG[a]; SFX.play(a>=3?'fire':'skill'); flashWorld(); } }
-function addMiasma(n){ if(!miasmaActive())return; const b=miasmaTier(); G.miasma=clamp(G.miasma+n,0,99); const a=miasmaTier(); if(a>b){ G._worldMsg=MIASMA_MSG[Math.min(6,a)]; SFX.play('frost'); flashWorld(); } }
+function addMiasma(n){ if(!miasmaActive())return; const b=miasmaTier(); G.miasma=clamp(G.miasma+n,0,99); const a=miasmaTier(); if(a>b){ G._worldMsg=MIASMA_MSG[Math.min(6,a)]; SFX.play('frost'); flashWorld(); }
+  // FLASHBACKS — fragments of an older conversation, one-shot per run.
+  G._flashSeen=G._flashSeen||{};
+  for(const fl of FLASHBACKS){ if(G.miasma>=fl.at && !G._flashSeen[fl.at]){ G._flashSeen[fl.at]=1; G._flashbackMsg=fl.line; SFX.play('frost'); if(fl.at>=55)discoverLore('l15'); } }
+}
 function coolHeat(n){ G.heat=clamp(G.heat-n,0,140); }
 function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
 function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
 /* damage the player from a tracked source; returns true if it killed them */
-function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp; p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp); return p.hp<=0; }
+function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp;
+  const b=G.battle; if(b&&b.lastStand>0) amt=Math.min(amt,Math.max(0,before-1));
+  p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp); return p.hp<=0; }
 /* TIME DEBT — borrow power now, pay survival later. Answers "how much future do I sacrifice?" */
 function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150); if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
@@ -1322,8 +1499,27 @@ function recomputeSets(p){
 function rollRarity(depth){ let w=[Math.max(3,42-depth*2.2),30,13+depth*0.7,4+depth*0.6,Math.max(0,depth*0.45-1)];
   if(G.mods&&G.mods.luck)w=w.map((x,i)=>i>=2?x*1.8:x*0.7);
   const ht=heatTier(); if(ht>=1)w=w.map((x,i)=>i>=2?x*(1+ht*0.35):x*(1-ht*0.12)); // the Furnace forges richer spoils
+  if(G._luckBoom>0)w=w.map((x,i)=>i>=2?x*2.2:x*0.5); // false-exit refusal &middot; transient luck spike
   let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<5;i++){ if(r<w[i])return i; r-=w[i]; } return 0; }
 function rollIlvl(depth){ return clamp(depth+rnd(3)-1,1,30); }
+const WEAPON_TRAITS={
+  bleed:  {name:'Bleeding',  short:'BLEED',  desc:'Crits apply heavy BLEED.',            color:'red',    fxKind:'poison'},
+  cursed: {name:'Cursed',    short:'CURSED', desc:'+25% DMG. Each strike adds +1 Miasma.',color:'purple', fxKind:'arcane'},
+  soul:   {name:'Soulbound', short:'SOUL',   desc:'+0.4% DMG per kill this run (cap 32%).',color:'amber',fxKind:'crit'},
+  furnace:{name:'Furnace-forged',short:'FURNACE',desc:'+0.5% DMG per Heat point (cap 50%).',color:'red',fxKind:'fire'},
+  frost:  {name:'Frost-touched',short:'FROST',  desc:'+0.7% DMG per Miasma point (cap 56%).',color:'blue',fxKind:'frost'},
+  debt:   {name:'Debt-bound', short:'DEBT',  desc:'+0.5% DMG per Time Debt (cap 50%).',  color:'purple', fxKind:'arcane'},
+  echo:   {name:'Echo-marked',short:'ECHO',  desc:'+30% DMG once you take an Echo this run.',color:'teal',fxKind:'arcane'},
+};
+const WEAPON_TRAIT_KEYS=Object.keys(WEAPON_TRAITS);
+function weaponTraitMult(p){ const t=p.weapon&&p.weapon.trait; if(!t)return 1;
+  if(t==='cursed') return 1.25;
+  if(t==='soul')   return 1+Math.min(0.32,(p.kills||0)*0.004);
+  if(t==='furnace')return 1+Math.min(0.50,(G.heat||0)*0.005);
+  if(t==='frost')  return 1+Math.min(0.56,(G.miasma||0)*0.007);
+  if(t==='debt')   return 1+Math.min(0.50,(G.debt||0)*0.005);
+  if(t==='echo')   return p.flags.echoTaken?1.30:1;
+  return 1; }
 function makeItem(slot,cls,depth,opts){ opts=opts||{};
   let rarity=opts.rarity!=null?opts.rarity:rollRarity(depth);
   const ilvl=opts.ilvl!=null?opts.ilvl:rollIlvl(depth);
@@ -1337,13 +1533,19 @@ function makeItem(slot,cls,depth,opts){ opts=opts||{};
     if(passive.stat)for(const k in passive.stat)stats[k]=(stats[k]||0)+passive.stat[k];
     name=(passive.prefix||'')+name+(passive.suffix||''); }
   const item={slot,name,type:base.type,rarity,ilvl,stats,aff:base.aff||null,set:set||base.set||null};
-  if(slot==='weapon'){ item.dmg=stats.dmg||0; if(passive&&passive.proc)item.proc=passive.proc; }
+  if(slot==='weapon'){ item.dmg=stats.dmg||0; if(passive&&passive.proc)item.proc=passive.proc;
+    // WEAPON ARCHETYPE TRAIT — late-game weapons grow weird, tempting bad decisions.
+    if(opts.trait){ item.trait=opts.trait; }
+    else if(!item.proc && rarity>=2 && chance(22+Math.min(38,depth*2))){ item.trait=pick(WEAPON_TRAIT_KEYS); }
+  }
   if(passive&&passive.flag)item.passiveFlag=passive.flag;
   if(passive)item.passiveDesc=passive.desc;
   return item;
 }
 const STAT_LBL={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT',dodge:'DODGE',lifesteal:'LS',regen:'RGN'};
-function itemExtraText(it){ let s=''; if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`; if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`; return s; }
+function itemExtraText(it){ let s=''; if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`;
+  if(it.trait&&WEAPON_TRAITS[it.trait]){ const t=WEAPON_TRAITS[it.trait]; s+=` &middot; <span class="${t.color}">&#10070; ${t.name}</span><small class="muted" style="display:block">${t.desc}</small>`; }
+  if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`; return s; }
 function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stats||{}),...(cur?Object.keys(cur.stats||{}):[])])];
   const parts=keys.map(k=>{ const nv=it.stats[k]||0, ov=(cur&&cur.stats[k])||0, d=nv-ov;
     const dt=!cur?'':d>0?` <span class="green">&#9650;${d}</span>`:d<0?` <span class="red">&#9660;${-d}</span>`:'';
@@ -1354,6 +1556,7 @@ function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'
   for(const k in it.stats){ parts.push(`+${it.stats[k]} ${lbl[k]||k}`); }
   let s=parts.join(', ');
   if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`;
+  if(it.trait&&WEAPON_TRAITS[it.trait]){ const t=WEAPON_TRAITS[it.trait]; s+=` &middot; <span class="${t.color}">&#10070; ${t.name}</span>`; }
   if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`;
   return s; }
 
@@ -1392,6 +1595,7 @@ function renderTitle(){
       <p class="muted" style="font-size:8px;line-height:2">
         20 chambers &middot; 4 zones &middot; slay, forge, and grow OP<br>
         &middot; then dare the endless Abyss beneath.</p>
+      <p class="muted center" style="font-size:7px;letter-spacing:1px;opacity:.7;margin-top:6px">&middot; the crypt does not ask your name &middot;</p>
       <button class="btn center" onclick="go('class')"><span class="blink">&#9654;</span> PRESS START</button>
       ${(()=>{const r=loadRecords(),l=loadLore().length; if(!r.runs&&!l)return ''; return `<div class="stats" style="font-size:8px;margin-top:10px;border-top:2px solid var(--line);padding-top:8px">
         <span class="amber">DEEPEST</span> chamber ${r.deepest||0} &middot; <span class="green">WINS</span> ${r.wins||0}/${r.runs||0} &middot; <span class="amber">&#128220; CODEX</span> ${l}/${LORE.length}${(r.deepest||0)>0?'<br><span class="muted">'+((r.wins||0)>0?'The crypt remembers your victory. Can you carry more of its story to the surface?':'Descend deeper than '+r.deepest+' — and live to tell it.')+'</span>':''}</div>`;})()}
@@ -1477,6 +1681,11 @@ function makeRoom(depth){
 function pickEvent(){
   let avail=EVENTS.filter(e=>!G.seenEvents.includes(e.id));
   if(!avail.length){ G.seenEvents=[]; avail=EVENTS; }
+  // Mystery zone-bias: ~60% chance the event is one tagged for THIS zone (the NPC drip).
+  // Otherwise pick any untagged event for variety. Mystery events feel like they belong here.
+  const z=G.abyss?3:zoneOf(G.depth);
+  const zoneMatch=avail.filter(e=>e.zone===z);
+  if(zoneMatch.length && chance(60)) avail=zoneMatch;
   const e=pick(avail); G.seenEvents.push(e.id); return e;
 }
 /* ============================================================
@@ -1494,6 +1703,16 @@ const ECHO_LINE={
   hazard:['Do not trust the bright water.','The crypt itself bleeds you.'],
   null:['I do not remember how I died. That should frighten you.','The dark took me mid-step.'],
 };
+// KNOWING LINES — at Zone 2+, an echo occasionally says something it should not be able to know.
+const ECHO_KNOWING=[
+  'You never listen. You never have.',
+  'I tried to warn the one before me. He did not listen either.',
+  'How many of us are you, exactly?',
+  'You will hesitate at the King. We always do.',
+  'I left a relic for you, two zones up. You walked past it.',
+  'It is colder than last time. Or maybe I am older.',
+  'When you get there — and you will — try to remember our name.',
+];
 function echoLine(cause){ return pick(ECHO_LINE[cause]||ECHO_LINE.null); }
 function saveEcho(){ const p=G.player; if(!p)return; const cause=topCause();
   const items=SLOTS.map(s=>p.equip[s]).filter(Boolean).sort((a,b)=>(b.rarity*100+b.ilvl)-(a.rarity*100+a.ilvl));
@@ -1541,17 +1760,22 @@ function echoChoice(kind){ const p=G.player,ec=G.room.echo;
   if(kind==='leave'){ SFX.play('door'); return proceed('You leave the fallen champion to the dark.'); }
   if(kind==='fight'||kind==='attack'){ G.room={type:'enemy',_enemies:[echoEnemy(ec)],_echoItem:ec.item}; startBattle('The echo rises to face you!'); return; }
   if(kind==='speak'){ const corrupt=chance(35); let line=ec.line;
-    if(corrupt&&chance(50)){ const c=8+rnd(8); hurt(p,c,'hazard'); SFX.play('hurt'); if(p.hp<=0){G.screen='gameover';return render();} line=`"...${ec.line}" — its jaw unhinges; the words turn to a scream that claws ${c} from you.`; }
-    else if(!corrupt){ heal(p,Math.round(p.maxHp*0.08)); line=`"${ec.line}" Its peace settles on you (small heal).`; }
-    else { line=`"${ec.line}" ...but the dead misremember. Trust it at your peril.`; }
+    // KNOWING — in Zone 2+ (or Abyss), the echo occasionally lets slip something it should not know.
+    const zoneNow=G.abyss?3:zoneOf(G.depth);
+    const knowing=zoneNow>=2 && chance(28);
+    if(knowing){ line=pick(ECHO_KNOWING); discoverLore('l12'); }
+    if(corrupt&&chance(50)){ const c=8+rnd(8); hurt(p,c,'hazard'); SFX.play('hurt'); if(p.hp<=0){G.screen='gameover';return render();} line=`"...${line}" — its jaw unhinges; the words turn to a scream that claws ${c} from you.`; }
+    else if(!corrupt){ heal(p,Math.round(p.maxHp*0.08)); line=`"${line}" ${knowing?'It looks at you as if it has been waiting.':'Its peace settles on you (small heal).'}`; }
+    else { line=`"${line}" ${knowing?'...the words are addressed to you specifically. The dead should not know your face.':'...but the dead misremember. Trust it at your peril.'}`; }
     G.room.outcome=line; SFX.play('chest'); render(); return; }
   if(kind==='take'&&ec.item){ let it=null; try{ it=JSON.parse(JSON.stringify(ec.item)); }catch(e){}
     // weapons must match the current champion's class — reskin from another class's run
     if(it&&it.slot==='weapon'&&ec.cls&&ec.cls!==p.cls){ it=makeItem('weapon',p.cls,Math.max(1,it.ilvl),{rarity:it.rarity,ilvl:it.ilvl}); }
     if(it)equipItem(p,it);
+    addFlag(p,'echoTaken');
     const c=Math.round(p.maxHp*0.08); hurt(p,c,'hazard'); addMiasma(10); SFX.play('upgrade'); if(p.hp<=0){G.screen='gameover';return render();}
     G.room.outcome=`You pry the ${(it&&it.name)||'gear'} from cold fingers and don it. The dead resent the theft (-${c} HP, the cold thickens).`; render(); return; }
-  if(kind==='trade'&&ec.relic){ const gained=gainRelic(p,RELICS.find(r=>r.name===ec.relic)); addMiasma(12); G.room.outcome=gained?`You take the ${ec.relic}. Something follows it into you (the cold thickens).`:`You already carry the ${ec.relic}; you leave it.`; render(); return; }
+  if(kind==='trade'&&ec.relic){ const gained=gainRelic(p,RELICS.find(r=>r.name===ec.relic)); addFlag(p,'echoTaken'); addMiasma(12); G.room.outcome=gained?`You take the ${ec.relic}. Something follows it into you (the cold thickens).`:`You already carry the ${ec.relic}; you leave it.`; render(); return; }
   proceed(); }
 /* ---------- THE COLLECTOR (Time Debt comes due) ---------- */
 function unequip(p,slot){ const it=p.equip[slot]; if(!it)return null; applyItemStats(p,it,-1); if(it.passiveFlag)removeFlag(p,it.passiveFlag); p.equip[slot]=null;
@@ -1593,9 +1817,17 @@ function doorHint(room){ return {enemy:room.boss?'DANGER — overwhelming presen
   chest:'Smells of dust and... treasure?',event:'Something unusual — fate awaits',relic:'A humming, ancient power',
   merchant:'Coins clink in the dark',forge:'A phantom forge glows with soul-fire',echo:'A cold presence — someone died here',collector:'A toll-keeper of brass and shadow',shrine:'A faint, calming glow',fountain:'Glittering, sweet-smelling water',empty:'Quiet. Probably safe.'}[room.type]; }
 function nextCorridor(){ G.depth++;
+  if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
   if(G._forceCollector){ G._forceCollector=0; G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
   if(G.abyss){ const floor=G.depth-RUN_LENGTH;
-    if(floor%4===0){ const key=chance(35)?'devourer':pick(Object.keys(BOSSES)); G.doors=[{type:'enemy',boss:key,peek:'A horror of the deep stirs. It has been waiting.'}]; }
+    if(floor%4===0){
+      let key;
+      // Past floor 12 of the Abyss, the Remembered begins to appear — first as rare, then certain on the deepest run
+      if(floor>=24 && !G._rememberedSlain) key='remembered';
+      else if(floor>=12 && chance(28) && !G._rememberedSlain) key='remembered';
+      else key=chance(35)?'devourer':pick(Object.keys(BOSSES).filter(k=>k!=='remembered'));
+      const peek=key==='remembered'?'A familiar silhouette waits at the end of the corridor. It has been waiting longer than you have been alive.':'A horror of the deep stirs. It has been waiting.';
+      G.doors=[{type:'enemy',boss:key,peek}]; }
     else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
     return; }
   if(G.depth===1||G.depth===6||G.depth===11||G.depth===16){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]&&discoverLore(({1:'l2',6:'l3',11:'l6',16:'l9'})[G.depth]); if(G.depth>1)stagePopup(G.depth); }
@@ -1618,8 +1850,9 @@ function renderCorridor(){
   const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
   G._zoneMsg=null;
   const lore=G._loreMsg?`<div class="panel tight center amber fade" style="font-size:9px">${G._loreMsg}</div>`:''; G._loreMsg=null;
+  const flash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
   const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${wmsg}${banner}${playerBar(G.player,true)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${flash}${wmsg}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       ${G._whisper?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
@@ -1786,7 +2019,8 @@ function renderRoom(){
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
   const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
+  const rflash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -1854,6 +2088,7 @@ function renderMerchant(){
       <img class="ev-sprite tint-amber" src="assets/players/ranger.png" alt="The Merchant" draggable="false">
       <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
       <p class="muted center" style="font-size:9px">"Coin for comfort, traveler."</p>
+      <p class="muted center" style="font-size:7px;opacity:.7">He does not ask your name. He never does.</p>
       <div class="coinbar"><span class="amber">&#128176; ${p.gold} GOLD</span><span class="teal">&#9670; ${p.essence}</span></div>${heatNote}
       ${item('Health Potion',mc(25),'+1 potion (heals 40% in battle)',"buy('potion')",p.gold>=mc(25))}
       ${item('Healing Draught',mc(18),'restore 50% HP now',"buy('heal')",p.gold>=mc(18))}
@@ -1962,10 +2197,10 @@ function renderBattle(){
     const efx=(b.fx||[]).filter(f=>f.idx===i).map(f=>fxHtml(f.kind)).join('');
     return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''}">
       ${efx}${flo?`<div class="fxlayer">${flo}</div>`:''}
+      ${spriteHtml}
       <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
-      ${spriteHtml}
-      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
+      <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.hunted?'<span class="chip c-burn" title="Hunted: bounty on death">&#127993; HUNTED</span>':'')+(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
       ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}</div>`;
   }).join('');
   const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
@@ -1975,25 +2210,37 @@ function renderBattle(){
   const pStatus=(b.barrier>0?`<span class="chip c-guard">BARRIER ${b.barrier}</span>`:'')
     +(b.pdefTurns>0?`<span class="chip c-guard">GUARD ${b.pdefTurns}</span>`:'')
     +(b.evadeTurns>0?`<span class="chip c-pois">EVADE ${b.evadeTurns}</span>`:'')
+    +(b.lastStand>0?`<span class="chip c-burn">LAST STAND ${b.lastStand}</span>`:'')
+    +(b.glassNext?`<span class="chip c-vuln" title="Next skill will shatter across all enemies">SIGIL READY</span>`:'')
     +(b.guardDown>0?`<span class="chip c-vuln">EXPOSED</span>`:'')+stChips(b.pst);
   const cm=G.mods.skillCost;
   const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm));
-    return `<button class="btn" ${p.mana<cost?'disabled':''} onclick="playerSkill('${s.id}')"><span class="k blue">${cost}MP</span>${s.name}${s.aoe?' <span class="amber">(AOE)</span>':''}<small>${s.desc}</small></button>`;}).join('');
+    return `<button class="cmd" ${p.mana<cost?'disabled':''} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber">AOE</span>':''}<small>${s.desc}</small></span></button>`;}).join('');
+  const pSprite=playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`;
+  const um=ultMeta(p.cls);
   app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>${worldBar()}
-    <div class="panel ${b.anim}" id="scene">
-      <div class="enemies-row ${b.intro?'enter-foe':''}">${cells}</div>
-      <div class="log">${logHtml}</div>
-      <div class="pwrap">${pFxHtml}${pFloHtml?`<div class="fxlayer">${pFloHtml}</div>`:''}${playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`}</div>
-      <div class="center">${pStatus}</div>${playerBar(p,true)}
-      <div class="bar"><div class="lbl"><span class="purple">&#10022; ULTIMATE</span><span>${b.charge>=100?'READY':Math.floor(b.charge||0)+'%'}</span></div>
-        <div class="track"><div class="fill chg ${b.charge>=100?'ready':''}" style="width:${clamp(b.charge||0,0,100)}%"></div></div></div></div>
-    ${b.over?'':`<div class="panel tight">
-      <button class="btn ult ${b.charge>=100?'ready':''}" ${b.charge>=100?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span>${ultMeta(p.cls).name}<small>${b.charge>=100?ultMeta(p.cls).desc:'charge by fighting — '+Math.floor(b.charge||0)+'/100'}</small></button>
-      <div class="menu-grid">
-        <button class="btn" onclick="playerAttack()"><span class="k">&#9876;</span>ATTACK<small>${p.weapon.name} (${p.atk+p.weapon.dmg} pow)</small></button>
-        <button class="btn" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span>POTION<small>${p.potions} left &middot; heal 30%</small></button></div>
-      <hr class="hr">${skills}
-      <button class="btn muted" onclick="fleeBattle()"><span class="k">&#10551;</span>FLEE<small>${b.hadBoss?'cannot flee a boss!':'risky — foes may strike'}</small></button></div>`}`;
+    <div class="panel ff ${b.anim}" id="scene">
+      <div class="ff-stage ${b.intro?'enter-foe':''}">${cells}</div>
+      <div class="ff-narrator"><div class="log">${logHtml||'<div class="muted">&#8230;</div>'}</div></div>
+      <div class="ff-bottom">
+        <div class="ff-portrait">
+          <div class="pname">${p.cls.toUpperCase()}</div>
+          <div class="pclass">Lv ${p.level} &middot; ${p.weapon.name}</div>
+          <div class="pwrap">${pFxHtml}${pFloHtml?`<div class="fxlayer">${pFloHtml}</div>`:''}${pSprite}</div>
+          <div class="ffbar"><span class="lbl red">HP</span><div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div><span class="num">${p.hp}/${p.maxHp}</span></div>
+          <div class="ffbar"><span class="lbl blue">MP</span><div class="track"><div class="fill mp" style="width:${clamp(p.mana/Math.max(1,p.maxMana)*100,0,100)}%"></div></div><span class="num">${p.mana}/${p.maxMana}</span></div>
+          <div class="ffbar"><span class="lbl purple">&#10022;</span><div class="track"><div class="fill chg ${b.charge>=100?'ready':''}" style="width:${clamp(b.charge||0,0,100)}%"></div></div><span class="num">${b.charge>=100?'READY':Math.floor(b.charge||0)+'%'}</span></div>
+          <div class="center" style="margin-top:2px">${pStatus}</div>
+        </div>
+        ${b.over?'<div class="ff-cmd"><div class="muted center" style="grid-column:1/-1;padding:18px 4px">&#8212; battle over &#8212;</div></div>':`<div class="ff-cmd">
+          <button class="cmd ult ${b.charge>=100?'ready':''}" ${b.charge>=100?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span><span class="lbl">${um.name}<small>${b.charge>=100?um.desc:'charge by fighting &middot; '+Math.floor(b.charge||0)+'/100'}</small></span></button>
+          <button class="cmd" onclick="playerAttack()"><span class="k">&#9876;</span><span class="lbl">ATTACK<small>${p.weapon.name} &middot; ${p.atk+p.weapon.dmg} pow</small></span></button>
+          <button class="cmd" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span><span class="lbl">POTION<small>${p.potions} left &middot; heal 30%</small></span></button>
+          <hr>${skills}
+          <button class="cmd flee" onclick="fleeBattle()"><span class="k">&#10551;</span><span class="lbl">FLEE<small>${b.hadBoss?'cannot flee a boss!':'risky &middot; foes may strike'}</small></span></button>
+        </div>`}
+      </div>
+    </div>`;
 }
 /* ----- status application ----- */
 function addBurn(st,a,t){ t+=statusBonusTurns(st); st.burn=Math.max(st.burn,a); st.burnT=Math.max(st.burnT,t); }
@@ -2009,6 +2256,7 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   if(f.executioner&&e.hp<=e.maxHp*et)m*=2;
   if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15;
   m*=slayerMult(e);
+  m*=weaponTraitMult(p);
   if(e.st.vulnT>0)m*=1.25;
   return m; }
 function rollCrit(){ return chance(effCrit(G.player)); }
@@ -2035,6 +2283,11 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   // SOUL ESSENCE: kill currency for the Forge
   let ess=2+Math.round((e.xp||6)/4); if(e.elite)ess+=5; if(e.boss)ess+=34; ess=Math.round(ess*(G.mods.essMul||1));
   p.essence+=ess; blog(`+${ess} ${ESS} essence.`,'info');
+  // MARKED TRAIL bounty
+  if(e.hunted){ const bg=14+rnd(20),be=10,bc=22; p.gold+=bg; p.essence+=be; const b=G.battle; if(b) gainCharge(bc);
+    blog(`Hunted prey falls — +${bg} gold, +${be} ${ESS}, ultimate surges.`,'crit'); }
+  // MIRROR CHAMBER reward
+  if(e._mirrorBoon){ const r=grantRandomRelic(p); if(r) blog(`Your reflection bursts into shards — relic forms: ${r}.`,'crit'); }
   if(e.elite&&chance(35)){ p.potions++; blog('It dropped a Health Potion!','heal'); }
   if(p.flags.bloodpact){ let h=Math.round(p.maxHp*0.08); if(p.flags.synSanguine)h*=2; heal(p,h); blog(`Blood Pact heals ${h}.`,'heal'); }
   if(p.flags.bloodKill){ const h=Math.round(p.maxHp*0.06); heal(p,h); }
@@ -2054,6 +2307,9 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle; let d=p.atk+p.weapo
   SFX.play(c?'crit':'hit');
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
   const e=b.enemies[idx];
+  // WEAPON TRAITS — cursed pollutes, bleed cuts on crit
+  if(p.weapon.trait==='cursed'){ if(miasmaActive()) addMiasma(1); else addHeat(1); }
+  if(p.weapon.trait==='bleed' && c && e && e.hp>0){ addPoison(e.st,6,3); blog(`${e.name} BLEEDS!`,'info'); }
   // Avatar of Wrath: cleave splash to other foes
   if(p.affTier.w>=3 && done>0){ const cl=Math.max(1,Math.round(done*0.3));
     b.enemies.forEach((o,j)=>{ if(j!==idx&&o.hp>0){ o.hp=clamp(o.hp-cl,0,o.maxHp); blog(`Cleave hits ${o.name} for ${cl}.`,'dmg'); if(o.hp<=0)onEnemyDeath(o); } }); }
@@ -2094,7 +2350,7 @@ function aoeHit(fn){ G.battle.enemies.forEach((e,i)=>{ if(e.hp>0) fn(i); }); }
 function spendMana(cost){ const p=G.player; p.mana-=cost; let frac=0; if(p.flags.soulSiphon)frac=0.5; if(p.flags.synOver)frac=1.0; if(frac){ heal(p,Math.max(1,Math.round(cost*frac))); } }
 function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>x.id===id); if(!s||b.over)return;
   const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; spendMana(cost); ensureTarget();
-  _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow'}[id]||'hit';
+  _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow',glass:'arcane',last:'hit',mark:'arrow'}[id]||'hit';
   const mm=p.maxMana;
   switch(id){
     case 'bolt':{SFX.play('skill');let d=10+Math.round(mm*0.14)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
@@ -2110,6 +2366,20 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=p.skills.find(x=>
       else { let d=(p.atk+p.weapon.dmg)*1.58;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,5,3); } break;}
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
+    case 'glass':{SFX.play('skill');const c=Math.max(1,Math.round(p.hp*0.15));p.hp=clamp(p.hp-c,1,p.maxHp);b.glassNext=1;blog(`Glass Sigil etched in your own blood (-${c} HP). Your next skill will SHATTER.`,'crit');break;}
+    case 'last':{SFX.play('skill');b.lastStand=2;b.lastVuln=2;blog('LAST STAND — you cannot fall for 2 turns!','crit');break;}
+    case 'mark':{SFX.play('arrow');const me=b.enemies[b.target];if(me&&me.hp>0){me.hunted=1;blog(`${me.name} is HUNTED — slay it for bounty.`,'crit');}else{blog('No living target to mark.','info');} break;}
+  }
+  // GLASS SIGIL echo: after any non-AOE skill, splash arcane damage across the other foes.
+  if(b.glassNext && id!=='glass'){
+    const skill=p.skills.find(x=>x.id===id);
+    if(skill && !skill.aoe){
+      b.glassNext=0;
+      const echo=Math.max(6,Math.round((p.atk+p.weapon.dmg)*0.55+(p.maxMana||0)*0.08));
+      let any=false;
+      b.enemies.forEach((e,i)=>{ if(i!==b.target && e.hp>0){ any=true; dealToEnemy(i,echo,'Sigil shatters across',false); }});
+      if(any) blog('The sigil rings out — the spell tears across the room!','crit');
+    }
   }
   gainCharge(24); afterPlayer(); }
 function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--; const h=Math.round(p.maxHp*0.30); heal(p,h); SFX.play('potion'); blog(`You quaff a potion. +${h} HP.`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
@@ -2149,6 +2419,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
     if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const frac=e.manaburn?0.45:0.6; const ab=Math.min(p.mana,Math.ceil(dmg*frac)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
     if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.10)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
     let lethal=p.hp-dmg<=0;
+    if(lethal&&b.lastStand>0){ dmg=Math.max(0,p.hp-1); lethal=false; blog('LAST STAND holds — the blow cannot fell you!','crit'); }
     if(lethal&&p.flags.secondWind&&!b.usedSecond){ b.usedSecond=true; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death!','lvl'); }
     else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
     if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
@@ -2162,6 +2433,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   b.enemies.forEach(e=>{ if(e.st.weakT>0)e.st.weakT--; if(e.st.vulnT>0)e.st.vulnT--; });
   if(b.pst.vulnT>0)b.pst.vulnT--;
   if(b.pdefTurns>0)b.pdefTurns--; if(b.evadeTurns>0)b.evadeTurns--; if(b.guardDown>0)b.guardDown--;
+  if(b.lastStand>0){ b.lastStand--; if(b.lastStand===0 && b.lastVuln>0){ addVuln(b.pst,b.lastVuln); b.lastVuln=0; blog('Last Stand fades — you are VULNERABLE.','info'); } }
   p.mana=clamp(p.mana+p.regen,0,p.maxMana);
   flash('playerHit');
   if(p.hp<=0){ b.over=true; SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
@@ -2180,8 +2452,12 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   addHeat(2+elites); addMiasma(3+elites);
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); }
-  if(b.enemies.some(e=>e.name===BOSSES.king.name))discoverLore('l13');
-  if(b.enemies.some(e=>e.name===BOSSES.devourer.name))discoverLore('l10');
+  if(b.enemies.some(e=>e.name===BOSSES.dragon.name)){ blog(BOSS_DEATHCRY.dragon,'crit'); discoverLore('l4'); }
+  if(b.enemies.some(e=>e.name===BOSSES.king.name)){ blog(BOSS_DEATHCRY.king,'crit'); discoverLore('l13'); }
+  if(b.enemies.some(e=>e.name===BOSSES.devourer.name)){ blog(BOSS_DEATHCRY.devourer,'crit'); discoverLore('l10'); discoverLore('l15'); }
+  if(b.enemies.some(e=>e.name===BOSSES.remembered.name)){ blog(BOSS_DEATHCRY.remembered,'crit'); discoverLore('l15'); discoverLore('l16'); G._rememberedSlain=1; }
+  // Whoever the chamber-20 boss was — king, dragon, or otherwise — the lie cracks here. The Triumph screen reflects it.
+  if(b.isFinal){ discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
   // Defeating the Collector burns away your debt
   if(b.enemies.some(e=>e._collector)){ G.debt=0; G.collectorEta=0; blog('The Collector shatters — your debt dies with it.','lvl'); discoverLore('l8'); }
   SFX.play(b.hadBoss?'win':'gold');
@@ -2243,6 +2519,7 @@ function renderTriumph(){
       <pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>
       <p class="evtext center">The crypt's last guardian lies broken at your feet. You have what you came for — glory, and survival.<br><br>
         But a cold wind rises from a stair that should not exist, spiralling down past the throne. <span class="red">The Devourer</span> still hungers below.</p>
+      <p class="center purple fade" style="font-size:9px;letter-spacing:.6px;margin:10px 4px 4px;opacity:.85"><i>&#9763; You have done this many times. You will do it again.</i></p>
       <button class="btn center" onclick="claimVictory()"><span class="k">&#9819;</span>RETIRE A LEGEND<small>end the run victorious &amp; keep your glory</small></button>
       <button class="btn center" onclick="startAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>endless &amp; escalating — claim ever-greater power, until it claims you</small></button>
     </div>`;
