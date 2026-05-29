@@ -1487,7 +1487,33 @@ const FLASHBACKS=[
   {at:48, line:'The voice was yours. <i>"...I volunteered."</i>'},
 ];
 function flashWorld(){ G._worldPulse=1; }
-function addHeat(n){ if(!heatActive())return; const b=heatTier(); G.heat=clamp(G.heat+n,0,140); const a=heatTier(); if(a>b){ G._worldMsg=HEAT_MSG[a]; SFX.play(a>=3?'fire':'skill'); flashWorld(); } }
+// Every 10 Heat, the player gets a clear line explaining what the meter now does.
+// Helps non-readers track the cost of pushing further into the Furnace.
+const HEAT_TICK={
+  10:'&#128293; HEAT 10 &mdash; the air thickens. Your strikes start setting things alight.',
+  20:'&#128293; HEAT 20 &mdash; the heat settles into your armour. Locals burn longer when struck.',
+  30:'&#128293; HEAT 30 &mdash; sparks start stinging you between chambers (1-2 HP, sometimes).',
+  40:'&#128293; HEAT 40 &mdash; the walls remember being warmer than this.',
+  50:'&#128293; HEAT 50 &mdash; <b>ASHEN</b> enemies appear: +ATK, longer burns. Every chamber now costs 2-3 HP.',
+  60:'&#128293; HEAT 60 &mdash; the Furnace is paying attention to you specifically.',
+  70:'&#128293; HEAT 70 &mdash; <b>MOLTEN</b> enemies: +HP, +ATK, harsher burn. Furnace bosses start feeding on your Heat.',
+  80:'&#128293; HEAT 80 &mdash; chamber crossings now cost 5-8 HP. The keeper is waking up.',
+  90:'&#128293; HEAT 90 &mdash; the floor warps. You begin to shed substance.',
+  100:'&#128293; HEAT 100 &mdash; <b>BLAZING</b> enemies; the Furnace boss now hits +40% and brings a savage burn proc.',
+  110:'&#128293; HEAT 110 &mdash; every chamber bakes you for 12-19 HP. The walls flicker.',
+  120:'&#128293; HEAT 120 &mdash; OVERHEAT. You are part of the Furnace now.',
+  130:'&#128293; HEAT 130 &mdash; there is fire inside you that should not be.',
+  140:'&#128293; HEAT 140 &mdash; you cannot remember being cold.',
+};
+function addHeat(n){ if(!heatActive())return;
+  const beforeTier=heatTier(); const beforeBucket=Math.floor(G.heat/10);
+  G.heat=clamp(G.heat+n,0,140);
+  const afterTier=heatTier(); const afterBucket=Math.floor(G.heat/10);
+  if(afterTier>beforeTier){ G._worldMsg=HEAT_MSG[afterTier]; SFX.play(afterTier>=3?'fire':'skill'); flashWorld(); }
+  for(let bucket=beforeBucket+1; bucket<=afterBucket; bucket++){
+    const tm=HEAT_TICK[bucket*10]; if(tm) G._heatTickMsg=tm;
+  }
+}
 function addMiasma(n){ if(!miasmaActive())return; const b=miasmaTier(); G.miasma=clamp(G.miasma+n,0,99); const a=miasmaTier(); if(a>b){ G._worldMsg=MIASMA_MSG[Math.min(6,a)]; SFX.play('frost'); flashWorld(); }
   // FLASHBACKS — fragments of an older conversation, one-shot per run.
   G._flashSeen=G._flashSeen||{};
@@ -2050,8 +2076,9 @@ function renderCorridor(){
   const lore=G._loreMsg?`<div class="panel tight center amber fade" style="font-size:9px">${G._loreMsg}</div>`:''; G._loreMsg=null;
   const flash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
   const mem=G._memoryMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px;border-color:#6c3cbf">&#9763; ${G._memoryMsg}</div>`:''; G._memoryMsg=null;
+  const heatTick=G._heatTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))">${G._heatTickMsg}</div>`:''; G._heatTickMsg=null;
   const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${flash}${mem}${wmsg}${banner}${playerBar(G.player,true)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${flash}${mem}${heatTick}${wmsg}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       ${G._whisper?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
@@ -2244,7 +2271,8 @@ function renderRoom(){
   }
   const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
   const rflash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
+  const rheatTick=G._heatTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))">${G._heatTickMsg}</div>`:''; G._heatTickMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${rheatTick}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
