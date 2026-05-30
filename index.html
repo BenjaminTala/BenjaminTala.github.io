@@ -1498,7 +1498,11 @@ const LORE=[
   {id:'l20',t:'The Thing Before',x:'The Devourer was not born — it was discovered. The crypt was built around a fragment of something older: a cold place that existed before fire, before stars, before any of this. The dragon was not warding the Devourer. The dragon was warding what the Devourer was carved from.'},
 ];
 function loadLore(){ try{ return JSON.parse(localStorage.getItem('crypt_lore')||'[]'); }catch(e){ return []; } }
-function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg; return true; }
+function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg;
+  // l15 is "The Lie You Were Told" — the truth about the Champion. At that moment,
+  // Harvest Essence renames itself to DEVOUR.
+  if(id==='l15' && G.player) try{ revealDevour(); }catch(e){}
+  return true; }
 function loadRecords(){ try{ return Object.assign({deepest:0,runs:0,wins:0},JSON.parse(localStorage.getItem('crypt_records')||'{}')); }catch(e){ return {deepest:0,runs:0,wins:0}; } }
 function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(r.deepest||0,G.depth); try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 /* atmospheric whispers — drip the world into the player run by run */
@@ -1786,10 +1790,11 @@ const DEVOUR_EVOLUTIONS={
 function devourComboKey(a,b){ return [a,b].sort().join('|'); }
 function makeDevourBase(){
   return {
-    id:'devour', name:'Devour', cost:10, aoe:false, mem:1, devour:true,
-    desc:'Heavy single strike. If this kills, you consume a FRAGMENT and the skill mutates.',
+    id:'devour', name:'Harvest Essence', cost:10, aoe:false, mem:1, devour:true,
+    desc:'Strike a weakened enemy and harvest its essence.',
     path:[], dmgMult:1.5, effects:[], stage:0,
-    source:'You start with this. You never knew why.',
+    source:'You start with this. You never thought to ask why it works.',
+    revealed:false,
   };
 }
 function evolveCombo(d, fam){
@@ -1872,31 +1877,53 @@ function showFragmentChoice(){
   const fam=G._fragQueue.shift();
   const fdef=DEVOUR_FAMILIES[fam]; if(!fdef){ showFragmentChoice(); return; }
   const d=G.player.memory;
+  const revealed=d && d.revealed;
+  // Honest vs hidden language. Pre-reveal: ESSENCE / harvest. Post-reveal: FRAGMENT / consume.
+  const noun=revealed?'Fragment':'Essence';
+  const verb=revealed?'consume':'harvest';
+  const title=revealed?`FRAGMENT &mdash; ${fdef.label}`:`ESSENCE &mdash; ${fdef.label}`;
   const combo=evolveCombo(d, fam);
-  const evolveLabel=combo?combo.name:`Fold in ${fdef.label}`;
+  const evolveLabel=combo?combo.name:`Bind in ${fdef.label}`;
   const evolveDesc=combo?combo.desc:`Add <b>${fdef.desc}</b> to ${d.name}, +0.20 damage scaling.`;
   const empowerLabel=`Deepen ${d.name}`;
   const empowerDesc=`Improve current path. +0.40 damage scaling, effects last longer.`;
   const replaceLabel=`Become ${fdef.label} Strike`;
   const replaceDesc=`Abandon ${d.name} entirely. Adopt a pure ${fdef.label} skill (${fdef.desc}).`;
   const body=
-    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; You consume a <b>${fdef.label} Fragment</b>.</p>`+
+    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; You ${verb} a <b>${fdef.label} ${noun}</b>.</p>`+
     `<p class="muted" style="font-size:9px;margin:8px 0">Current: <b>${d.name}</b> &middot; path: ${d.path.length?d.path.join(' &rarr; '):'(none)'}</p>`+
     `<button class="btn" onclick="pickFragment('${fam}','evolve')" style="margin-top:6px;border-left:3px solid #c06cff"><span class="k purple">&#9670;</span>EVOLVE &mdash; ${evolveLabel}<small>${evolveDesc}</small></button>`+
     `<button class="btn" onclick="pickFragment('${fam}','empower')" style="border-left:3px solid var(--amber)"><span class="k amber">&#10022;</span>EMPOWER &mdash; ${empowerLabel}<small>${empowerDesc}</small></button>`+
     `<button class="btn" onclick="pickFragment('${fam}','replace')" style="border-left:3px solid var(--red)"><span class="k red">&#9876;</span>REPLACE &mdash; ${replaceLabel}<small>${replaceDesc}</small></button>`;
-  showInfo({title:`FRAGMENT &mdash; ${fdef.label}`, body});
+  showInfo({title, body});
 }
 function pickFragment(fam, choice){
   const p=G.player; devourMutate(p, fam, choice);
-  // Visual feedback popup
-  popupBuild('DEVOUR EVOLVES &mdash; '+p.memory.name,
+  const revealed=p.memory&&p.memory.revealed;
+  // Honest vs hidden language.
+  popupBuild((revealed?'DEVOUR EVOLVES':'ESSENCE GATHERS')+' &mdash; '+p.memory.name,
     `<p class="shout-purple" style="font-size:11px;line-height:1.7">${p.memory.desc}</p>`+
     `<p class="muted" style="font-size:9px;margin-top:8px">Path: ${p.memory.path.length?p.memory.path.join(' &rarr; '):'(empty)'} &middot; stage ${p.memory.stage||0}</p>`,
   'memory');
   // Close the current fragment modal; drainBuildQueue will auto-fire the popup, and the next fragment if any
   const modal=document.getElementById('info-modal'); if(modal)modal.classList.add('hidden');
   setTimeout(()=>{ if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); } else { drainBuildQueue(); } }, 220);
+}
+// REVEAL — once the player learns the truth (l15 "The Lie"), Harvest Essence is permanently
+// renamed to DEVOUR. The ability was describing itself honestly all along — the player was
+// the one misreading the word. This is one of the biggest moments in the game.
+function revealDevour(){
+  const p=G.player; if(!p||!p.memory||!p.memory.devour||p.memory.revealed) return;
+  p.memory.revealed=true;
+  // Only rename the base name. Evolutions (Caustic Flame, etc.) keep their evolution names.
+  if(p.memory.name==='Harvest Essence') p.memory.name='Devour';
+  if(p.memory.desc==='Strike a weakened enemy and harvest its essence.')
+    p.memory.desc='Heavy single strike. If this kills, you consume a FRAGMENT and the skill mutates.';
+  popupBuild('THE WORD CHANGES',
+    `<p class="shout-red" style="font-size:12px;line-height:1.7">&#9763; You read the skill tooltip again. It does not say what it used to say.</p>`+
+    `<p class="evtext" style="font-size:10px;margin-top:10px"><b>HARVEST ESSENCE</b> &rarr; <b class="red" style="font-size:13px">DEVOUR</b></p>`+
+    `<p class="muted" style="font-size:9px;margin-top:8px;line-height:1.6">You were never harvesting anything. You were never collecting power. <b>The word was honest the whole time.</b> Every kill that taught you a new way to strike &mdash; you were eating them.</p>`,
+  'memory');
 }
 function grantMemory(p,key){
   // Devour superseded the old Memory Skill grants. Legacy hooks still fire (priest, knight,
