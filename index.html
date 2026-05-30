@@ -2052,7 +2052,9 @@ function echoChoice(kind){ const p=G.player,ec=G.room.echo;
     const zoneNow=G.abyss?3:zoneOf(G.depth);
     const knowing=zoneNow>=2 && chance(28);
     if(knowing){ line=pick(ECHO_KNOWING); discoverLore('l12'); if(!p.memory && chance(38)){ grantMemory(p,'recall'); line+=' &mdash; <i class="purple">a forgotten technique surfaces in your mind.</i>'; } }
-    if(corrupt&&chance(50)){ const c=8+rnd(8); hurt(p,c,'hazard'); SFX.play('hurt'); if(p.hp<=0){G.screen='gameover';return render();} line=`"...${line}" — its jaw unhinges; the words turn to a scream that claws ${c} from you.`; }
+    if(corrupt&&chance(50)){ const c=8+rnd(8); hurt(p,c,'hazard'); SFX.play('hurt'); if(p.hp<=0){G.screen='gameover';return render();}
+      line=`"...${line}" — its jaw unhinges; the words turn to a scream that claws ${c} from you.`;
+      showInfo({title:'THE ECHO SCREAMS',body:`<p class="shout-red" style="font-size:11px;line-height:1.8">Its peace was a lie. <b>You take ${c} damage</b> from the scream.</p>`}); }
     else if(!corrupt){ heal(p,Math.round(p.maxHp*0.08)); line=`"${line}" ${knowing?'It looks at you as if it has been waiting.':'Its peace settles on you (small heal).'}`; }
     else { line=`"${line}" ${knowing?'...the words are addressed to you specifically. The dead should not know your face.':'...but the dead misremember. Trust it at your peril.'}`; }
     G.room.outcome=line; SFX.play('chest'); render(); return; }
@@ -2062,7 +2064,9 @@ function echoChoice(kind){ const p=G.player,ec=G.room.echo;
     if(it)equipItem(p,it);
     addFlag(p,'echoTaken');
     const c=Math.round(p.maxHp*0.08); hurt(p,c,'hazard'); addMiasma(10); SFX.play('upgrade'); if(p.hp<=0){G.screen='gameover';return render();}
-    G.room.outcome=`You pry the ${(it&&it.name)||'gear'} from cold fingers and don it. The dead resent the theft (-${c} HP, the cold thickens).`; render(); return; }
+    G.room.outcome=`You pry the ${(it&&it.name)||'gear'} from cold fingers and don it. The dead resent the theft (-${c} HP, the cold thickens).`;
+    showInfo({title:'THE DEAD RESENT THE THEFT',body:`<p class="shout-red" style="font-size:11px;line-height:1.8">You take the ${(it&&it.name)||'gear'} from cold hands. <b>-${c} HP, +10 Miasma.</b></p>`});
+    render(); return; }
   if(kind==='trade'&&ec.relic){ const gained=gainRelic(p,RELICS.find(r=>r.name===ec.relic)); addFlag(p,'echoTaken'); addMiasma(12); G.room.outcome=gained?`You take the ${ec.relic}. Something follows it into you (the cold thickens).`:`You already carry the ${ec.relic}; you leave it.`; render(); return; }
   proceed(); }
 /* ---------- THE COLLECTOR (Time Debt comes due) ---------- */
@@ -2086,7 +2090,11 @@ function renderCollector(){ const p=G.player; discoverLore('l8'); const bs=bestI
 }
 function collectorPay(kind){ const p=G.player;
   if(kind==='item'){ const bs=bestItem(p); if(bs){ const it=unequip(p,bs); G.debt=0; G.collectorEta=0; SFX.play('door'); return proceed(`You surrender the ${it.name}. The Collector fades. Your debt is paid.`); } }
-  if(kind==='tribute'){ p.gold=0; p.essence=Math.floor(p.essence/2); hurt(p,Math.round(p.maxHp*0.15),'debt'); G.debt=0; G.collectorEta=0; SFX.play('gold'); if(p.hp<=0){G.screen='gameover';return render();} return proceed('You empty your purse and your veins. The Collector is satisfied — for now.'); }
+  if(kind==='tribute'){ const goldPaid=p.gold,essPaid=Math.floor(p.essence/2),hpCost=Math.round(p.maxHp*0.15);
+    p.gold=0; p.essence-=essPaid; hurt(p,hpCost,'debt'); G.debt=0; G.collectorEta=0; SFX.play('gold');
+    if(p.hp<=0){G.screen='gameover';return render();}
+    showInfo({title:'THE COLLECTOR &mdash; PAID',body:`<p class="shout-red" style="font-size:11px;line-height:1.8">You empty your purse and your veins. <b>${goldPaid} gold, ${essPaid} essence, ${hpCost} HP</b> &mdash; the debt is gone. For now.</p>`});
+    return proceed('You empty your purse and your veins. The Collector is satisfied — for now.'); }
   if(kind==='refuse'){ G.room={type:'enemy',_enemies:[collectorEnemy()]}; startBattle('You refuse. The Collector comes to take it ALL.'); return; }
   proceed(); }
 function stagePopup(d){ const z=ZONES[zoneOf(d)]; let body=`<span class="${z.color}">${z.lore}</span>`;
@@ -2352,7 +2360,10 @@ function renderRoom(){
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
   if(chance(base-extra*10)){ SFX.play('door'); proceed('You slip past unseen.'); }
-  else { const dmg=9+rnd(10)+Math.round(G.depth*1.8); SFX.play('hurt'); if(hurt(p,dmg,'enemy')){SFX.play('death');G.screen='gameover';return render();} proceed(`Caught! You take ${dmg} escaping.`); } }
+  else { const dmg=9+rnd(10)+Math.round(G.depth*1.8); SFX.play('hurt');
+    if(hurt(p,dmg,'enemy')){SFX.play('death');G.screen='gameover';return render();}
+    showInfo({title:'CAUGHT &mdash; SNEAK PAST FAILED',body:`<p class="shout-red" style="font-size:11px;line-height:1.8">They saw you turn your back. <b>You take ${dmg} damage</b> on the way out.</p>`});
+    proceed(`Caught! You take ${dmg} escaping.`); } }
 function leaveRoom(){ proceed('You move on.'); }
 function restEmpty(){ heal(G.player,6); G.player.mana=clamp(G.player.mana+4,0,G.player.maxMana); proceed(); }
 function shrine(k){ const p=G.player; let m='';
@@ -2363,7 +2374,9 @@ function shrine(k){ const p=G.player; let m='';
 function takeRelic(i){ const rl=G.room.options[i]; gainRelic(G.player,rl); proceed(`Relic claimed: ${rl.name}!`); }
 function drinkFountain(){ const p=G.player,roll=rnd(100); const cl=miasmaActive()&&G.miasma>0; const clTxt=()=>{ if(cl){cleanse(28);coolHeat(15);return ' Purified — the crypt loosens its grip (-28 miasma).';} coolHeat(20); return ''; };
   if(roll<50){ const h=Math.round(p.maxHp*0.38); heal(p,h); p.mana=clamp(p.mana+Math.round(p.maxMana*0.32),0,p.maxMana); SFX.play('heal'); proceed(`Blessed water! +${h} HP and mana restored.`+clTxt()); }
-  else if(roll<80){ const c=Math.round(p.maxHp*0.20); hurt(p,c,'hazard'); if(p.hp<=0){SFX.play('death');G.screen='gameover';return render();} SFX.play('hurt'); proceed(`Cursed! The water burns for ${c}.`); }
+  else if(roll<80){ const c=Math.round(p.maxHp*0.20); hurt(p,c,'hazard'); if(p.hp<=0){SFX.play('death');G.screen='gameover';return render();} SFX.play('hurt');
+    showInfo({title:'CURSED WATER',body:`<p class="shout-red" style="font-size:11px;line-height:1.8">The water turns to acid in your throat. <b>You take ${c} damage.</b></p>`});
+    proceed(`Cursed! The water burns for ${c}.`); }
   else { p.maxHp+=12; heal(p,12); p.atk+=2; if(cl)cleanse(20); SFX.play('upgrade'); proceed('A surge of vigor! +12 max HP, +2 ATK.'+(cl?' (-20 miasma)':'')); } }
 
 /* ---------- EVENTS ---------- */
