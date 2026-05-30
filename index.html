@@ -2021,7 +2021,8 @@ function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoo
     app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
       <div class="panel fade room-in"><h3 class="center purple" style="margin-bottom:8px">A FALLEN CHAMPION</h3>${sprite}
         <p class="evtext center">${G.room.outcome}</p>
-        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
+        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button>
+        <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
     return; }
   let opts;
   if(ec.monster){
@@ -2038,7 +2039,8 @@ function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoo
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center purple" style="margin-bottom:8px">A FALLEN CHAMPION</h3>${sprite}
       <p class="evtext center">A dead ${cls.toLowerCase()}, Lv ${ec.level}, slumped in the dark. It died at chamber ${ec.depth}${ec.item?` clutching ${gearTxt}`:''}.</p>
-      ${opts}</div>`;
+      ${opts}
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
 }
 function echoEnemy(ec){ const f=depthFactor(); const lv=ec.level||5;
   const hp=Math.round((70+lv*14)*f*0.5), atk=Math.round((9+lv*1.2)*f*0.5);
@@ -2086,6 +2088,7 @@ function renderCollector(){ const p=G.player; discoverLore('l8'); const bs=bestI
       ${it?`<button class="btn" onclick="collectorPay('item')"><span class="k amber">&#9876;</span>Surrender ${bs.toUpperCase()}: ${itemLabel(it)}<small>hand over your finest piece — debt cleared</small></button>`:''}
       <button class="btn" onclick="collectorPay('tribute')"><span class="k amber">&#128176;</span>Pay tribute<small>all ${gold}g, ${Math.floor(ess/2)} ${ESS}, and 15% HP — debt cleared</small></button>
       <button class="btn red" onclick="collectorPay('refuse')"><span class="k">&#9876;</span>REFUSE — face the Collector<small>win and the debt dies with it; lose and you pay everything</small></button>
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button>
     </div>${statusFooter()}`;
 }
 function collectorPay(kind){ const p=G.player;
@@ -2443,7 +2446,8 @@ function renderMerchant(){
       ${item('Mana Tonic',mc(14),'fully restore mana now',"buy('mana')",p.gold>=mc(14))}
       ${item('Mystery Upgrade',mc(40),'a random permanent upgrade',"buy('upgrade')",p.gold>=mc(40))}
       ${gearBtn}${relicBtn}
-      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>${statusFooter()}`;
+      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button>
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
 function buy(kind){ const p=G.player,st=G.room.stock; let bought=false; const mc=b=>Math.round(b*(st.pm||1));
   if(kind==='potion'&&p.gold>=mc(25)){p.gold-=mc(25);p.potions++;SFX.play('potion');bought=true;}
@@ -2500,7 +2504,8 @@ function renderForge(){ const p=G.player; discoverLore('l11');
       <h3 class="center amber" style="margin:8px 0">THE SOUL FORGE</h3>
       <p class="muted center" style="font-size:9px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS} essence</span> to grow stronger.</p>
       ${up}${im}${re}
-      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>${statusFooter()}`;
+      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button>
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
 
 /* ============================================================
