@@ -1474,8 +1474,12 @@ newGame();
    ============================================================ */
 function heatActive(){ return !G.abyss && !G.collapsed && zoneOf(G.depth)===1; }       // the Furnace
 function miasmaActive(){ return G.abyss || G.collapsed || zoneOf(G.depth)>=2; }          // Frozen Below + Silent Deep
-function heatTier(){ const h=G.heat; return h>=100?4:h>=75?3:h>=50?2:h>=25?1:0; }
+const HEAT_MAX=50;
+// 6 tiers: 0/1/2/3/4/5 at 0/10/20/30/40/50
+function heatTier(){ const h=G.heat; return h>=50?5:h>=40?4:h>=30?3:h>=20?2:h>=10?1:0; }
 function miasmaTier(){ const m=G.miasma; return m>=60?6:m>=50?5:m>=40?4:m>=30?3:m>=20?2:m>=10?1:0; }
+// damage = heat - 5 when heat >= 10. Steps of 5: 10→5, 15→10, 20→15... 50→45 per chamber.
+function heatChamberDamage(){ return Math.max(0, (G.heat||0) - 5); }
 function healFactor(){ const t=miasmaTier(); return t>=2?0.5:t>=1?0.78:1; }              // wounds stop closing in the cold
 const HEAT_MSG=['','Metal begins to soften. The locals catch fire.','Your breath leaves sparks — the merchants gouge, but the loot runs hot.','The walls pulse. The Furnace begins to burn YOU.','FIRE INSTABILITY — the Furnace is trying to kill you!'];
 const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds no longer close on their own.','The crypt tastes your soul.','SOUL ROT — the cold is eating your very substance.','The cold draws blood with every step.','You are coming undone.'];
@@ -1490,26 +1494,17 @@ function flashWorld(){ G._worldPulse=1; }
 // Every 10 Heat, the player gets a clear line explaining what the meter now does.
 // Helps non-readers track the cost of pushing further into the Furnace.
 const HEAT_TICK={
-  10:'&#128293; HEAT 10 &mdash; the air thickens. Your strikes start setting things alight.',
-  20:'&#128293; HEAT 20 &mdash; the heat settles into your armour. Locals burn longer when struck.',
-  30:'&#128293; HEAT 30 &mdash; sparks start stinging you between chambers (1-2 HP, sometimes).',
-  40:'&#128293; HEAT 40 &mdash; the walls remember being warmer than this.',
-  50:'&#128293; HEAT 50 &mdash; <b>ASHEN</b> enemies appear: +ATK, longer burns. Every chamber now costs 2-3 HP.',
-  60:'&#128293; HEAT 60 &mdash; the Furnace is paying attention to you specifically.',
-  70:'&#128293; HEAT 70 &mdash; <b>MOLTEN</b> enemies: +HP, +ATK, harsher burn. Furnace bosses start feeding on your Heat.',
-  80:'&#128293; HEAT 80 &mdash; chamber crossings now cost 5-8 HP. The keeper is waking up.',
-  90:'&#128293; HEAT 90 &mdash; the floor warps. You begin to shed substance.',
-  100:'&#128293; HEAT 100 &mdash; <b>BLAZING</b> enemies; the Furnace boss now hits +40% and brings a savage burn proc.',
-  110:'&#128293; HEAT 110 &mdash; every chamber bakes you for 12-19 HP. The walls flicker.',
-  120:'&#128293; HEAT 120 &mdash; OVERHEAT. You are part of the Furnace now.',
-  130:'&#128293; HEAT 130 &mdash; there is fire inside you that should not be.',
-  140:'&#128293; HEAT 140 &mdash; you cannot remember being cold.',
+  10:'&#128293; HEAT 10 &mdash; sparks lick your boots. Every chamber crossing now costs <b>5 HP</b>.',
+  20:'&#128293; HEAT 20 &mdash; <b>ASHEN</b> enemies appear: +ATK, longer burns. Chamber crossings cost <b>15 HP</b>.',
+  30:'&#128293; HEAT 30 &mdash; <b>MOLTEN</b> enemies: +HP, +ATK, harsher burn. Furnace bosses start feeding on your Heat. Chambers cost <b>25 HP</b>.',
+  40:'&#128293; HEAT 40 &mdash; <b>BLAZING</b> enemies; the Furnace boss now hits +40% with a savage burn. Chambers cost <b>35 HP</b>.',
+  50:'&#128293; HEAT 50 MAX &mdash; you are part of the Furnace now. Chambers cost <b>45 HP</b>. You will not survive long without cooling.',
 };
 function addHeat(n){ if(!heatActive())return;
   const beforeTier=heatTier(); const beforeBucket=Math.floor(G.heat/10);
-  G.heat=clamp(G.heat+n,0,140);
+  G.heat=clamp(G.heat+n,0,HEAT_MAX);
   const afterTier=heatTier(); const afterBucket=Math.floor(G.heat/10);
-  if(afterTier>beforeTier){ G._worldMsg=HEAT_MSG[afterTier]; SFX.play(afterTier>=3?'fire':'skill'); flashWorld(); }
+  if(afterTier>beforeTier){ G._worldMsg=HEAT_MSG[Math.min(4,afterTier)]; SFX.play(afterTier>=3?'fire':'skill'); flashWorld(); }
   for(let bucket=beforeBucket+1; bucket<=afterBucket; bucket++){
     const tm=HEAT_TICK[bucket*10]; if(tm) G._heatTickMsg=tm;
   }
@@ -1519,7 +1514,7 @@ function addMiasma(n){ if(!miasmaActive())return; const b=miasmaTier(); G.miasma
   G._flashSeen=G._flashSeen||{};
   for(const fl of FLASHBACKS){ if(G.miasma>=fl.at && !G._flashSeen[fl.at]){ G._flashSeen[fl.at]=1; G._flashbackMsg=fl.line; SFX.play('frost'); if(fl.at>=55)discoverLore('l15'); } }
 }
-function coolHeat(n){ G.heat=clamp(G.heat-n,0,140); }
+function coolHeat(n){ G.heat=clamp(G.heat-n,0,HEAT_MAX); }
 function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
 function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
 /* damage the player from a tracked source; returns true if it killed them */
@@ -1640,7 +1635,7 @@ function allSkills(p){ const out=p.skills.slice(); if(p.memory) out.push(p.memor
 function weaponTraitMult(p){ const t=p.weapon&&p.weapon.trait; if(!t)return 1;
   if(t==='cursed') return 1.25;
   if(t==='soul')   return 1+Math.min(0.32,(p.kills||0)*0.004);
-  if(t==='furnace')return 1+Math.min(0.50,(G.heat||0)*0.005);
+  if(t==='furnace')return 1+Math.min(0.50,(G.heat||0)*0.010);   // scales to +50% at max Heat (50)
   if(t==='frost')  return 1+Math.min(0.56,(G.miasma||0)*0.007);
   if(t==='debt')   return 1+Math.min(0.50,(G.debt||0)*0.005);
   if(t==='echo')   return p.flags.echoTaken?1.30:1;
@@ -1708,7 +1703,7 @@ function setZoneBg(){ try{ const inRun=G.player&&['corridor','room','event','rew
   document.body.classList.toggle('world-warm',   ht===1);
   document.body.classList.toggle('world-hot',    ht===2);
   document.body.classList.toggle('world-sear',   ht===3);
-  document.body.classList.toggle('world-furnace',ht>=4);
+  document.body.classList.toggle('world-furnace',ht>=4);   // tier 4 and 5 both furnace-intense
   document.body.classList.toggle('world-cold', mt>=2);
   document.body.classList.toggle('world-rot',  mt>=4);
   document.body.classList.toggle('world-undone',mt>=5);
@@ -1775,8 +1770,8 @@ function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 function worldBar(){ const parts=[];
-  if(heatActive()&&G.heat>0){ const t=heatTier(); const lbl=['',' softening',' SPARKS',' PULSING',' UNSTABLE'][t]; const c=['#ffcf4d','#ffcf4d','#ff9a3c','#ff5c6a','#ff2a2a'][t];
-    parts.push(`<span class="wmeter clickable" data-info-concept="heat" style="color:${c}">&#128293; HEAT ${G.heat}${lbl?' — '+lbl.trim():''}</span>`); }
+  if(heatActive()&&G.heat>0){ const t=heatTier(); const lbl=['',' WARM',' ASHEN',' MOLTEN',' BLAZING',' OVERHEAT'][t]; const c=['#ffcf4d','#ffcf4d','#ff9a3c','#ff5c6a','#ff2a2a','#ff0028'][t];
+    parts.push(`<span class="wmeter clickable" data-info-concept="heat" style="color:${c}">&#128293; HEAT ${G.heat}/${HEAT_MAX}${lbl?' — '+lbl.trim():''}</span>`); }
   if(miasmaActive()&&G.miasma>0){ const t=miasmaTier(); const lbl=['','watched','WOUNDS RESIST','hungering','SOUL ROT','BLEEDING','DECAYING'][Math.min(6,t)];
     parts.push(`<span class="wmeter clickable purple" data-info-concept="miasma">&#9763; MIASMA ${G.miasma}${lbl?' — '+lbl:''}</span>`); }
   if(G.debt>0){ parts.push(`<span class="wmeter clickable amber" data-info-concept="timedebt">&#8987; DEBT ${G.debt}${G.collectorEta>0?' — Collector ETA '+G.collectorEta:''}</span>`); }
@@ -2131,16 +2126,18 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
 function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
   // crossing a threshold stokes the Furnace / lets the cold seep deeper / debt compounds
-  addHeat(2); addMiasma(1); tickDebt();
+  addHeat(1); addMiasma(1); tickDebt();
   if(worldOnEnter()){ return; }   // environmental hazards can be lethal
   if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
 /* environmental pressure applied on entering a chamber; returns true if it killed you */
 function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,msg='';
-  if(heatActive()){ const t=heatTier();
-    if(t>=4){ const d=12+rnd(8); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT MAX &mdash; the walls pulse and molten air SCORCHES you (-${d} HP).`; }
-    else if(t>=3){ const d=5+rnd(4); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; the Furnace bakes you (-${d} HP).`; }
-    else if(t>=2 && chance(60)){ const d=2+rnd(2); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; sparks lash you (-${d} HP).`; }
-    else if(t>=1 && chance(30)){ const d=1+rnd(2); dead=hurt(p,d,'heat'); msg=`&#128293; HEAT &mdash; the heat presses on you (-${d} HP).`; } }
+  if(heatActive() && G.heat>=10){
+    const d=heatChamberDamage();
+    dead=hurt(p,d,'heat');
+    const t=heatTier();
+    const verb=t>=5?'SCORCHES':t>=4?'BLAZES through':t>=3?'BAKES':t>=2?'sears':'singes';
+    msg=`&#128293; HEAT ${G.heat} &mdash; the Furnace ${verb} you (-${d} HP).`;
+  }
   if(!dead && miasmaActive()){ const t=miasmaTier();
     if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg=`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`; }
     if(t>=4){ const d=4+rnd(5); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; }
@@ -2638,7 +2635,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'ember':{SFX.play('fire'); b.emberTurns=3; blog('Furnace Ember — your weapon catches with eternal flame for 3 turns!','crit'); break;}
     case 'decree':{SFX.play('crit'); blog('ROYAL DECREE — silence falls. Every foe is STUNNED.','crit');
       aoeHit(i=>{const e=b.enemies[i]; if(e&&e.hp>0){ addStun(e.st,1); const d=Math.round((e.atk||5)*1.6); dealToEnemy(i,d,'The decree turns its strength upon it',false); }}); break;}
-    case 'hoard':{SFX.play('fire'); const ht=heatTier(); const hm=1+(ht*0.45)+(G.heat*0.008); blog(`DRAGON'S HOARD — fire breath, x${hm.toFixed(2)} from heat!`,'crit');
+    case 'hoard':{SFX.play('fire'); const ht=heatTier(); const hm=1+(ht*0.30)+(G.heat*0.030); blog(`DRAGON'S HOARD — fire breath, x${hm.toFixed(2)} from heat!`,'crit');
       aoeHit(i=>{let d=Math.round((24+p.weapon.dmg*0.8+p.maxMana*0.10)*hm); let c=rollCrit(); if(c)d*=critMult(); dealToEnemy(i,d,'Hoard-fire engulfs',c); const e=b.enemies[i]; if(e&&e.hp>0)addBurn(e.st,8,3);}); break;}
     case 'recall':{SFX.play('skill'); const km=1+Math.min(0.80,(p.kills||0)*0.012); blog(`ECHO RECALL — phantoms (x${km.toFixed(2)} from kills) strike all foes!`,'crit');
       aoeHit(i=>{let d=Math.round((p.atk+p.weapon.dmg+10)*0.78*km); let c=rollCrit(); if(c)d*=1.6; dealToEnemy(i,d,'A phantom-you strikes',c);}); break;}
@@ -2786,7 +2783,7 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
   // fighting stokes the Furnace / deepens the cold's hold
   const elites=b.enemies.filter(e=>e.elite).length;
-  addHeat(3+elites*2); addMiasma(3+elites);
+  addHeat(2+elites); addMiasma(3+elites);
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); G._pendingBossDeath='warden'; }
   if(b.enemies.some(e=>e.name===BOSSES.dragon.name)){ blog(BOSS_DEATHCRY.dragon,'crit'); discoverLore('l4'); if(!p.memory||p.memory.id!=='hoard') grantMemory(p,'hoard'); G._pendingBossDeath='dragon'; }
