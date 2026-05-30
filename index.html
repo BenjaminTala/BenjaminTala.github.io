@@ -1762,17 +1762,26 @@ const DEVOUR_FAMILY_KEYS=Object.keys(DEVOUR_FAMILIES);
 // Named EVOLVE combinations — two paths merging. Order doesn't matter; sorted alphabetically.
 const DEVOUR_EVOLUTIONS={
   'Beast|Ooze':     {name:'Toxic Maw',       desc:'Heavy bite + BLEED + POISON; you HEAL for 30% of damage dealt.'},
-  'Demon|Ooze':     {name:'Caustic Flame',   desc:'AOE inferno — every foe takes damage, BURN, and POISON.'},
+  'Demon|Ooze':     {name:'Caustic Flame',   desc:'AOE inferno — every foe takes damage, BURN, and POISON.', aoe:true},
   'Beast|Demon':    {name:'Hellbeast',       desc:'Massive single hit + BLEED + BURN; +30% crit chance on this strike.'},
   'Construct|Demon':{name:'Molten Bastion',  desc:'Heavy hit + BURN. You gain a BARRIER equal to 25% of damage dealt.'},
-  'Humanoid|Undead':{name:'Soul Winter',     desc:'Hits ALL foes for cold damage. WEAKEN + VULN them. +4 Miasma to YOU.'},
+  'Humanoid|Undead':{name:'Soul Winter',     desc:'Hits ALL foes for cold damage. WEAKEN + VULN them. +4 Miasma to YOU.', aoe:true},
   'Beast|Undead':   {name:'Night Hunter',    desc:'Crit-locked single hit. Executes any target under 35% HP.'},
-  'Dragon|Humanoid':{name:'Cult of Embers',  desc:'AOE fire breath. +6 Heat. Damage scales with Heat already on you.'},
+  'Dragon|Humanoid':{name:'Cult of Embers',  desc:'AOE fire breath. +6 Heat. Damage scales with Heat already on you.', aoe:true},
   'Construct|Dragon':{name:'Heart of Iron Flame',desc:'You become BURNING ARMOR — +8 DEF and BURN the attacker on every hit for 3 turns.'},
-  'Ooze|Vermin':    {name:'The Swarm',       desc:'Three small strikes across the field. Each one POISONS.'},
+  'Ooze|Vermin':    {name:'The Swarm',       desc:'Three small strikes across the field. Each one POISONS.', aoe:true, strikes:3},
   'Dragon|Undead':  {name:'Pyre of the Forgotten',desc:'Single nuclear hit. Kill-scaling. +10 Heat. Locks BURN 5/4.'},
   'Beast|Construct':{name:'Wolfstone',       desc:'Heavy hit. You gain +5 DEF until next turn AND your next basic strike CRITS.'},
   'Demon|Humanoid': {name:'Black Sacrament', desc:'Pay 12% HP for a single devastating strike. +Miasma to target. BURN 6/4.'},
+  // === SAME-FAMILY DOUBLINGS — feeding the skill more of the same kind hardens its identity ===
+  'Ooze|Ooze':           {name:'Acid Tide',       desc:'AOE poison cloud. Every foe takes damage and stacks POISON twice.', aoe:true},
+  'Demon|Demon':         {name:'Hellforge',       desc:'Massive BURN nuke. +8 Heat to YOU. The fire is yours now.'},
+  'Beast|Beast':         {name:'Wolf Pack',       desc:'Three savage strikes across the field. Each one BLEEDS.', aoe:true, strikes:3},
+  'Vermin|Vermin':       {name:'Plague Swarm',    desc:'AOE; hits every foe twice. Spreads POISON. You become harder to hit (+8% dodge 2T).', aoe:true, strikes:2},
+  'Construct|Construct': {name:'Living Bulwark',  desc:'Heavy hit + STUN target + you gain a BARRIER equal to 30% of damage dealt.'},
+  'Undead|Undead':       {name:'Grave Voice',     desc:'AOE wail — WEAKEN + VULN every foe. Heals you for 18% of damage dealt.', aoe:true},
+  'Humanoid|Humanoid':   {name:'Mob Rule',        desc:'AOE — marks every foe VULN. Your next BASIC strike deals +50% damage.', aoe:true},
+  'Dragon|Dragon':       {name:'World Eater',     desc:'Pure HEAT nuke. Damage scales massively with current Heat. +12 Heat to YOU.'},
 };
 function devourComboKey(a,b){ return [a,b].sort().join('|'); }
 function makeDevourBase(){
@@ -1789,6 +1798,9 @@ function evolveCombo(d, fam){
   const key=devourComboKey(last, fam);
   return DEVOUR_EVOLUTIONS[key]||null;
 }
+// For SAME-FAMILY fragments we still want a fragment popup even though the family is "already known".
+// devourKillFragment will be allowed to queue same-family if a combo exists for it.
+function hasSameFamilyCombo(fam){ return !!DEVOUR_EVOLUTIONS[fam+'|'+fam]; }
 function devourFamilyTraitLabel(fam){
   const f=DEVOUR_FAMILIES[fam]; return f ? `${f.ico} ${f.label} (${f.desc})` : fam;
 }
@@ -1812,6 +1824,8 @@ function devourMutate(p, fam, choice){
       // Become the named evolution
       d.name=combo.name; d.desc=combo.desc; d.stage=(d.stage||0)+1;
       d.path.push(fam);
+      d.aoe=!!combo.aoe;
+      d.strikes=combo.strikes||1;
       // Effects gain the new family's trait + previous evolution carries old
       if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
       d.dmgMult=(d.dmgMult||1.5)+0.25;
@@ -1832,7 +1846,7 @@ function devourMutate(p, fam, choice){
   } else if(choice==='replace'){
     // Wipe the path and adopt the new family's pure form
     d.path=[fam]; d.effects=[fdef.trait]; d.stage=1; d.dmgMult=1.7;
-    d.cost=10;
+    d.cost=10; d.aoe=false; d.strikes=1;
     d.name=`${fdef.label} Strike`;
     d.desc=`Reborn from ${fdef.label}. Heavy single strike + ${fdef.desc.toLowerCase()}.`;
   }
@@ -1845,9 +1859,12 @@ function devourKillFragment(p, e){
   if(!e || !p || !p.memory || !p.memory.devour) return;
   const fam=familyOf(e);
   if(!DEVOUR_FAMILIES[fam]) return; // unknown family, no fragment
-  // Bosses always grant; non-boss families only if the player has not already absorbed them
+  // Bosses always grant. Non-boss kills grant if the family is new, OR if the last absorbed
+  // family is the same one (so the same-family combo can fire on the very next kill).
   const path=p.memory.path||[];
-  if(!e.boss && path.includes(fam)) return;
+  const last=path[path.length-1];
+  const sameFamilyChain = last===fam && hasSameFamilyCombo(fam);
+  if(!e.boss && path.includes(fam) && !sameFamilyChain) return;
   queueFragmentChoice(p, fam);
 }
 function showFragmentChoice(){
@@ -2945,6 +2962,8 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   const mt=miasmaActive()?miasmaTier():0;
   if(mt>=3 && chance(Math.min(28,(mt-2)*7))){ SFX.play('dodge'); blog(`Your arm forgets the strike for a moment — you miss.`,'info'); return; }
   let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(b.shadowCrit){c=true;b.shadowCrit=0;} if(b.titheCrits>0){c=true;b.titheCrits--;} if(c)d*=critMult();
+  // Mob Rule consumes a one-shot +50% buff on next basic strike
+  if(p._mobBuffNextHit){ d*=1.5; p._mobBuffNextHit=0; blog('Mob Rule strikes through you!','crit'); }
   SFX.play(c?'crit':'hit');
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
   const e=b.enemies[idx];
@@ -3024,39 +3043,46 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'tithe':{SFX.play('heal'); const c=Math.max(1,Math.round(p.hp*0.25)); p.hp=clamp(p.hp-c,1,p.maxHp); p.mana=p.maxMana; b.titheCrits=2; blog(`SOUL TITHE — paid ${c} HP. Mana brimmed. Next 2 strikes will CRIT.`,'crit'); break;}
     case 'devour':{
       // The 4th-slot DEVOUR — every champion starts with this. Mutates by killing.
-      const d=p.memory; const dmgMult=(d&&d.dmgMult)||1.5; const aoe=d&&d.aoe;
+      const d=p.memory; const dmgMult=(d&&d.dmgMult)||1.5; const aoe=d&&d.aoe; const strikes=Math.max(1,(d&&d.strikes)||1);
       SFX.play('crit');
-      const heatScale=d && (d.effects||[]).includes('heat')?(1+(G.heat||0)*0.012):1;
+      const heatScaled=d && ((d.effects||[]).includes('heat') || /World Eater|Hellforge|Cult of Embers|Pyre/.test(d.name||''));
+      const heatScale=heatScaled?(1+(G.heat||0)*( /World Eater/.test(d.name||'')?0.040:0.012 )):1;
       const killScale=d && d.name && /Pyre|Curse|Night Hunter/.test(d.name)?1+Math.min(0.60,(p.kills||0)*0.008):1;
-      if(aoe){
-        blog(`${d.name} engulfs the room!`,'crit');
-        aoeHit(i=>{
-          let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale; let c=rollCrit(); if(c)dmg*=critMult();
-          const e=b.enemies[i]; const before=e?e.hp:0;
-          const done=dealToEnemy(i,dmg,`${d.name} rends`,c);
-          if(e && e.hp>0) applyDevourEffects(e,d,b);
-          if(before>0 && e.hp<=0) devourKillFragment(p,e);
-        });
-      } else {
-        let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale; let c=rollCrit(); if(c)dmg*=critMult();
-        const idx=b.target; const e=b.enemies[idx]; const before=e?e.hp:0;
-        // Execute under 35% for Night Hunter
+      const doHit=(idx,strikeIdx)=>{
+        let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale; if(strikeIdx>0) dmg*=0.70;
+        let c=rollCrit();
+        // Same-family combo locks: Wolf Pack and Hellbeast always crit; Night Hunter execute
+        if(d && /Hellbeast|Wolf Pack/.test(d.name)) c=true;
+        if(c)dmg*=critMult();
+        const e=b.enemies[idx]; const before=e?e.hp:0;
         if(d && /Night Hunter/.test(d.name) && e && e.hp<=e.maxHp*0.35) dmg=Math.max(dmg, e.hp+1);
         const done=dealToEnemy(idx,dmg,`${d.name} rends`,c);
         if(e && e.hp>0) applyDevourEffects(e,d,b);
-        // Toxic Maw heals 30% of damage
+        // Acid Tide / Grave Voice / Plague Swarm — apply trait twice on first strike for big AOE pulse
+        if(strikeIdx===0 && d && /Acid Tide/.test(d.name) && e && e.hp>0){ addPoison(e.st,7,3); }
+        if(strikeIdx===0 && d && /Plague Swarm/.test(d.name) && e && e.hp>0){ addPoison(e.st,5,3); }
+        if(strikeIdx===0 && d && /Grave Voice/.test(d.name) && done>0){ heal(p,Math.round(done*0.18)); }
+        // Combo-specific extras
         if(d && /Toxic Maw/.test(d.name) && done>0){ heal(p,Math.round(done*0.30)); blog(`You drink the wound (+${Math.round(done*0.30)} HP).`,'heal'); }
-        // Black Sacrament costs 12% HP
-        if(d && /Black Sacrament/.test(d.name)){ const c2=Math.round(p.maxHp*0.12); p.hp=clamp(p.hp-c2,1,p.maxHp); blog(`The sacrament demands -${c2} HP.`,'info'); }
-        // Molten Bastion gives barrier
-        if(d && /Molten Bastion/.test(d.name) && done>0){ b.barrier=(b.barrier||0)+Math.round(done*0.25); blog(`A burning barrier rises (+${Math.round(done*0.25)}).`,'info'); }
-        // Heart of Iron Flame — armor + thorn-burn aura 3 turns
-        if(d && /Heart of Iron Flame/.test(d.name)){ p._burningArmor=3; blog('You are clad in burning armor for 3 turns.','crit'); }
+        if(d && /Molten Bastion|Living Bulwark/.test(d.name) && done>0){ const ab=Math.round(done*( /Living Bulwark/.test(d.name)?0.30:0.25)); b.barrier=(b.barrier||0)+ab; blog(`A burning barrier rises (+${ab}).`,'info'); }
+        if(d && /Living Bulwark/.test(d.name) && e && e.hp>0){ addStun(e.st,1); blog(`${e.name} is STUNNED!`,'crit'); }
         if(before>0 && e.hp<=0) devourKillFragment(p,e);
+      };
+      if(aoe){
+        blog(`${d.name} engulfs the room!`,'crit');
+        for(let s=0;s<strikes;s++){ aoeHit(i=>doHit(i,s)); }
+      } else {
+        for(let s=0;s<strikes;s++){ if(living().length===0)break; ensureTarget(); doHit(b.target,s); }
       }
-      // Heat scaling for Cult of Embers, Pyre, etc
-      if(d && (d.effects||[]).includes('heat')) addHeat(2);
-      // Soul Winter raises miasma on player
+      // Special post-cast effects
+      if(d && /Black Sacrament/.test(d.name)){ const c2=Math.round(p.maxHp*0.12); p.hp=clamp(p.hp-c2,1,p.maxHp); blog(`The sacrament demands -${c2} HP.`,'info'); }
+      if(d && /Heart of Iron Flame/.test(d.name)){ p._burningArmor=3; blog('You are clad in burning armor for 3 turns.','crit'); }
+      if(d && /Plague Swarm/.test(d.name)){ b.evade=8; b.evadeTurns=Math.max(b.evadeTurns||0,2); blog('The swarm shrouds you (+8 dodge, 2T).','info'); }
+      if(d && /Mob Rule/.test(d.name)){ p._mobBuffNextHit=1; blog('Mob Rule — your next basic strike deals +50% damage.','crit'); }
+      if(d && /Wolfstone/.test(d.name)){ b.shadowCrit=1; b.pdef=0.30; b.pdefTurns=Math.max(b.pdefTurns||0,1); blog('Wolfstone — your next strike CRITS, +30% defense this turn.','info'); }
+      if(d && /Cult of Embers|Hellforge/.test(d.name)) addHeat( /Hellforge/.test(d.name)?8:6 );
+      if(d && /World Eater/.test(d.name)) addHeat(12);
+      if(d && /Pyre of the Forgotten/.test(d.name)) addHeat(10);
       if(d && /Soul Winter/.test(d.name)) addMiasma(4);
       break;
     }
