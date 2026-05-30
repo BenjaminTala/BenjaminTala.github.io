@@ -100,6 +100,29 @@
   body.world-furnace::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,40,10,.55) 0%,transparent 70%);animation:hotShimmer 0.9s ease-in-out infinite alternate}
   @keyframes hotShimmer{from{opacity:.55}to{opacity:1}}
   @keyframes furnaceFlicker{0%{filter:hue-rotate(-22deg) saturate(1.8) brightness(1.10) contrast(1.10)}50%{filter:hue-rotate(-22deg) saturate(1.95) brightness(1.18) contrast(1.16)}}
+  /* EMBERS — pseudo-particle field that drifts up at heat tier 2+. Three layers so it looks alive. */
+  body.world-hot::after,body.world-sear::after,body.world-furnace::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:141;opacity:.55;
+    background-image:
+      radial-gradient(circle 1.5px at 12% 90%,#ffb050 0,transparent 70%),
+      radial-gradient(circle 1.5px at 28% 80%,#ff8030 0,transparent 70%),
+      radial-gradient(circle 1.5px at 46% 95%,#ffc060 0,transparent 70%),
+      radial-gradient(circle 1.5px at 62% 78%,#ff9040 0,transparent 70%),
+      radial-gradient(circle 1.5px at 78% 92%,#ffb050 0,transparent 70%),
+      radial-gradient(circle 1.5px at 90% 85%,#ff8030 0,transparent 70%),
+      radial-gradient(circle 1.5px at 18% 70%,#ffa050 0,transparent 70%),
+      radial-gradient(circle 1.5px at 56% 65%,#ffb070 0,transparent 70%);
+    background-size:100% 110%;
+    animation:emberRise 6s linear infinite}
+  body.world-sear::after{opacity:.85;animation-duration:4s}
+  body.world-furnace::after{opacity:1;animation-duration:2.6s}
+  @keyframes emberRise{from{background-position:0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0;}to{background-position:0 -120%,0 -120%,0 -120%,0 -120%,0 -120%,0 -120%,0 -120%,0 -120%;}}
+  /* EDGE GLOW — red rim that pulses at tier 3+ heat. The screen itself feels hot. */
+  body.world-sear #app,body.world-furnace #app{position:relative}
+  body.world-sear #app::before,body.world-furnace #app::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:139;
+    box-shadow:inset 0 0 80px 18px rgba(255,40,10,.45),inset 0 0 200px 40px rgba(255,80,30,.25);
+    animation:heatPulse 1.8s ease-in-out infinite}
+  body.world-furnace #app::before{box-shadow:inset 0 0 120px 24px rgba(255,20,0,.65),inset 0 0 240px 50px rgba(255,60,20,.40);animation-duration:1.1s}
+  @keyframes heatPulse{0%,100%{opacity:.7}50%{opacity:1}}
   /* MIASMA meter pulses at high tiers so the player can never forget what is in their blood */
   .wmeter.pulse-mia{animation:pulseMia 1.6s ease-in-out infinite}
   @keyframes pulseMia{0%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}50%{filter:brightness(1.3) drop-shadow(0 0 6px rgba(192,108,255,.8))}}
@@ -1217,6 +1240,28 @@ const EVENTS=[
      {label:'"Have you mapped the bottom?"',desc:'Press',run:p=>{discoverLore('l19');return '<span class="shout">"Once."</span> He does not look up. <span class="shout-red">"Never again."</span> He does not say why.';}},
      {label:'Buy a partial map (-40 gold)',desc:'Next 2 corridors hit louder loot',run:p=>{if(p.gold<40)return 'He shrugs without looking up.';p.gold-=40;G._luckBoom=2;return 'The lines on the paper he gives you twitch and resettle as you watch. The next two chambers feel... helpful.';}},
    ]},
+  // === FURNACE EVENTS — stoke the Heat meter through chamber events too ===
+  {id:'valve',title:'THE VALVE BURSTS',zone:1,art:"  ###    \n  )()(   \n  )()(   \n  ###    ",
+   text:'A copper valve embedded in the wall coughs once, then explodes. A wave of dry heat washes over the chamber.',
+   options:[
+     {label:'Push through fast',desc:'+10 Heat, get out clean',run:p=>{addHeat(10);return 'You sprint past the wound in the wall. Your skin tightens. The Furnace stirs (+10 Heat).';}},
+     {label:'Try to seal it',desc:'-12 HP, +4 Heat, find scrap',run:p=>{const c=12;p.hp=clamp(p.hp-c,1,p.maxHp);addHeat(4);p.gold+=18;return `You jam your cloak in the breach. It works long enough to gather ${18} loose scrap — but you are scorched (-${c} HP, +4 Heat).`;}},
+     {label:'Back out',desc:'No reward, no cost',run:p=>'You back away. The valve keeps coughing behind you. Whatever was in there stays there.'},
+   ]},
+  {id:'forge_run',title:'THE FORGE OPERATES',zone:1,art:"   /-\\   \n  |fffi   \n  |[##]| \n   |  |  ",
+   text:'You find a working forge — bellows wheezing, sparks falling, no smith in sight. The fire is doing the work alone.',
+   options:[
+     {label:'Temper a piece of armor',desc:'+3 DEF, +5 Heat',run:p=>{p.def+=3;addHeat(5);return 'You hold a plate into the flame until your palms blister. Your armor drinks the fire (+3 DEF, +5 Heat).';}},
+     {label:'Pour your essence in',desc:'-15 essence, +5 ATK, +6 Heat',run:p=>{if(p.essence<15)return 'The forge waits. Your essence does not.';p.essence-=15;p.atk+=5;addHeat(6);return `The forge accepts ${15} essence and turns it back as fire (+5 ATK, +6 Heat).`;}},
+     {label:'Pour water on it',desc:'-15 Heat, lose 1 potion',run:p=>{if(!p.potions)return 'You have nothing to pour.';p.potions--;coolHeat(15);return 'The forge goes dark with a long animal sound. Your skin loosens (-15 Heat, -1 potion).';}},
+   ]},
+  {id:'magma',title:'THE MAGMA CHANNEL',zone:1,art:"  ~~~~   \n ~~~~~   \n  ~~~    \n   ~     ",
+   text:'A trench in the floor is full of slow-moving fire. Something glints at the bottom — gold, or a relic, or a face.',
+   options:[
+     {label:'Reach in for it',desc:'-22 HP, +12 Heat, big loot',run:p=>{const c=22;p.hp=clamp(p.hp-c,1,p.maxHp);addHeat(12);const g=40+rnd(40);p.gold+=g;return `You plunge your arm in. You take it. Whatever it was, it weighs less than you expected (-${c} HP, +12 Heat, +${g} gold).`;}},
+     {label:'Pry it out with a blade',desc:'-8 HP, +6 Heat, small loot',run:p=>{const c=8;p.hp=clamp(p.hp-c,1,p.maxHp);addHeat(6);const g=18+rnd(20);p.gold+=g;return `You hook the glint out. Your arm still smokes (-${c} HP, +6 Heat, +${g} gold).`;}},
+     {label:'Leave it',desc:'Nothing happens',run:p=>'You step around the channel. The Furnace keeps its trinkets.'},
+   ]},
   {id:'priest',title:'THE DYING PRIEST',zone:0,sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  .--.\n ( || )\n  )/\\(\n  |  |",
    text:'A robed man slumps against a half-broken shrine. He looks up and his eyes widen — with relief.',
    options:[
@@ -1718,7 +1763,7 @@ function render(){
     event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,triumph:renderTriumph,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
   const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
-  const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display=(G.player&&['corridor','room','event','reward','triumph'].includes(G.screen))?'block':'none'; }
+  const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display='none'; } // inline INVENTORY button in the door list is the canonical entry — FAB hidden.
   setZoneBg();
 }
 const ZONE_BG=['radial-gradient(circle at 50% 15%, #2a1e10 0%, #0d0b16 58%, #070510 100%)',
@@ -2108,7 +2153,7 @@ function renderCorridor(){
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${flash}${mem}${heatTick}${miasmaTick}${wmsg}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       ${G._whisper?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
-      </div>${statusFooter()}`;
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
 let _invReturn='corridor';
 function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
@@ -2343,7 +2388,13 @@ function renderEvent(){
 }
 function chooseEvent(i){ const r=G.room,res=r.ev.options[i].run(G.player);
   if(res===false) return;            // a battle was started
-  r.outcome=res; render(); }
+  r.outcome=res; render();
+  // CONSEQUENCE POPUP — any event outcome should be impossible to miss.
+  // Pops the outcome up in a modal so the player has to register what just happened.
+  if(typeof res==='string' && res.length){
+    showInfo({title:r.ev.title+' &mdash; outcome',body:`<p class="shout" style="font-size:11px;line-height:1.8">${res}</p>`});
+  }
+}
 
 /* ---------- CHEST ---------- */
 function openChest(){
@@ -3014,9 +3065,13 @@ function relicNoteFor(name){const r=RELICS.find(x=>x.name===name);return r?r.not
 function synergyDescFor(name){const s=SYNERGIES.find(x=>x.name===name);return s?s.desc:'';}
 function affinityTipFor(p,k){
   const m=AFF_META[k],t=p.affTier[k];
-  let s=`${m.name} — ${p.aff[k]} points.`;
-  if(t>0)s+=` Current: ${AFF_TIER_TITLE[k][t]}.`;
-  if(t<3)s+=` Next at ${AFF_THRESH[t]} pts: ${AFF_TIER_TITLE[k][t+1]}.`;
+  let s=`${m.name} — ${p.aff[k]} points.\n`;
+  for(let tier=1;tier<=3;tier++){
+    const reached=t>=tier;
+    const marker=reached?'[✓]':(tier===t+1?'[next]':'[ ]');
+    const at=tier<=AFF_THRESH.length?` (${AFF_THRESH[tier-1]} pts)`:'';
+    s+=`\n${marker} ${AFF_TIER_TITLE[k][tier]}${at}`;
+  }
   return s;
 }
 function showRelicInfo(name){ showInfo({title:name,body:relicNoteFor(name)||'A relic of unknown power.'}); }
