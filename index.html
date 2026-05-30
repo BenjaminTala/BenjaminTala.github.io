@@ -100,6 +100,16 @@
   body.world-furnace::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,40,10,.55) 0%,transparent 70%);animation:hotShimmer 0.9s ease-in-out infinite alternate}
   @keyframes hotShimmer{from{opacity:.55}to{opacity:1}}
   @keyframes furnaceFlicker{0%{filter:hue-rotate(-22deg) saturate(1.8) brightness(1.10) contrast(1.10)}50%{filter:hue-rotate(-22deg) saturate(1.95) brightness(1.18) contrast(1.16)}}
+  /* ENEMY INTENT BADGE — telegraphs the next action so the player can think. */
+  .intent{display:inline-block;font-size:8px;letter-spacing:1px;padding:2px 6px;margin:2px auto 4px;border:1px solid #4a3260;background:#1a1424;color:#cbb6e6;border-radius:2px;line-height:1.4;text-align:center;max-width:200px}
+  .intent .i-ico{margin-right:3px}
+  .intent.i-danger {color:#ff9a3c;border-color:#a8482a;background:#2a1410}
+  .intent.i-charge {color:#ffce4d;border-color:#a8581a;background:#3a2208;animation:intentPulse 0.9s ease-in-out infinite;font-weight:bold}
+  .intent.i-cast   {color:#a6d3ff;border-color:#365a8a;background:#0e1a2a}
+  .intent.i-heal   {color:#7cff8f;border-color:#2a7a3a;background:#0a2010}
+  .intent.i-armor  {color:#cfe0ff;border-color:#4a6090;background:#0e1422}
+  .intent.i-enrage {color:#ff5c6a;border-color:#8a2030;background:#2a0a12;font-weight:bold;animation:intentPulse 1s ease-in-out infinite}
+  @keyframes intentPulse{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 10px rgba(255,140,60,.7)}}
   /* EMBERS — pseudo-particle field that drifts up at heat tier 2+. Three layers so it looks alive. */
   body.world-hot::after,body.world-sear::after,body.world-furnace::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:141;opacity:.55;
     background-image:
@@ -2527,12 +2537,95 @@ function startBattle(intro){
   const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE){ blog(bossE.cry,'crit'); if(bossE._key)showBossIntro(bossE._key); }
   const heatFed=enemies.find(e=>e._heatFed); if(heatFed){ blog(`&#128293; The Furnace howls &mdash; its keeper feeds on the heat you carried in. (+${Math.round((heatFed-2)*20)}% HP & ATK)`,'crit'); }
   G.battle.intro=true;
+  // First-round intents — the player sees what every foe plans before they act.
+  G.battle.enemies.forEach(e=>{ e._alive=0; planIntent(e,G.battle); });
   G.screen='battle'; render(); playTransition(G.battle.hadBoss?'#6e0d1a':'#3a1622');
 }
 function blog(t,c=''){ G.log.push({text:t,cls:c}); if(G.log.length>40)G.log.shift(); }
 function living(){ return G.battle.enemies.filter(e=>e.hp>0); }
 function allDead(){ return G.battle.enemies.every(e=>e.hp<=0); }
 function ensureTarget(){ const b=G.battle; if(!b.enemies[b.target]||b.enemies[b.target].hp<=0){ const i=b.enemies.findIndex(e=>e.hp>0); b.target=i<0?0:i; } }
+
+/* ============================================================
+   ENEMY INTENT — every foe telegraphs its next move so the player
+   can decide who to silence, burst, or stun.  Roles fall out of the
+   stats: casters cast, low-HP enemies enrage, bosses occasionally
+   charge a big attack over two turns.
+   ============================================================ */
+const INTENT_DISPLAY={
+  attack: {ico:'&#9876;', cls:''},
+  heavy:  {ico:'&#9888;', cls:'i-danger'},
+  charge: {ico:'&#9889;', cls:'i-charge'},
+  unleash:{ico:'&#9760;', cls:'i-danger'},
+  burn:   {ico:'&#128293;', cls:'i-cast'},
+  poison: {ico:'&#9763;', cls:'i-cast'},
+  weak:   {ico:'&#8595;', cls:'i-cast'},
+  vuln:   {ico:'&#10687;', cls:'i-cast'},
+  stun:   {ico:'&#9889;', cls:'i-cast'},
+  heal:   {ico:'&#10010;', cls:'i-heal'},
+  armor:  {ico:'&#128737;', cls:'i-armor'},
+  enrage: {ico:'!!', cls:'i-enrage'},
+  manaburn:{ico:'&#8709;', cls:'i-cast'},
+};
+function planIntent(e,b){
+  if(!e || e.hp<=0){ e.intent=null; return; }
+  // If a multi-turn charge is locked in, advance it.
+  if(e.intent && e.intent.kind==='charge' && e.intent.turns>1){
+    e.intent={kind:'charge', label:`CHARGING &mdash; ${e.intent.turns-1} turn(s)`, value:e.intent.value, turns:e.intent.turns-1};
+    return;
+  }
+  if(e.intent && e.intent.kind==='charge' && e.intent.turns===1){
+    e.intent={kind:'unleash', label:`UNLEASH ${e.intent.value}`, value:e.intent.value};
+    return;
+  }
+  // Bosses can begin a cataclysm — once per fight, telegraphed 2 turns.
+  if(e.boss && !e._chargedOnce && e._alive>=2 && chance(28)){
+    e._chargedOnce=true;
+    const dmg=Math.round(e.atk*2.6);
+    e.intent={kind:'charge', label:`CATACLYSM ${dmg} &mdash; 2 turns`, value:dmg, turns:2};
+    return;
+  }
+  // Caster healing a wounded ally (PRIEST role).
+  if(e.caster){
+    const wounded=(b.enemies||[]).find(x=>x.hp>0 && x.hp<x.maxHp*0.55 && x!==e);
+    if(wounded && chance(45)){
+      const h=Math.max(8,Math.round(wounded.maxHp*0.20));
+      e.intent={kind:'heal', label:`HEAL ally +${h}`, value:h, targetIdx:b.enemies.indexOf(wounded)};
+      return;
+    }
+  }
+  // Wounded — chance to enrage (CULTIST / boss enrage phase).
+  if(e.hp <= e.maxHp*0.45 && !e._enraged && chance(30 + (e.boss?20:0))){
+    e._enraged=true;
+    const buff=Math.max(2,Math.round(e.atk*0.30));
+    e.intent={kind:'enrage', label:`ENRAGE +${buff} ATK`, value:buff};
+    return;
+  }
+  // Healthy heavy-armor types throw up a guard (GUARDIAN role).
+  if(e.hp > e.maxHp*0.6 && (e.def||0)<10 && chance(15 + (e.boss?10:0))){
+    e.intent={kind:'armor', label:'+6 DEF', value:6};
+    return;
+  }
+  // Casters lean toward statuses.
+  if(e.caster && chance(55)){
+    const choices=[];
+    if(e.burnAtk||e.poison){ if(e.burnAtk) choices.push({kind:'burn', label:`BURN ${e.burnAtk[0]}/${e.burnAtk[1]}t`, value:[e.burnAtk[0],e.burnAtk[1]]}); if(e.poison) choices.push({kind:'poison', label:`PSN ${e.poison[0]}/${e.poison[1]}t`, value:[e.poison[0],e.poison[1]]}); }
+    choices.push({kind:'weak', label:'WEAKEN 2t', value:2});
+    choices.push({kind:'vuln', label:'VULN 2t',  value:2});
+    if(e.manaburn) choices.push({kind:'manaburn', label:'BURN MANA', value:1});
+    e.intent=pick(choices);
+    return;
+  }
+  // Default: variation between basic and heavy attack.
+  const willHeavy=(e.boss && chance(38)) || chance(16);
+  const dmg=willHeavy?Math.round(e.atk*1.6+rnd(4)):e.atk+rnd(5);
+  e.intent={kind:willHeavy?'heavy':'attack', label:`${willHeavy?'HEAVY ':'ATK '}${dmg}`, value:dmg};
+}
+function intentBadgeHtml(e){
+  if(!e||!e.intent||e.hp<=0)return '';
+  const d=INTENT_DISPLAY[e.intent.kind]||INTENT_DISPLAY.attack;
+  return `<div class="intent ${d.cls}" title="${escAttr('Next action: '+(e.intent.label.replace(/&[a-z]+;/g,'')))}"><span class="i-ico">${d.ico}</span> ${e.intent.label}</div>`;
+}
 function setTarget(i){ if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }
 function stChips(st){ let c='';
   if(st.burnT>0)   c+=`<span class="chip c-burn" title="BURN — ${Math.max(1,Math.round(st.burn))} damage at end of every turn. ${st.burnT} turn(s) left.">BURN ${st.burnT}</span>`;
@@ -2553,6 +2646,7 @@ function renderBattle(){
     const efx=(b.fx||[]).filter(f=>f.idx===i).map(f=>fxHtml(f.kind)).join('');
     return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''}">
       ${efx}${flo?`<div class="fxlayer">${flo}</div>`:''}
+      ${dead?'':intentBadgeHtml(e)}
       ${spriteHtml}
       <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
@@ -2815,60 +2909,88 @@ function afterPlayer(){ const b=G.battle;
   if(allDead()){ winBattle(); return; }
   if(miasmaActive() && miasmaTier()>=3 && chance(11)) blog(pick(HALLUCINATIONS),'info');
   render(); setTimeout(enemyTurn,560); }
+// One-shot physical hit pipeline. Used by attack/heavy/unleash intents.
+function applyEnemyHit(e,p,b,baseDmg,label){
+  let dmg=baseDmg;
+  if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
+  if(e._frostRamp) dmg=Math.round(dmg*(1+e._frostRamp));
+  dmg=Math.round(dmg*G.mods.eDmg);
+  const mt2=miasmaActive()?miasmaTier():0;
+  if(mt2>=2){ const before=dmg; dmg=Math.round(dmg*(1+Math.min(0.25,mt2*0.045)));
+    if(chance(22) && dmg>before) blog(`&#9763; MIASMA &mdash; the cold lets it land harder (+${dmg-before}).`,'dmg'); }
+  const dodgeChance=Math.max(0,Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
+  if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; return; }
+  let red=(b.pdefTurns>0?b.pdef:0);
+  dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.6)));
+  if(b.guardDown>0)dmg=Math.round(dmg*1.3);
+  if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
+  if(b.barrier>0&&dmg>0){ const ab=Math.min(b.barrier,dmg); b.barrier-=ab; dmg-=ab; blog(`Barrier absorbs ${ab}.`,'info'); }
+  if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const frac=e.manaburn?0.40:0.52; const ab=Math.min(p.mana,Math.ceil(dmg*frac)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
+  if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.12)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
+  let lethal=p.hp-dmg<=0;
+  if(lethal&&b.lastStand>0){ dmg=Math.max(0,p.hp-1); lethal=false; blog('LAST STAND holds &mdash; the blow cannot fell you!','crit'); }
+  if(lethal&&p.flags.secondWind&&!p._phoenixUsed){ p._phoenixUsed=1; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
+  else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
+  if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
+  if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
+  if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
+  if(p.flags.thorns&&e.hp>0){ const rf=Math.max(1,Math.round(dmg*0.3)); e.hp=clamp(e.hp-rf,0,e.maxHp); blog(`Thorns reflect ${rf} to ${e.name}.`,'heal'); if(p.flags.synFrost)addWeak(e.st,2); if(e.hp<=0)onEnemyDeath(e); }
+}
+function executeIntent(e,p,b){
+  const it=e.intent; if(!it) return;
+  switch(it.kind){
+    case 'charge':
+      blog(`${e.name} is charging &mdash; ${it.turns} turn(s) until it lands.`,'info');
+      return;
+    case 'enrage':
+      e.atk += it.value;
+      blog(`${e.name} ENRAGES &mdash; +${it.value} ATK for the rest of the fight!`,'crit');
+      return;
+    case 'armor':
+      e.def = (e.def||0)+it.value;
+      blog(`${e.name} hardens its stance (+${it.value} DEF).`,'info');
+      return;
+    case 'heal': {
+      const t=b.enemies[it.targetIdx]||e;
+      if(t && t.hp>0){ const h=Math.min(it.value, t.maxHp-t.hp); if(h>0){ t.hp+=h; blog(`${e.name} heals ${t===e?'itself':t.name} (+${h} HP).`,'heal'); } else { blog(`${e.name} tries to heal &mdash; nothing to mend.`,'info'); } }
+      return;
+    }
+    case 'burn':  addBurn(b.pst, it.value[0], it.value[1]); blog(`${e.name} sets you ABLAZE! (BURN ${it.value[0]}/${it.value[1]}t)`,'dmg'); return;
+    case 'poison':addPoison(b.pst,it.value[0], it.value[1]); blog(`${e.name} POISONS you. (PSN ${it.value[0]}/${it.value[1]}t)`,'dmg'); return;
+    case 'weak':  addWeak(b.pst, it.value); blog(`${e.name} WEAKENS your strikes!`,'info'); return;
+    case 'vuln':  addVuln(b.pst, it.value); blog(`${e.name} marks you VULNERABLE!`,'info'); return;
+    case 'manaburn':{ const mb=Math.min(p.mana,Math.round(p.maxMana*0.20)+4); if(mb>0){p.mana-=mb; blog(`${e.name} BURNS ${mb} mana from you!`,'dmg');} else blog(`${e.name} reaches for mana you do not have.`,'info'); return; }
+    case 'unleash':
+      applyEnemyHit(e,p,b,it.value,`${e.name} UNLEASHES its cataclysm`);
+      // Combo phase still applies post-unleash for late-game bosses
+      return;
+    case 'heavy':
+      applyEnemyHit(e,p,b,it.value,`${e.name} HEAVY strike`);
+      return;
+    case 'attack':
+    default:
+      applyEnemyHit(e,p,b,it.value,`${e.name} strikes`);
+      return;
+  }
+}
 function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
-  if(b.hollowSkip>0){ b.hollowSkip--; blog('The world is pausing — your enemies miss this beat.','info'); render(); return; }
+  if(b.hollowSkip>0){ b.hollowSkip--; blog('The world is pausing &mdash; your enemies miss this beat.','info'); render(); return; }
   if(b.emberTurns>0)b.emberTurns--;
   const zone=zoneOf(G.depth);
   for(const e of b.enemies){
     if(e.hp<=0)continue; if(p.hp<=0)break;
     if(e.st.stunT>0){ blog(`${e.name} is stunned and cannot act!`,'info'); e.st.stunT--; continue; }
-    // FROZEN BELOW escalation — enemies that survive past turn 2 grow more dangerous each round.
-    // HP sponges become real threats: every additional turn alive bumps their ATK and adds VULN on hit.
     e._alive=(e._alive||0)+1;
     if(zone>=2 && e._alive===3){ blog(`${e.name} steadies its stance &mdash; growing more dangerous.`,'info'); }
     if(zone>=2 && e._alive>=3 && !e.boss){
       const ramp=Math.min(0.50, (e._alive-2)*0.10);
       e._frostRamp=ramp;
     }
-    // Bosses past chamber 26 develop a combo phase below 40% HP. Earlier bosses are checks, not walls.
-    let extraAtk=0;
-    if(e.boss && G.depth>=26 && e.hp<=e.maxHp*0.40 && chance(35)) extraAtk=1;
-    const hits=1+extraAtk;
-    for(let hit=0; hit<hits && p.hp>0; hit++){
-      let dmg=e.atk+rnd(5),label=`${e.name} attacks`;
-      if(e.caster&&chance(45)){dmg=Math.round(e.atk*1.55);label=`${e.name} casts dark magic`;}
-      if(e.boss&&chance(38)){dmg=Math.round(e.atk*1.75);label=`${e.name} unleashes a savage blow`;}
-      if(e.boss&&e.hp<=e.maxHp*0.35){dmg=Math.round(dmg*1.4);}            // enrage
-      if(hit>0){ label=`${e.name} follows up`; dmg=Math.round(dmg*0.85); }
-      if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
-      // Frozen Below ramp: longer-lived enemies hit harder
-      if(e._frostRamp) dmg=Math.round(dmg*(1+e._frostRamp));
-      dmg=Math.round(dmg*G.mods.eDmg);
-      // Miasma thins the body — at tier 2+ the world hits you a little harder.
-      const mt2=miasmaActive()?miasmaTier():0;
-      if(mt2>=2){ const before=dmg; dmg=Math.round(dmg*(1+Math.min(0.25,mt2*0.045)));
-        if(chance(22) && dmg>before) blog(`&#9763; MIASMA &mdash; the cold lets it land harder (+${dmg-before}).`,'dmg'); }
-      const dodgeChance=Math.max(0,Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
-      if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside — ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; continue; }
-      let red=(b.pdefTurns>0?b.pdef:0);
-      dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.6)));
-      if(b.guardDown>0)dmg=Math.round(dmg*1.3);
-      if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
-      if(b.barrier>0&&dmg>0){ const ab=Math.min(b.barrier,dmg); b.barrier-=ab; dmg-=ab; blog(`Barrier absorbs ${ab}.`,'info'); }
-      if((p.cls==='mage'||p.flags.gearManaShield)&&p.mana>0){ const frac=e.manaburn?0.40:0.52; const ab=Math.min(p.mana,Math.ceil(dmg*frac)); if(ab>0){p.mana-=ab;dmg-=ab;blog(`Mana Shield soaks ${ab}.`,'info'); if(dmg<=0&&p.flags.aegisStun&&e.hp>0){addStun(e.st,1);blog(`Aegis! ${e.name} is STUNNED!`,'info');}} }
-      if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.12)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
-      let lethal=p.hp-dmg<=0;
-      if(lethal&&b.lastStand>0){ dmg=Math.max(0,p.hp-1); lethal=false; blog('LAST STAND holds — the blow cannot fell you!','crit'); }
-      if(lethal&&p.flags.secondWind&&!p._phoenixUsed){ p._phoenixUsed=1; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away — one charge, this run.)','lvl'); }
-      else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
-      if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
-      if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
-      if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
-      // Zone 3+ enemies start applying tactical statuses, not just damage.
-      if(!e.boss && zone>=2 && chance(10+(zone-2)*8)){ const roll=rnd(2); if(roll===0){addWeak(b.pst,2); blog(`${e.name} WEAKENS your strikes!`,'info');} else {addVuln(b.pst,2); blog(`${e.name} marks you VULNERABLE!`,'info');} }
-      // Bosses past chamber 26 layer a status on hit when wounded
-      if(e.boss && G.depth>=26 && e.hp<=e.maxHp*0.55 && chance(30)){ const roll=rnd(2); if(roll===0){addWeak(b.pst,2); blog(`${e.name} WEAKENS your strikes!`,'info');} else {addVuln(b.pst,2); blog(`${e.name} marks you VULNERABLE!`,'info');} }
-      if(p.flags.thorns&&e.hp>0){ const rf=Math.max(1,Math.round(dmg*0.3)); e.hp=clamp(e.hp-rf,0,e.maxHp); blog(`Thorns reflect ${rf} to ${e.name}.`,'heal'); if(p.flags.synFrost)addWeak(e.st,2); if(e.hp<=0)onEnemyDeath(e); }
+    if(!e.intent) planIntent(e,b);
+    executeIntent(e,p,b);
+    // Late-game bosses follow up after a real hit (combo phase)
+    if(p.hp>0 && e.boss && G.depth>=26 && e.hp<=e.maxHp*0.40 && (e.intent&&(e.intent.kind==='attack'||e.intent.kind==='heavy'||e.intent.kind==='unleash')) && chance(35)){
+      applyEnemyHit(e,p,b,Math.round(e.atk*1.0),`${e.name} follows up`);
     }
     if(p.hp<=0)break;
   }
@@ -2882,6 +3004,8 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   flash('playerHit');
   if(p.hp<=0){ b.over=true; SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
   if(allDead()){ winBattle(); return; }
+  // Plan the next round of intents so the player can see what is coming on their turn.
+  b.enemies.forEach(e=>{ if(e.hp>0) planIntent(e,b); else e.intent=null; });
   render(); }
 function flash(kind){ const scene=$('scene');
   if(kind==='enemyHit'){ G.battle.anim=''; }
