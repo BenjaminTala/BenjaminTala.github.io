@@ -19,8 +19,9 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{background:var(--bg);color:var(--ink);font-family:'Press Start 2P',monospace;font-size:12px;line-height:1.8;
-    display:flex;justify-content:center;align-items:flex-start;padding:18px 10px 40px;image-rendering:pixelated;-webkit-font-smoothing:none;}
-  #app{width:100%;max-width:680px}
+    display:flex;justify-content:center;align-items:flex-start;padding:18px 10px 64px;image-rendering:pixelated;-webkit-font-smoothing:none;}
+  #app{width:100%;max-width:780px}
+  @media (min-width:1024px){ #app{max-width:860px} }
   h1,h2,h3{margin:0;font-weight:400}
   .title{text-align:center;color:var(--amber);font-size:22px;line-height:1.5;text-shadow:3px 3px 0 #000,0 0 14px rgba(255,207,77,.35);margin:14px 0 6px;}
   .subtitle{text-align:center;color:var(--dim);font-size:9px;margin-bottom:22px}
@@ -38,7 +39,10 @@
   .btn small{display:block;color:var(--dim);font-size:9px;margin-top:6px;line-height:1.6}
   .btn:hover small{color:#b9b4e6}
   .row{display:flex;gap:10px;flex-wrap:wrap}.row .btn{flex:1;min-width:120px}
-  .grid3{display:flex;gap:10px;flex-wrap:wrap}.grid3 .card{flex:1;min-width:150px}
+  .grid3{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+  .grid3>*{flex:1 1 220px;min-width:0;display:flex;flex-direction:column}
+  .grid3>*>button:last-child{margin-top:auto}
+  .grid3 .card{flex:1 1 220px;min-width:0}
   .bar{margin:6px 0}
   .bar .lbl{font-size:9px;display:flex;justify-content:space-between;margin-bottom:3px}
   .bar .track{background:#000;border:2px solid var(--line);height:14px;padding:1px}
@@ -96,6 +100,9 @@
   body.world-furnace::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,40,10,.55) 0%,transparent 70%);animation:hotShimmer 0.9s ease-in-out infinite alternate}
   @keyframes hotShimmer{from{opacity:.55}to{opacity:1}}
   @keyframes furnaceFlicker{0%{filter:hue-rotate(-22deg) saturate(1.8) brightness(1.10) contrast(1.10)}50%{filter:hue-rotate(-22deg) saturate(1.95) brightness(1.18) contrast(1.16)}}
+  /* MIASMA meter pulses at high tiers so the player can never forget what is in their blood */
+  .wmeter.pulse-mia{animation:pulseMia 1.6s ease-in-out infinite}
+  @keyframes pulseMia{0%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}50%{filter:brightness(1.3) drop-shadow(0 0 6px rgba(192,108,255,.8))}}
   body.world-cold  #app{filter:hue-rotate(12deg) saturate(.85) brightness(.96); box-shadow:inset 0 0 80px rgba(120,140,200,.10)}
   body.world-cold::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;background:radial-gradient(ellipse at 50% -10%,rgba(160,180,220,.10) 0%,transparent 60%)}
   body.world-rot   #app{filter:hue-rotate(24deg) saturate(.7) brightness(.92) contrast(1.06); box-shadow:inset 0 0 120px rgba(140,90,200,.18)}
@@ -138,12 +145,14 @@
   .btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   /* audio toggles */
   #audio-toggles{position:fixed;top:6px;right:6px;z-index:200;display:flex;gap:4px;font-family:'Press Start 2P',monospace}
-  #inv-fab{position:fixed;top:8px;left:8px;z-index:200;font-family:'Press Start 2P',monospace}
-  #inv-fab button{font-family:inherit;font-size:10px;background:linear-gradient(180deg,#3a2810,#1a1408);color:var(--amber);border:2px solid var(--amber);padding:8px 12px;cursor:pointer;letter-spacing:2px;touch-action:manipulation;
-    box-shadow:0 0 0 1px #000, 0 0 14px rgba(255,207,77,.35), inset 0 0 8px rgba(255,207,77,.10);
+  /* INVENTORY FAB anchored bottom-right of the viewport — always visible, always near content, large and obvious. */
+  #inv-fab{position:fixed;right:18px;bottom:18px;z-index:200;font-family:'Press Start 2P',monospace}
+  #inv-fab button{font-family:inherit;font-size:11px;background:linear-gradient(180deg,#3a2810,#1a1408);color:var(--amber);border:2px solid var(--amber);padding:12px 16px;cursor:pointer;letter-spacing:2px;touch-action:manipulation;
+    box-shadow:0 0 0 1px #000, 0 0 18px rgba(255,207,77,.45), inset 0 0 10px rgba(255,207,77,.12);
     animation:invPulse 2.2s ease-in-out infinite}
-  #inv-fab button:hover{border-color:#fff;color:#fff;background:linear-gradient(180deg,#5a3818,#2a1c10);box-shadow:0 0 0 1px #000, 0 0 22px rgba(255,207,77,.7)}
-  @keyframes invPulse{0%,100%{box-shadow:0 0 0 1px #000, 0 0 12px rgba(255,207,77,.35), inset 0 0 8px rgba(255,207,77,.10)}50%{box-shadow:0 0 0 1px #000, 0 0 22px rgba(255,207,77,.6), inset 0 0 8px rgba(255,207,77,.18)}}
+  #inv-fab button:hover{border-color:#fff;color:#fff;background:linear-gradient(180deg,#5a3818,#2a1c10);box-shadow:0 0 0 1px #000, 0 0 28px rgba(255,207,77,.8)}
+  @keyframes invPulse{0%,100%{box-shadow:0 0 0 1px #000, 0 0 14px rgba(255,207,77,.4), inset 0 0 10px rgba(255,207,77,.12)}50%{box-shadow:0 0 0 1px #000, 0 0 26px rgba(255,207,77,.7), inset 0 0 10px rgba(255,207,77,.20)}}
+  @media (max-width:560px){ #inv-fab{right:10px;bottom:10px} #inv-fab button{font-size:9px;padding:8px 10px} }
   .coinbar{display:flex;justify-content:center;gap:14px;align-items:center;margin:6px 0 12px;font-size:14px;letter-spacing:1px}
   .coinbar .amber{text-shadow:0 0 10px rgba(255,207,77,.6)}
   .coinbar .teal{text-shadow:0 0 10px rgba(76,224,208,.5)}
@@ -1509,7 +1518,27 @@ function addHeat(n){ if(!heatActive())return;
     const tm=HEAT_TICK[bucket*10]; if(tm) G._heatTickMsg=tm;
   }
 }
-function addMiasma(n){ if(!miasmaActive())return; const b=miasmaTier(); G.miasma=clamp(G.miasma+n,0,99); const a=miasmaTier(); if(a>b){ G._worldMsg=MIASMA_MSG[Math.min(6,a)]; SFX.play('frost'); flashWorld(); }
+// Every 10 Miasma, the player gets a clear line explaining the internal cost.
+// Heat is external pressure; Miasma is internal decay. Both should feel impossible to ignore.
+const MIASMA_TICK={
+  10:'&#9763; MIASMA 10 &mdash; the air feels heavier. <b>Potions heal 6% less.</b>',
+  20:'&#9763; MIASMA 20 &mdash; your hands tremble. <b>You take +5% damage from enemies.</b>',
+  30:'&#9763; MIASMA 30 &mdash; your reflection lingers a moment too long. <b>Strikes can miss outright (7% chance).</b>',
+  40:'&#9763; MIASMA 40 &mdash; the crypt is learning your name. <b>Potions heal 24% less, ultimate charges slower.</b>',
+  50:'&#9763; MIASMA 50 &mdash; something inside you is beginning to answer. <b>+12% damage taken, hallucinations rise during fights.</b>',
+  60:'&#9763; MIASMA 60 &mdash; you struggle to remember why you came here. <b>Max-HP rot begins on every chamber entry.</b>',
+  70:'&#9763; MIASMA 70 &mdash; your heartbeat no longer sounds human. <b>Higher miss chance, more damage taken.</b>',
+  80:'&#9763; MIASMA 80 &mdash; the crypt recognises you. <b>Chamber crossings now cost HP directly.</b>',
+  90:'&#9763; MIASMA 90 &mdash; you are no longer entirely yourself. <b>The cold drinks you outright.</b>',
+};
+function addMiasma(n){ if(!miasmaActive())return;
+  const beforeTier=miasmaTier(); const beforeBucket=Math.floor(G.miasma/10);
+  G.miasma=clamp(G.miasma+n,0,99);
+  const afterTier=miasmaTier(); const afterBucket=Math.floor(G.miasma/10);
+  if(afterTier>beforeTier){ G._worldMsg=MIASMA_MSG[Math.min(6,afterTier)]; SFX.play('frost'); flashWorld(); }
+  for(let bucket=beforeBucket+1; bucket<=afterBucket; bucket++){
+    const tm=MIASMA_TICK[bucket*10]; if(tm) G._miasmaTickMsg=tm;
+  }
   // FLASHBACKS — fragments of an older conversation, one-shot per run.
   G._flashSeen=G._flashSeen||{};
   for(const fl of FLASHBACKS){ if(G.miasma>=fl.at && !G._flashSeen[fl.at]){ G._flashSeen[fl.at]=1; G._flashbackMsg=fl.line; SFX.play('frost'); if(fl.at>=55)discoverLore('l15'); } }
@@ -1772,8 +1801,10 @@ function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10
 function worldBar(){ const parts=[];
   if(heatActive()&&G.heat>0){ const t=heatTier(); const lbl=['',' WARM',' ASHEN',' MOLTEN',' BLAZING',' OVERHEAT'][t]; const c=['#ffcf4d','#ffcf4d','#ff9a3c','#ff5c6a','#ff2a2a','#ff0028'][t];
     parts.push(`<span class="wmeter clickable" data-info-concept="heat" style="color:${c}">&#128293; HEAT ${G.heat}/${HEAT_MAX}${lbl?' — '+lbl.trim():''}</span>`); }
-  if(miasmaActive()&&G.miasma>0){ const t=miasmaTier(); const lbl=['','watched','WOUNDS RESIST','hungering','SOUL ROT','BLEEDING','DECAYING'][Math.min(6,t)];
-    parts.push(`<span class="wmeter clickable purple" data-info-concept="miasma">&#9763; MIASMA ${G.miasma}${lbl?' — '+lbl:''}</span>`); }
+  if(miasmaActive()&&G.miasma>0){ const t=miasmaTier(); const lbl=['','WATCHED','WOUNDS RESIST','HUNGERING','SOUL ROT','BLEEDING','DECAYING'][Math.min(6,t)];
+    const c=['#b394d9','#c47bff','#b454f0','#a23add','#8a1ec6','#7800b8','#6a009a'][Math.min(6,t)];
+    const pulse=t>=4?' pulse-mia':'';
+    parts.push(`<span class="wmeter clickable purple${pulse}" data-info-concept="miasma" style="color:${c}">&#9763; MIASMA ${G.miasma}/99${lbl?' &mdash; '+lbl:''}</span>`); }
   if(G.debt>0){ parts.push(`<span class="wmeter clickable amber" data-info-concept="timedebt">&#8987; DEBT ${G.debt}${G.collectorEta>0?' — Collector ETA '+G.collectorEta:''}</span>`); }
   if(!parts.length)return '';
   const pulse=G._worldPulse?' worldpulse':''; G._worldPulse=0;
@@ -2072,11 +2103,12 @@ function renderCorridor(){
   const flash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
   const mem=G._memoryMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px;border-color:#6c3cbf">&#9763; ${G._memoryMsg}</div>`:''; G._memoryMsg=null;
   const heatTick=G._heatTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))">${G._heatTickMsg}</div>`:''; G._heatTickMsg=null;
+  const miasmaTick=G._miasmaTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#d9b8ff;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(180,100,255,.10),rgba(140,70,220,.04))">${G._miasmaTickMsg}</div>`:''; G._miasmaTickMsg=null;
   const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${flash}${mem}${heatTick}${wmsg}${banner}${playerBar(G.player,true)}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${flash}${mem}${heatTick}${miasmaTick}${wmsg}${banner}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       ${G._whisper?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
+      </div>${statusFooter()}`;
 }
 let _invReturn='corridor';
 function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
@@ -2126,7 +2158,7 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
 function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
   // crossing a threshold stokes the Furnace / lets the cold seep deeper / debt compounds
-  addHeat(1); addMiasma(1); tickDebt();
+  addHeat(2); addMiasma(1); tickDebt();
   if(worldOnEnter()){ return; }   // environmental hazards can be lethal
   if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
 /* environmental pressure applied on entering a chamber; returns true if it killed you */
@@ -2269,7 +2301,8 @@ function renderRoom(){
   const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
   const rflash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
   const rheatTick=G._heatTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))">${G._heatTickMsg}</div>`:''; G._heatTickMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${rheatTick}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
+  const rmiasmaTick=G._miasmaTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#d9b8ff;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(180,100,255,.10),rgba(140,70,220,.04))">${G._miasmaTickMsg}</div>`:''; G._miasmaTickMsg=null;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${rheatTick}${rmiasmaTick}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -2431,11 +2464,11 @@ function allDead(){ return G.battle.enemies.every(e=>e.hp<=0); }
 function ensureTarget(){ const b=G.battle; if(!b.enemies[b.target]||b.enemies[b.target].hp<=0){ const i=b.enemies.findIndex(e=>e.hp>0); b.target=i<0?0:i; } }
 function setTarget(i){ if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }
 function stChips(st){ let c='';
-  if(st.burnT>0)c+=`<span class="chip c-burn">BURN ${st.burnT}</span>`;
-  if(st.poisonT>0)c+=`<span class="chip c-pois">PSN ${st.poisonT}</span>`;
-  if(st.weakT>0)c+=`<span class="chip c-weak">WEAK ${st.weakT}</span>`;
-  if(st.vulnT>0)c+=`<span class="chip c-vuln">VULN ${st.vulnT}</span>`;
-  if(st.stunT>0)c+=`<span class="chip c-stun">STUN</span>`;
+  if(st.burnT>0)   c+=`<span class="chip c-burn" title="BURN — ${Math.max(1,Math.round(st.burn))} damage at end of every turn. ${st.burnT} turn(s) left.">BURN ${st.burnT}</span>`;
+  if(st.poisonT>0) c+=`<span class="chip c-pois" title="POISON / BLEED — ${Math.max(1,Math.round(st.poison))} damage at end of every turn. ${st.poisonT} turn(s) left.">PSN ${st.poisonT}</span>`;
+  if(st.weakT>0)   c+=`<span class="chip c-weak" title="WEAKEN — outgoing damage reduced by ~40%. ${st.weakT} turn(s) left.">WEAK ${st.weakT}</span>`;
+  if(st.vulnT>0)   c+=`<span class="chip c-vuln" title="VULNERABLE — takes +25% damage from all sources. ${st.vulnT} turn(s) left.">VULN ${st.vulnT}</span>`;
+  if(st.stunT>0)   c+=`<span class="chip c-stun" title="STUN — skips next turn entirely.">STUN</span>`;
   return c; }
 function renderBattle(){
   const p=G.player,b=G.battle; ensureTarget();
@@ -2668,16 +2701,23 @@ function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p
   if(lost>0) blog(`&#9763; MIASMA &mdash; the cold drinks ${lost} HP from the cure.`,'info');
   (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
 function fleeBattle(){ const p=G.player,b=G.battle;
-  if(b.hadBoss){ blog('There is no escape from this foe!','info'); return render(); }
+  if(b.hadBoss){
+    showInfo({title:'NO ESCAPE',body:'<p class="shout-red" style="font-size:11px">There is no fleeing this foe. It blocks the way back.</p>'});
+    return render();
+  }
   if(p.cls==='ranger'?chance(82):chance(55)){
-    // Fleeing has a real cost — the crypt resents the back of your neck.
     const tax=Math.max(6,Math.round(p.hp*0.18));
     p.hp=clamp(p.hp-tax,1,p.maxHp); attrib('hazard',tax);
-    addMiasma(2); // the seal frays as you run
+    addMiasma(2);
     blog(`You break away — claws and cold take ${tax} HP from your back.`,'info');
+    showInfo({title:'FLED &mdash; WOUNDED',body:`<p class="shout-red" style="font-size:11px">You turned your back to the dark. Claws and cold took <b>${tax} HP</b> from you on the way out, and the cold has thickened around you (+2 Miasma).</p>`});
     b.over=true; render(); setTimeout(()=>proceed('You escaped — wounded.'),700);
   }
-  else { blog('You failed to flee — they tear into you!','info'); enemyTurn(); } }
+  else {
+    blog('You failed to flee — they tear into you!','info');
+    showInfo({title:'CAUGHT',body:'<p class="shout-red" style="font-size:11px">You turned to run. They were faster. <b>They get a free strike.</b></p>'});
+    enemyTurn();
+  } }
 
 function tickDoT(entity,st,name){ // returns false if entity died
   const isPlayer=(name==='you'); const ward=(!isPlayer&&entity.statusWard)?0.5:1;   // Warded enemies shrug off DoT
@@ -2711,6 +2751,14 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   for(const e of b.enemies){
     if(e.hp<=0)continue; if(p.hp<=0)break;
     if(e.st.stunT>0){ blog(`${e.name} is stunned and cannot act!`,'info'); e.st.stunT--; continue; }
+    // FROZEN BELOW escalation — enemies that survive past turn 2 grow more dangerous each round.
+    // HP sponges become real threats: every additional turn alive bumps their ATK and adds VULN on hit.
+    e._alive=(e._alive||0)+1;
+    if(zone>=2 && e._alive===3){ blog(`${e.name} steadies its stance &mdash; growing more dangerous.`,'info'); }
+    if(zone>=2 && e._alive>=3 && !e.boss){
+      const ramp=Math.min(0.50, (e._alive-2)*0.10);
+      e._frostRamp=ramp;
+    }
     // Bosses past chamber 26 develop a combo phase below 40% HP. Earlier bosses are checks, not walls.
     let extraAtk=0;
     if(e.boss && G.depth>=26 && e.hp<=e.maxHp*0.40 && chance(35)) extraAtk=1;
@@ -2722,6 +2770,8 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
       if(e.boss&&e.hp<=e.maxHp*0.35){dmg=Math.round(dmg*1.4);}            // enrage
       if(hit>0){ label=`${e.name} follows up`; dmg=Math.round(dmg*0.85); }
       if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
+      // Frozen Below ramp: longer-lived enemies hit harder
+      if(e._frostRamp) dmg=Math.round(dmg*(1+e._frostRamp));
       dmg=Math.round(dmg*G.mods.eDmg);
       // Miasma thins the body — at tier 2+ the world hits you a little harder.
       const mt2=miasmaActive()?miasmaTier():0;
@@ -2783,7 +2833,7 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
   // fighting stokes the Furnace / deepens the cold's hold
   const elites=b.enemies.filter(e=>e.elite).length;
-  addHeat(2+elites); addMiasma(3+elites);
+  addHeat(4+elites*2); addMiasma(3+elites);
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); G._pendingBossDeath='warden'; }
   if(b.enemies.some(e=>e.name===BOSSES.dragon.name)){ blog(BOSS_DEATHCRY.dragon,'crit'); discoverLore('l4'); if(!p.memory||p.memory.id!=='hoard') grantMemory(p,'hoard'); G._pendingBossDeath='dragon'; }
