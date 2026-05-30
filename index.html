@@ -1740,13 +1740,161 @@ const MEMORY_SKILLS={
   glass:  {id:'glass',  name:'Glass Sigil',       cost:14, desc:'Pay 15% HP. Your next single-target skill SHATTERS across every foe.',         mem:1, source:'A cursed mirror etched it.'},
 };
 const MEMORY_KEYS=Object.keys(MEMORY_SKILLS);
-function grantMemory(p,key){ const m=MEMORY_SKILLS[key]; if(!m||!p)return false; p.memory={...m};
-  if(G.screen==='battle') blog(`A memory surfaces — ${m.name}.`,'crit'); else G._memoryMsg=`A memory surfaces — ${m.name}. ${m.source}`;
-  popupBuild('MEMORY SURFACES &mdash; '+m.name,
-    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; ${m.desc}</p>`+
-    `<p class="muted" style="font-size:9px;margin-top:8px">${m.source} &middot; costs ${m.cost} MP${m.aoe?' &middot; <span class="amber">AOE</span>':''}</p>`,
+
+/* ============================================================
+   DEVOUR — the 4th skill is no longer empty. Every champion begins
+   with DEVOUR. When DEVOUR kills, a Fragment is consumed and the
+   skill mutates: EVOLVE (combine), EMPOWER (deepen), or REPLACE
+   (abandon path). Over a run, every champion's 4th skill becomes
+   something different. Nobody explains why this works.
+   ============================================================ */
+const DEVOUR_FAMILIES={
+  Ooze:     {label:'Ooze',     trait:'poison', ico:'&#9763;', desc:'+POISON on hit'},
+  Demon:    {label:'Infernal', trait:'burn',   ico:'&#128293;', desc:'+BURN on hit'},
+  Beast:    {label:'Feral',    trait:'bleed',  ico:'&#129704;', desc:'+BLEED (stacking poison) on hit'},
+  Vermin:   {label:'Swarm',    trait:'multi',  ico:'&#128001;', desc:'second small hit'},
+  Construct:{label:'Stone',    trait:'stun',   ico:'&#128737;', desc:'chance to STUN'},
+  Undead:   {label:'Grave',    trait:'weaken', ico:'&#9760;',   desc:'WEAKEN on hit'},
+  Humanoid: {label:'Cult',     trait:'vuln',   ico:'&#9728;',   desc:'VULN on hit'},
+  Dragon:   {label:'Draconic', trait:'heat',   ico:'&#128293;', desc:'damage scales with HEAT'},
+};
+const DEVOUR_FAMILY_KEYS=Object.keys(DEVOUR_FAMILIES);
+// Named EVOLVE combinations — two paths merging. Order doesn't matter; sorted alphabetically.
+const DEVOUR_EVOLUTIONS={
+  'Beast|Ooze':     {name:'Toxic Maw',       desc:'Heavy bite + BLEED + POISON; you HEAL for 30% of damage dealt.'},
+  'Demon|Ooze':     {name:'Caustic Flame',   desc:'AOE inferno — every foe takes damage, BURN, and POISON.'},
+  'Beast|Demon':    {name:'Hellbeast',       desc:'Massive single hit + BLEED + BURN; +30% crit chance on this strike.'},
+  'Construct|Demon':{name:'Molten Bastion',  desc:'Heavy hit + BURN. You gain a BARRIER equal to 25% of damage dealt.'},
+  'Humanoid|Undead':{name:'Soul Winter',     desc:'Hits ALL foes for cold damage. WEAKEN + VULN them. +4 Miasma to YOU.'},
+  'Beast|Undead':   {name:'Night Hunter',    desc:'Crit-locked single hit. Executes any target under 35% HP.'},
+  'Dragon|Humanoid':{name:'Cult of Embers',  desc:'AOE fire breath. +6 Heat. Damage scales with Heat already on you.'},
+  'Construct|Dragon':{name:'Heart of Iron Flame',desc:'You become BURNING ARMOR — +8 DEF and BURN the attacker on every hit for 3 turns.'},
+  'Ooze|Vermin':    {name:'The Swarm',       desc:'Three small strikes across the field. Each one POISONS.'},
+  'Dragon|Undead':  {name:'Pyre of the Forgotten',desc:'Single nuclear hit. Kill-scaling. +10 Heat. Locks BURN 5/4.'},
+  'Beast|Construct':{name:'Wolfstone',       desc:'Heavy hit. You gain +5 DEF until next turn AND your next basic strike CRITS.'},
+  'Demon|Humanoid': {name:'Black Sacrament', desc:'Pay 12% HP for a single devastating strike. +Miasma to target. BURN 6/4.'},
+};
+function devourComboKey(a,b){ return [a,b].sort().join('|'); }
+function makeDevourBase(){
+  return {
+    id:'devour', name:'Devour', cost:10, aoe:false, mem:1, devour:true,
+    desc:'Heavy single strike. If this kills, you consume a FRAGMENT and the skill mutates.',
+    path:[], dmgMult:1.5, effects:[], stage:0,
+    source:'You start with this. You never knew why.',
+  };
+}
+function evolveCombo(d, fam){
+  const last=d.path[d.path.length-1];
+  if(!last) return null;
+  const key=devourComboKey(last, fam);
+  return DEVOUR_EVOLUTIONS[key]||null;
+}
+function devourFamilyTraitLabel(fam){
+  const f=DEVOUR_FAMILIES[fam]; return f ? `${f.ico} ${f.label} (${f.desc})` : fam;
+}
+function applyDevourEffects(e, d, b){
+  if(!e || e.hp<=0) return;
+  (d.effects||[]).forEach(eff=>{
+    if(eff==='poison'){ addPoison(e.st, 5+d.stage, 3); blog(`${e.name} is POISONED!`,'info'); }
+    else if(eff==='burn'){ addBurn(e.st, 5+d.stage, 3); blog(`${e.name} BURNS!`,'info'); }
+    else if(eff==='bleed'){ addPoison(e.st, 6+d.stage, 4); blog(`${e.name} BLEEDS!`,'info'); }
+    else if(eff==='weaken'){ addWeak(e.st, 2); blog(`${e.name} is WEAKENED!`,'info'); }
+    else if(eff==='vuln'){ addVuln(e.st, 2); blog(`${e.name} is VULNERABLE!`,'info'); }
+    else if(eff==='stun' && chance(35)){ addStun(e.st, 1); blog(`${e.name} is STUNNED!`,'crit'); }
+  });
+}
+function devourMutate(p, fam, choice){
+  const d=p.memory; if(!d||!d.devour)return;
+  const fdef=DEVOUR_FAMILIES[fam]; if(!fdef){ return; }
+  if(choice==='evolve'){
+    const combo=evolveCombo(d, fam);
+    if(combo){
+      // Become the named evolution
+      d.name=combo.name; d.desc=combo.desc; d.stage=(d.stage||0)+1;
+      d.path.push(fam);
+      // Effects gain the new family's trait + previous evolution carries old
+      if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
+      d.dmgMult=(d.dmgMult||1.5)+0.25;
+      d.cost=Math.min(28, (d.cost||10)+2);
+    } else {
+      // No named combo — fold the new family in anyway
+      d.stage=(d.stage||0)+1; d.path.push(fam);
+      if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
+      d.dmgMult=(d.dmgMult||1.5)+0.20;
+      d.cost=Math.min(28, (d.cost||10)+1);
+      d.name=`${fdef.label} ${d.name}`;
+      d.desc=`Heavy strike + ${fdef.desc.toLowerCase()}.`;
+    }
+  } else if(choice==='empower'){
+    // Deepen current path — bigger damage, longer effects
+    d.stage=(d.stage||0)+1; d.dmgMult=(d.dmgMult||1.5)+0.40;
+    d.desc=d.desc+` <span class="amber">[empowered +${d.stage}]</span>`;
+  } else if(choice==='replace'){
+    // Wipe the path and adopt the new family's pure form
+    d.path=[fam]; d.effects=[fdef.trait]; d.stage=1; d.dmgMult=1.7;
+    d.cost=10;
+    d.name=`${fdef.label} Strike`;
+    d.desc=`Reborn from ${fdef.label}. Heavy single strike + ${fdef.desc.toLowerCase()}.`;
+  }
+}
+function queueFragmentChoice(p, fam){
+  G._fragQueue=G._fragQueue||[];
+  G._fragQueue.push(fam);
+}
+function devourKillFragment(p, e){
+  if(!e || !p || !p.memory || !p.memory.devour) return;
+  const fam=familyOf(e);
+  if(!DEVOUR_FAMILIES[fam]) return; // unknown family, no fragment
+  // Bosses always grant; non-boss families only if the player has not already absorbed them
+  const path=p.memory.path||[];
+  if(!e.boss && path.includes(fam)) return;
+  queueFragmentChoice(p, fam);
+}
+function showFragmentChoice(){
+  if(!G._fragQueue||!G._fragQueue.length) return;
+  const fam=G._fragQueue.shift();
+  const fdef=DEVOUR_FAMILIES[fam]; if(!fdef){ showFragmentChoice(); return; }
+  const d=G.player.memory;
+  const combo=evolveCombo(d, fam);
+  const evolveLabel=combo?combo.name:`Fold in ${fdef.label}`;
+  const evolveDesc=combo?combo.desc:`Add <b>${fdef.desc}</b> to ${d.name}, +0.20 damage scaling.`;
+  const empowerLabel=`Deepen ${d.name}`;
+  const empowerDesc=`Improve current path. +0.40 damage scaling, effects last longer.`;
+  const replaceLabel=`Become ${fdef.label} Strike`;
+  const replaceDesc=`Abandon ${d.name} entirely. Adopt a pure ${fdef.label} skill (${fdef.desc}).`;
+  const body=
+    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; You consume a <b>${fdef.label} Fragment</b>.</p>`+
+    `<p class="muted" style="font-size:9px;margin:8px 0">Current: <b>${d.name}</b> &middot; path: ${d.path.length?d.path.join(' &rarr; '):'(none)'}</p>`+
+    `<button class="btn" onclick="pickFragment('${fam}','evolve')" style="margin-top:6px;border-left:3px solid #c06cff"><span class="k purple">&#9670;</span>EVOLVE &mdash; ${evolveLabel}<small>${evolveDesc}</small></button>`+
+    `<button class="btn" onclick="pickFragment('${fam}','empower')" style="border-left:3px solid var(--amber)"><span class="k amber">&#10022;</span>EMPOWER &mdash; ${empowerLabel}<small>${empowerDesc}</small></button>`+
+    `<button class="btn" onclick="pickFragment('${fam}','replace')" style="border-left:3px solid var(--red)"><span class="k red">&#9876;</span>REPLACE &mdash; ${replaceLabel}<small>${replaceDesc}</small></button>`;
+  showInfo({title:`FRAGMENT &mdash; ${fdef.label}`, body});
+}
+function pickFragment(fam, choice){
+  const p=G.player; devourMutate(p, fam, choice);
+  // Visual feedback popup
+  popupBuild('DEVOUR EVOLVES &mdash; '+p.memory.name,
+    `<p class="shout-purple" style="font-size:11px;line-height:1.7">${p.memory.desc}</p>`+
+    `<p class="muted" style="font-size:9px;margin-top:8px">Path: ${p.memory.path.length?p.memory.path.join(' &rarr; '):'(empty)'} &middot; stage ${p.memory.stage||0}</p>`,
   'memory');
-  return true; }
+  // Close the current fragment modal; drainBuildQueue will auto-fire the popup, and the next fragment if any
+  const modal=document.getElementById('info-modal'); if(modal)modal.classList.add('hidden');
+  setTimeout(()=>{ if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); } else { drainBuildQueue(); } }, 220);
+}
+function grantMemory(p,key){
+  // Devour superseded the old Memory Skill grants. Legacy hooks still fire (priest, knight,
+  // child, echoes, bosses) but now they translate to a Fragment for the player's Devour.
+  // The mapping below sends each old memory id to the family it thematically belonged to.
+  const legacyToFamily={ ember:'Demon', decree:'Humanoid', hoard:'Dragon', recall:'Undead',
+    tithe:'Humanoid', devour:'Demon', hollow:'Undead', curse:'Humanoid', glass:'Construct' };
+  const fam=legacyToFamily[key]||'Demon';
+  if(p && p.memory && p.memory.devour && DEVOUR_FAMILIES[fam]){
+    queueFragmentChoice(p, fam);
+    if(G.screen!=='battle') showFragmentChoice();
+    return true;
+  }
+  return false;
+}
 function grantRandomMemory(p,pool){ const keys=(pool||MEMORY_KEYS).filter(k=>!p.memory||p.memory.id!==k); if(!keys.length)return false; return grantMemory(p,pick(keys)); }
 function allSkills(p){ const out=p.skills.slice(); if(p.memory) out.push(p.memory); return out; }
 
@@ -1866,6 +2014,8 @@ function renderClassSelect(){
     <div class="grid3 fade">${card('mage')}${card('warrior')}${card('ranger')}</div>`;
 }
 function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes();
+  // Every champion begins with DEVOUR in the 4th slot. The skill mutates by killing.
+  G.player.memory=makeDevourBase();
   G.omenChoices=shuffle(OMENS.filter(o=>o.id!=='none')).slice(0,2); G.omenChoices.unshift(OMENS[0]); G.omenChoices=shuffle(G.omenChoices);
   G.screen='omen'; render(); }
 /* ---------- OMEN ---------- */
@@ -2872,7 +3022,44 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'recall':{SFX.play('skill'); const km=1+Math.min(0.80,(p.kills||0)*0.012); blog(`ECHO RECALL — phantoms (x${km.toFixed(2)} from kills) strike all foes!`,'crit');
       aoeHit(i=>{let d=Math.round((p.atk+p.weapon.dmg+10)*0.78*km); let c=rollCrit(); if(c)d*=1.6; dealToEnemy(i,d,'A phantom-you strikes',c);}); break;}
     case 'tithe':{SFX.play('heal'); const c=Math.max(1,Math.round(p.hp*0.25)); p.hp=clamp(p.hp-c,1,p.maxHp); p.mana=p.maxMana; b.titheCrits=2; blog(`SOUL TITHE — paid ${c} HP. Mana brimmed. Next 2 strikes will CRIT.`,'crit'); break;}
-    case 'devour':{SFX.play('crit'); let d=(p.atk+p.weapon.dmg)*1.85; let c=rollCrit(); if(c)d*=critMult(); const e=b.enemies[b.target]; const done=dealToEnemy(b.target,d,'DEVOURER BITE rends',c); if(done>0){ heal(p,done); blog(`You devour ${done} from the wound.`,'heal'); } break;}
+    case 'devour':{
+      // The 4th-slot DEVOUR — every champion starts with this. Mutates by killing.
+      const d=p.memory; const dmgMult=(d&&d.dmgMult)||1.5; const aoe=d&&d.aoe;
+      SFX.play('crit');
+      const heatScale=d && (d.effects||[]).includes('heat')?(1+(G.heat||0)*0.012):1;
+      const killScale=d && d.name && /Pyre|Curse|Night Hunter/.test(d.name)?1+Math.min(0.60,(p.kills||0)*0.008):1;
+      if(aoe){
+        blog(`${d.name} engulfs the room!`,'crit');
+        aoeHit(i=>{
+          let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale; let c=rollCrit(); if(c)dmg*=critMult();
+          const e=b.enemies[i]; const before=e?e.hp:0;
+          const done=dealToEnemy(i,dmg,`${d.name} rends`,c);
+          if(e && e.hp>0) applyDevourEffects(e,d,b);
+          if(before>0 && e.hp<=0) devourKillFragment(p,e);
+        });
+      } else {
+        let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale; let c=rollCrit(); if(c)dmg*=critMult();
+        const idx=b.target; const e=b.enemies[idx]; const before=e?e.hp:0;
+        // Execute under 35% for Night Hunter
+        if(d && /Night Hunter/.test(d.name) && e && e.hp<=e.maxHp*0.35) dmg=Math.max(dmg, e.hp+1);
+        const done=dealToEnemy(idx,dmg,`${d.name} rends`,c);
+        if(e && e.hp>0) applyDevourEffects(e,d,b);
+        // Toxic Maw heals 30% of damage
+        if(d && /Toxic Maw/.test(d.name) && done>0){ heal(p,Math.round(done*0.30)); blog(`You drink the wound (+${Math.round(done*0.30)} HP).`,'heal'); }
+        // Black Sacrament costs 12% HP
+        if(d && /Black Sacrament/.test(d.name)){ const c2=Math.round(p.maxHp*0.12); p.hp=clamp(p.hp-c2,1,p.maxHp); blog(`The sacrament demands -${c2} HP.`,'info'); }
+        // Molten Bastion gives barrier
+        if(d && /Molten Bastion/.test(d.name) && done>0){ b.barrier=(b.barrier||0)+Math.round(done*0.25); blog(`A burning barrier rises (+${Math.round(done*0.25)}).`,'info'); }
+        // Heart of Iron Flame — armor + thorn-burn aura 3 turns
+        if(d && /Heart of Iron Flame/.test(d.name)){ p._burningArmor=3; blog('You are clad in burning armor for 3 turns.','crit'); }
+        if(before>0 && e.hp<=0) devourKillFragment(p,e);
+      }
+      // Heat scaling for Cult of Embers, Pyre, etc
+      if(d && (d.effects||[]).includes('heat')) addHeat(2);
+      // Soul Winter raises miasma on player
+      if(d && /Soul Winter/.test(d.name)) addMiasma(4);
+      break;
+    }
     case 'hollow':{SFX.play('frost'); b.hollowSkip=1; blog('HOLLOW STEP — the world pauses. You step outside the next moment.','crit'); break;}
     case 'curse':{SFX.play('crit'); const km=1+Math.min(0.80,(p.kills||0)*0.016); const e=b.enemies[b.target]; let d=(p.atk+p.weapon.dmg)*2.4*km; let c=rollCrit(); if(c)d*=critMult(); dealToEnemy(b.target,d,"CHAMPION'S CURSE breaks",c); if(e&&e.hp>0)addWeak(e.st,3); break;}
   }
@@ -3081,8 +3268,14 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
     if(G._pendingBossDeath){ showBossDeath(G._pendingBossDeath); G._pendingBossDeath=null; }
     if(b.isFinal){ SFX.play('win'); p.won=true; G.screen='triumph'; return render(); }
     G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); playTransition('#5a4410');
-    // Drain any build popups that queued up during the fight (synergies/sets formed from echo loot, etc.)
-    setTimeout(()=>{ if(G._buildQueue && G._buildQueue.length){ const m=document.getElementById('info-modal'); if(!m||m.classList.contains('hidden')) drainBuildQueue(); } }, 350);
+    // Drain fragment / build popups that queued during the fight.
+    // Fragments fire first so the player picks their Devour evolution before the loot screen takes focus.
+    setTimeout(()=>{
+      const m=document.getElementById('info-modal'); const open=m&&!m.classList.contains('hidden');
+      if(open)return;
+      if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); }
+      else if(G._buildQueue && G._buildQueue.length){ drainBuildQueue(); }
+    }, 350);
   },900); }
 
 /* ============================================================
