@@ -100,6 +100,13 @@
   body.world-furnace::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,40,10,.55) 0%,transparent 70%);animation:hotShimmer 0.9s ease-in-out infinite alternate}
   @keyframes hotShimmer{from{opacity:.55}to{opacity:1}}
   @keyframes furnaceFlicker{0%{filter:hue-rotate(-22deg) saturate(1.8) brightness(1.10) contrast(1.10)}50%{filter:hue-rotate(-22deg) saturate(1.95) brightness(1.18) contrast(1.16)}}
+  /* BUILD POPUPS — distinctive accents so different progression types are recognisable at a glance. */
+  .build-pop{padding:6px 4px 2px;border-radius:2px}
+  .build-pop.aff   {border-left:3px solid var(--teal); padding-left:8px}
+  .build-pop.synergy{border-left:3px solid #c06cff; padding-left:8px;background:linear-gradient(90deg,rgba(192,108,255,.10),transparent 60%)}
+  .build-pop.set   {border-left:3px solid #ffd54a; padding-left:8px;background:linear-gradient(90deg,rgba(255,213,74,.10),transparent 60%)}
+  .build-pop.relic {border-left:3px solid var(--purple);padding-left:8px;background:linear-gradient(90deg,rgba(192,108,255,.08),transparent 60%)}
+  .build-pop.memory{border-left:3px solid #b070ff; padding-left:8px;background:linear-gradient(90deg,rgba(176,112,255,.12),transparent 60%)}
   /* ENEMY INTENT BADGE — telegraphs the next action so the player can think. */
   .intent{display:inline-block;font-size:8px;letter-spacing:1px;padding:2px 6px;margin:2px auto 4px;border:1px solid #4a3260;background:#1a1424;color:#cbb6e6;border-radius:2px;line-height:1.4;text-align:center;max-width:200px}
   .intent .i-ico{margin-right:3px}
@@ -1637,12 +1644,26 @@ function unlockAffinity(p,k,t){
   if(k==='v'&&t===1){ p.maxHp+=18; heal(p,18); p.maxMana+=12; p.mana+=12; }
   const msg=AFF_TIER_TITLE[k][t];
   if(G.screen==='battle') blog(msg.split(':')[0]+' UNLOCKED!','lvl'); else G._affMsg=msg;
-}
+  // Build popup — players should see and feel every tier unlock.
+  const title=AFF_META[k].name+' '+['','I','II','III'][t]+(t===3?' &mdash; CAPSTONE':'');
+  popupBuild(title,
+    `<p class="shout" style="font-size:11px;line-height:1.7">${msg}</p>`+
+    `<p class="muted" style="font-size:9px;margin-top:8px">You have ${p.aff[k]} ${AFF_META[k].name} points.${t<3?` Next tier at ${AFF_THRESH[t]} pts.`:''}</p>`,
+  'aff'); }
 function recomputeSynergies(p){ p.synergies=[];
   SYNERGIES.forEach(s=>{ if(s.need.every(n=>p.relics.includes(n))){ p.synergies.push(s.name);
     if(!p.flags[s.flag]){ addFlag(p,s.flag); if(s.onForm)s.onForm(p);
-      if(G.screen==='battle') blog(`SYNERGY: ${s.name}!`,'lvl'); else G._affMsg=`Synergy unlocked: ${s.name} — ${s.desc}`; } } }); }
-function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.apply(p); p.relics.push(rl.name); addAffinity(p,rl.aff); recomputeSynergies(p); SFX.play('relic'); return true; }
+      if(G.screen==='battle') blog(`SYNERGY: ${s.name}!`,'lvl'); else G._affMsg=`Synergy unlocked: ${s.name} — ${s.desc}`;
+      popupBuild('SYNERGY FORMED &mdash; '+s.name,
+        `<p class="muted" style="font-size:9px;margin-bottom:6px">${s.need.join(' + ')}</p>`+
+        `<p class="shout" style="font-size:11px;line-height:1.7">&#10022; ${s.desc}</p>`,
+      'synergy'); } } }); }
+function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.apply(p); p.relics.push(rl.name); addAffinity(p,rl.aff); recomputeSynergies(p); SFX.play('relic');
+  popupBuild('RELIC FOUND &mdash; '+rl.name,
+    `<p class="shout" style="font-size:11px;line-height:1.7">&#9670; ${rl.note}</p>`+
+    (rl.aff?`<p class="muted" style="font-size:9px;margin-top:8px">${affTagText(rl.aff)}</p>`:''),
+  'relic');
+  return true; }
 function gainUpgrade(p,up){ up.apply(p); addAffinity(p,up.aff); }
 function affCritBonus(p){ let c=0; if(p.affTier.g>=1)c+=12; if(p.affTier.g>=2)c+=8; if(p.affTier.w>=2)c+=8; return c; }
 function affDodgeBonus(p){ return p.affTier.g>=1?10:0; }
@@ -1667,13 +1688,21 @@ function equipItem(p,item){ const slot=item.slot; const old=p.equip[slot];
   if(slot==='weapon')p.weapon=item;
   recomputeSets(p); recomputeAffinity(p); }
 function recomputeSets(p){
+  const before=new Set(p.sets||[]);
   for(const sn in p._setApplied){ const ap=p._setApplied[sn]; for(const k in ap.stats)p[k]-=ap.stats[k]; ap.flags.forEach(f=>removeFlag(p,f)); }
   p._setApplied={};
   const counts={}; SLOTS.forEach(s=>{ const it=p.equip[s]; if(it&&it.set)counts[it.set]=(counts[it.set]||0)+1; });
   p.sets=[];
   for(const sn in counts){ const set=SETS[sn]; if(set&&counts[sn]>=set.pieces){ p.sets.push(sn);
     const stats=set.stats||{}; for(const k in stats)p[k]=(p[k]||0)+stats[k]; (set.flags||[]).forEach(f=>addFlag(p,f));
-    p._setApplied[sn]={stats:{...stats},flags:[...(set.flags||[])]}; } }
+    p._setApplied[sn]={stats:{...stats},flags:[...(set.flags||[])]};
+    // New set activation -> popup
+    if(!before.has(sn)){
+      popupBuild('ARMOR SET ACTIVATED &mdash; '+set.name+' '+set.pieces+'/'+set.pieces,
+        `<p class="shout" style="font-size:11px;line-height:1.7">&#10022; ${set.desc}</p>`,
+      'set');
+    }
+  } }
   p.hp=clamp(p.hp,0,p.maxHp); p.mana=clamp(p.mana,0,p.maxMana);
 }
 /* ---- item generation ---- */
@@ -1712,7 +1741,12 @@ const MEMORY_SKILLS={
 };
 const MEMORY_KEYS=Object.keys(MEMORY_SKILLS);
 function grantMemory(p,key){ const m=MEMORY_SKILLS[key]; if(!m||!p)return false; p.memory={...m};
-  if(G.screen==='battle') blog(`A memory surfaces — ${m.name}.`,'crit'); else G._memoryMsg=`A memory surfaces — ${m.name}. ${m.source}`; return true; }
+  if(G.screen==='battle') blog(`A memory surfaces — ${m.name}.`,'crit'); else G._memoryMsg=`A memory surfaces — ${m.name}. ${m.source}`;
+  popupBuild('MEMORY SURFACES &mdash; '+m.name,
+    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; ${m.desc}</p>`+
+    `<p class="muted" style="font-size:9px;margin-top:8px">${m.source} &middot; costs ${m.cost} MP${m.aoe?' &middot; <span class="amber">AOE</span>':''}</p>`,
+  'memory');
+  return true; }
 function grantRandomMemory(p,pool){ const keys=(pool||MEMORY_KEYS).filter(k=>!p.memory||p.memory.id!==k); if(!keys.length)return false; return grantMemory(p,pick(keys)); }
 function allSkills(p){ const out=p.skills.slice(); if(p.memory) out.push(p.memory); return out; }
 
@@ -3046,7 +3080,10 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   setTimeout(()=>{
     if(G._pendingBossDeath){ showBossDeath(G._pendingBossDeath); G._pendingBossDeath=null; }
     if(b.isFinal){ SFX.play('win'); p.won=true; G.screen='triumph'; return render(); }
-    G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); playTransition('#5a4410'); },900); }
+    G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); playTransition('#5a4410');
+    // Drain any build popups that queued up during the fight (synergies/sets formed from echo loot, etc.)
+    setTimeout(()=>{ if(G._buildQueue && G._buildQueue.length){ const m=document.getElementById('info-modal'); if(!m||m.classList.contains('hidden')) drainBuildQueue(); } }, 350);
+  },900); }
 
 /* ============================================================
    REWARDS
@@ -3205,6 +3242,24 @@ function closeInfo(e){
   const m=document.getElementById('info-modal');
   if(m)m.classList.add('hidden');
   SFX.play('click');
+  // Drain the build-popup queue — if more achievements were stacked while a modal was open, show the next one.
+  setTimeout(()=>{ if(G && G._buildQueue && G._buildQueue.length && (!G.battle||G.battle.over)) drainBuildQueue(); }, 180);
+}
+/* BUILD PROGRESSION POPUPS — every meaningful upgrade interrupts the player so they see what
+   their character just earned. Queued during battle, drained at battle end so combat is not
+   constantly broken by modals. */
+function popupBuild(title, body, kind){
+  G._buildQueue=G._buildQueue||[];
+  const styled=`<div class="build-pop ${kind||''}">${body}</div>`;
+  G._buildQueue.push({title, body:styled});
+  const m=document.getElementById('info-modal');
+  const modalOpen=m && !m.classList.contains('hidden');
+  if(!modalOpen && (!G.battle || G.battle.over)) drainBuildQueue();
+}
+function drainBuildQueue(){
+  if(!G._buildQueue || !G._buildQueue.length) return;
+  const next=G._buildQueue.shift();
+  showInfo(next);
 }
 function relicNoteFor(name){const r=RELICS.find(x=>x.name===name);return r?r.note:'';}
 function synergyDescFor(name){const s=SYNERGIES.find(x=>x.name===name);return s?s.desc:'';}
