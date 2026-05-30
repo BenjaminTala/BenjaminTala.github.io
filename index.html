@@ -2347,7 +2347,7 @@ function renderRoom(){
   const rflash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
   const rheatTick=G._heatTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))">${G._heatTickMsg}</div>`:''; G._heatTickMsg=null;
   const rmiasmaTick=G._miasmaTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#d9b8ff;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(180,100,255,.10),rgba(140,70,220,.04))">${G._miasmaTickMsg}</div>`:''; G._miasmaTickMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${rheatTick}${rmiasmaTick}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${rheatTick}${rmiasmaTick}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}<button class="btn muted center" onclick="openInventory()" style="margin-top:6px"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -2377,14 +2377,16 @@ function renderEvent(){
       <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
         ${art}
         <p class="evtext center">${r.outcome}</p>
-        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
+        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button>
+        <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
     return;
   }
   const opts=ev.options.map((o,i)=>`<button class="btn" onclick="chooseEvent(${i})"><span class="k teal">[${i+1}]</span>${o.label}<small>${o.desc}</small></button>`).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
       ${art}
-      <p class="evtext center">${ev.text}</p>${opts}</div>`;
+      <p class="evtext center">${ev.text}</p>${opts}
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
 }
 function chooseEvent(i){ const r=G.room,res=r.ev.options[i].run(G.player);
   if(res===false) return;            // a battle was started
@@ -2931,7 +2933,8 @@ function renderReward(){ const p=G.player,pd=G.pending;
     <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px">Choose one reward:</p>${cards}
       ${(pd.options&&pd.options.length>1&&!G.abyss)?`<button class="btn center" style="border-left-color:var(--amber)" onclick="takeAllRewards()"><span class="k">&#8987;</span>BORROW — TAKE EVERYTHING<small>claim all of it now &middot; +Time Debt (the Collector will come for it)</small></button>`:''}
-      <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button></div>`;
+      <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button>
+      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
 }
 function takeReward(i){ const p=G.player,pd=G.pending;
   if(i>=0){ const o=pd.options[i];
