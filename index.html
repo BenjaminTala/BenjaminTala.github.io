@@ -1826,32 +1826,29 @@ function devourMutate(p, fam, choice){
   if(choice==='evolve'){
     const combo=evolveCombo(d, fam);
     if(combo){
-      // Become the named evolution
       d.name=combo.name; d.desc=combo.desc; d.stage=(d.stage||0)+1;
       d.path.push(fam);
       d.aoe=!!combo.aoe;
       d.strikes=combo.strikes||1;
-      // Effects gain the new family's trait + previous evolution carries old
       if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
       d.dmgMult=(d.dmgMult||1.5)+0.25;
-      d.cost=Math.min(28, (d.cost||10)+2);
+      // Cost scales with power. AOE evolutions cost more.
+      d.cost=Math.min(36, (d.cost||10)+(combo.aoe?6:4));
     } else {
-      // No named combo — fold the new family in anyway
       d.stage=(d.stage||0)+1; d.path.push(fam);
       if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
       d.dmgMult=(d.dmgMult||1.5)+0.20;
-      d.cost=Math.min(28, (d.cost||10)+1);
+      d.cost=Math.min(36, (d.cost||10)+3);
       d.name=`${fdef.label} ${d.name}`;
       d.desc=`Heavy strike + ${fdef.desc.toLowerCase()}.`;
     }
   } else if(choice==='empower'){
-    // Deepen current path — bigger damage, longer effects
     d.stage=(d.stage||0)+1; d.dmgMult=(d.dmgMult||1.5)+0.40;
+    d.cost=Math.min(36, (d.cost||10)+3);
     d.desc=d.desc+` <span class="amber">[empowered +${d.stage}]</span>`;
   } else if(choice==='replace'){
-    // Wipe the path and adopt the new family's pure form
     d.path=[fam]; d.effects=[fdef.trait]; d.stage=1; d.dmgMult=1.7;
-    d.cost=10; d.aoe=false; d.strikes=1;
+    d.cost=12; d.aoe=false; d.strikes=1;
     d.name=`${fdef.label} Strike`;
     d.desc=`Reborn from ${fdef.label}. Heavy single strike + ${fdef.desc.toLowerCase()}.`;
   }
@@ -1863,14 +1860,72 @@ function queueFragmentChoice(p, fam){
 function devourKillFragment(p, e){
   if(!e || !p || !p.memory || !p.memory.devour) return;
   const fam=familyOf(e);
-  if(!DEVOUR_FAMILIES[fam]) return; // unknown family, no fragment
-  // Bosses always grant. Non-boss kills grant if the family is new, OR if the last absorbed
-  // family is the same one (so the same-family combo can fire on the very next kill).
+  if(!DEVOUR_FAMILIES[fam]) return;
+  // Collect into the current cast's kill list — processed after the cast resolves
+  // so multi-kill casts yield ONE chosen fragment (or one PER boss).
+  const b=G.battle; if(!b) return;
+  b._castKills=b._castKills||[];
+  b._castKills.push({fam, boss:!!e.boss, name:e.name});
+}
+// At end of a Devour cast, decide what fragments the player gets.
+//   - All boss kills always queue (bosses bypass Saturated).
+//   - Non-boss kills: if Saturated, none. Otherwise the player gets ONE fragment.
+//     If the cast killed multiple non-boss families, a multi-choice popup appears
+//     and the player picks which essence to take.
+//   - After taking any non-boss fragment, the player becomes SATURATED for 2 turns.
+function processDevourCast(p, b){
+  const kills=(b._castKills||[]).slice(); b._castKills=[];
+  if(!kills.length) return;
   const path=p.memory.path||[];
-  const last=path[path.length-1];
-  const sameFamilyChain = last===fam && hasSameFamilyCombo(fam);
-  if(!e.boss && path.includes(fam) && !sameFamilyChain) return;
-  queueFragmentChoice(p, fam);
+  // Helper: would this family yield a real fragment popup? (new family OR same-family combo exists)
+  const eligible=k=>{
+    const last=path[path.length-1];
+    const sameFamilyChain = last===k.fam && hasSameFamilyCombo(k.fam);
+    return k.boss || !path.includes(k.fam) || sameFamilyChain;
+  };
+  // Boss fragments always go — Saturated never blocks a boss
+  kills.filter(k=>k.boss && eligible(k)).forEach(k=>queueFragmentChoice(p, k.fam));
+  // Non-boss
+  if(p._saturated>0){
+    if(kills.some(k=>!k.boss)) blog(`SATURATED &mdash; you cannot harvest from these kills yet.`,'info');
+  } else {
+    const nonBoss=kills.filter(k=>!k.boss && eligible(k));
+    const fams=[...new Set(nonBoss.map(k=>k.fam))];
+    if(fams.length===1){
+      queueFragmentChoice(p, fams[0]);
+      p._saturated=2;
+    } else if(fams.length>1){
+      // Multi-choice popup
+      G._multiEssenceFams=fams;
+      // The player gets Saturated regardless of which they pick (set on selection)
+    }
+  }
+}
+function queueMultiEssence(){
+  // If the most recent Devour cast offered a multi-essence choice, show it now.
+  if(G._multiEssenceFams && G._multiEssenceFams.length){
+    showMultiEssenceChoice();
+  }
+}
+function showMultiEssenceChoice(){
+  const fams=G._multiEssenceFams||[]; if(!fams.length) return;
+  const d=G.player.memory; const revealed=d && d.revealed;
+  const noun=revealed?'Fragment':'Essence';
+  const title=revealed?`FRAGMENTS AVAILABLE &mdash; Choose one`:`ESSENCES AVAILABLE &mdash; Choose one`;
+  const intro=revealed?'Multiple fragments rise from the dead. Take ONE.':'Multiple essences rise from the dead. Take ONE.';
+  const body=
+    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; ${intro}</p>`+
+    fams.map(fam=>{ const fdef=DEVOUR_FAMILIES[fam];
+      return `<button class="btn" onclick="pickMultiEssence('${fam}')" style="border-left:3px solid #c06cff"><span class="k purple">${fdef.ico}</span>${fdef.label} ${noun}<small>${fdef.desc}</small></button>`;
+    }).join('');
+  showInfo({title, body});
+}
+function pickMultiEssence(fam){
+  G._multiEssenceFams=null;
+  G.player._saturated=2;
+  const modal=document.getElementById('info-modal'); if(modal)modal.classList.add('hidden');
+  queueFragmentChoice(G.player, fam);
+  setTimeout(()=>showFragmentChoice(), 220);
 }
 function showFragmentChoice(){
   if(!G._fragQueue||!G._fragQueue.length) return;
@@ -2890,6 +2945,7 @@ function renderBattle(){
     +(b.evadeTurns>0?`<span class="chip c-pois">EVADE ${b.evadeTurns}</span>`:'')
     +(b.lastStand>0?`<span class="chip c-burn">LAST STAND ${b.lastStand}</span>`:'')
     +(b.glassNext?`<span class="chip c-vuln" title="Next skill will shatter across all enemies">SIGIL READY</span>`:'')
+    +(p._saturated>0?`<span class="chip c-pois" title="SATURATED — recently harvested a fragment. Cannot harvest again until this fades. ${p._saturated} turn(s) left.">SATURATED ${p._saturated}</span>`:'')
     +(b.guardDown>0?`<span class="chip c-vuln">EXPOSED</span>`:'')+stChips(b.pst);
   const cm=G.mods.skillCost;
   const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm));
@@ -3111,6 +3167,8 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       if(d && /World Eater/.test(d.name)) addHeat(12);
       if(d && /Pyre of the Forgotten/.test(d.name)) addHeat(10);
       if(d && /Soul Winter/.test(d.name)) addMiasma(4);
+      // SATURATED RULE — at most one fragment per cast (bosses excepted). Multi-kills offer a choice.
+      processDevourCast(p, b);
       break;
     }
     case 'hollow':{SFX.play('frost'); b.hollowSkip=1; blog('HOLLOW STEP — the world pauses. You step outside the next moment.','crit'); break;}
@@ -3274,6 +3332,8 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   if(b.pst.vulnT>0)b.pst.vulnT--;
   if(b.pdefTurns>0)b.pdefTurns--; if(b.evadeTurns>0)b.evadeTurns--; if(b.guardDown>0)b.guardDown--;
   if(b.lastStand>0){ b.lastStand--; if(b.lastStand===0 && b.lastVuln>0){ addVuln(b.pst,b.lastVuln); b.lastVuln=0; blog('Last Stand fades — you are VULNERABLE.','info'); } }
+  // SATURATED — recovery period after harvesting a fragment.
+  if(p._saturated>0){ p._saturated--; if(p._saturated===0) blog('You are no longer Saturated &mdash; you can harvest again.','info'); }
   p.mana=clamp(p.mana+p.regen,0,p.maxMana);
   flash('playerHit');
   if(p.hp<=0){ b.over=true; SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
@@ -3321,12 +3381,14 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
     if(G._pendingBossDeath){ showBossDeath(G._pendingBossDeath); G._pendingBossDeath=null; }
     if(b.isFinal){ SFX.play('win'); p.won=true; G.screen='triumph'; return render(); }
     G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); playTransition('#5a4410');
-    // Drain fragment / build popups that queued during the fight.
-    // Fragments fire first so the player picks their Devour evolution before the loot screen takes focus.
+    // Drain multi-essence / fragment / build popups that queued during the fight.
+    // Multi-essence first (pick which family from a multi-kill), then per-fragment popups,
+    // then the rest of the build progression queue.
     setTimeout(()=>{
       const m=document.getElementById('info-modal'); const open=m&&!m.classList.contains('hidden');
       if(open)return;
-      if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); }
+      if(G._multiEssenceFams && G._multiEssenceFams.length){ showMultiEssenceChoice(); }
+      else if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); }
       else if(G._buildQueue && G._buildQueue.length){ drainBuildQueue(); }
     }, 350);
   },900); }
