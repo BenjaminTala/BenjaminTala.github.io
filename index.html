@@ -3718,7 +3718,9 @@ function showInfo(key){
   const m=document.getElementById('info-modal');
   // Serialize — if a modal is already open, queue this one instead of overwriting it.
   if(m && !m.classList.contains('hidden')){ G._modalQueue=G._modalQueue||[]; G._modalQueue.push(i); return; }
-  document.getElementById('info-title').textContent=i.title;
+  // Titles are authored with HTML entities (&mdash;, &#10022; etc) — textContent would
+  // render them literally as "&mdash;". Use innerHTML so the entities resolve.
+  document.getElementById('info-title').innerHTML=i.title;
   document.getElementById('info-text').innerHTML=i.body;
   if(m)m.classList.remove('hidden');
   SFX.play('chest');
