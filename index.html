@@ -1266,7 +1266,7 @@ const EVENTS=[
    text:'A copper valve embedded in the wall coughs once, then explodes. A wave of dry heat washes over the chamber.',
    options:[
      {label:'Push through fast',desc:'+10 Heat, get out clean',run:p=>{addHeat(10);return 'You sprint past the wound in the wall. Your skin tightens. The Furnace stirs (+10 Heat).';}},
-     {label:'Try to seal it',desc:'-12 HP, +4 Heat, find scrap',run:p=>{const c=12;p.hp=clamp(p.hp-c,1,p.maxHp);addHeat(4);p.gold+=18;return `You jam your cloak in the breach. It works long enough to gather ${18} loose scrap — but you are scorched (-${c} HP, +4 Heat).`;}},
+     {label:'Try to seal it',desc:'-12 HP, +4 Heat, find scrap',run:p=>{const c=12;selfHurt(p,c,'hazard');addHeat(4);p.gold+=18;return `You jam your cloak in the breach. It works long enough to gather ${18} loose scrap — but you are scorched (-${c} HP, +4 Heat).`;}},
      {label:'Back out',desc:'No reward, no cost',run:p=>'You back away. The valve keeps coughing behind you. Whatever was in there stays there.'},
    ]},
   {id:'forge_run',title:'THE FORGE OPERATES',zone:1,art:"   /-\\   \n  |fffi   \n  |[##]| \n   |  |  ",
@@ -1279,8 +1279,8 @@ const EVENTS=[
   {id:'magma',title:'THE MAGMA CHANNEL',zone:1,art:"  ~~~~   \n ~~~~~   \n  ~~~    \n   ~     ",
    text:'A trench in the floor is full of slow-moving fire. Something glints at the bottom — gold, or a relic, or a face.',
    options:[
-     {label:'Reach in for it',desc:'-22 HP, +12 Heat, big loot',run:p=>{const c=22;p.hp=clamp(p.hp-c,1,p.maxHp);addHeat(12);const g=40+rnd(40);p.gold+=g;return `You plunge your arm in. You take it. Whatever it was, it weighs less than you expected (-${c} HP, +12 Heat, +${g} gold).`;}},
-     {label:'Pry it out with a blade',desc:'-8 HP, +6 Heat, small loot',run:p=>{const c=8;p.hp=clamp(p.hp-c,1,p.maxHp);addHeat(6);const g=18+rnd(20);p.gold+=g;return `You hook the glint out. Your arm still smokes (-${c} HP, +6 Heat, +${g} gold).`;}},
+     {label:'Reach in for it',desc:'-22 HP, +12 Heat, big loot',run:p=>{const c=22;selfHurt(p,c,'hazard');addHeat(12);const g=40+rnd(40);p.gold+=g;return `You plunge your arm in. You take it. Whatever it was, it weighs less than you expected (-${c} HP, +12 Heat, +${g} gold).`;}},
+     {label:'Pry it out with a blade',desc:'-8 HP, +6 Heat, small loot',run:p=>{const c=8;selfHurt(p,c,'hazard');addHeat(6);const g=18+rnd(20);p.gold+=g;return `You hook the glint out. Your arm still smokes (-${c} HP, +6 Heat, +${g} gold).`;}},
      {label:'Leave it',desc:'Nothing happens',run:p=>'You step around the channel. The Furnace keeps its trinkets.'},
    ]},
   {id:'priest',title:'THE DYING PRIEST',zone:0,sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  .--.\n ( || )\n  )/\\(\n  |  |",
@@ -1309,7 +1309,7 @@ const EVENTS=[
    options:[
      {label:'"What are you praying for?"',desc:'Listen',run:p=>'"That you will turn back." The cultist does not raise their head. "The Warden will never let you pass." A pause. "...not again."'},
      {label:'"Not AGAIN? What does that mean?"',desc:'Demand an answer',run:p=>'They go silent. The silence is the answer.'},
-     {label:'Kick them aside',desc:'+8 gold, -6 HP',run:p=>{const c=6;p.hp=clamp(p.hp-c,1,p.maxHp);p.gold+=8;return `You shove past. The cultist topples in. Their purse — ${8} gold — lies abandoned (-${c} HP, scuffle).`;}},
+     {label:'Kick them aside',desc:'+8 gold, -6 HP',run:p=>{const c=6;selfHurt(p,c,'hazard');p.gold+=8;return `You shove past. The cultist topples in. Their purse — ${8} gold — lies abandoned (-${c} HP, scuffle).`;}},
    ]},
   {id:'frozenchild',title:'THE FROZEN CHILD',zone:2,sprite:{src:'assets/players/ranger.png',tint:'tint-blue'},art:"   o\n  /|\\\n   |\n  / \\",
    text:'A child stands ankle-deep in frost, staring at you with patient, unsurprised eyes. They do not seem cold.',
@@ -1353,7 +1353,7 @@ const EVENTS=[
   {id:'knight',title:'THE WOUNDED KNIGHT',sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
    text:'A dying knight slumps against the wall. "Please... mend me, and take my blade."',
    options:[
-     {label:'Heal him (-12 HP)',desc:'He gives you his weapon',run:p=>{p.hp=clamp(p.hp-12,1,p.maxHp);const w=makeItem('weapon',p.cls,G.depth+2);equipItem(p,w);return `You bind his wounds. He presses a ${w.name} (Lv${w.ilvl}) into your hands and fades away.`;}},
+     {label:'Heal him (-12 HP)',desc:'He gives you his weapon',run:p=>{selfHurt(p,12,'hazard');const w=makeItem('weapon',p.cls,G.depth+2);equipItem(p,w);return `You bind his wounds. He presses a ${w.name} (Lv${w.ilvl}) into your hands and fades away.`;}},
      {label:'Rob him',desc:'Take his gold, leave him',run:p=>{const g=25+rnd(30);p.gold+=g;return `You take ${g} gold from his pack. His eyes follow you into the dark.`;}},
      {label:'Leave him be',desc:'Walk away',run:p=>`You leave the knight to his fate.`},
    ]},
@@ -1376,12 +1376,12 @@ const EVENTS=[
    options:[
      {label:'Step through &mdash; end the run now',desc:'Claim victory at current depth. The crypt forgets the rest.',run:p=>{G._falseExit=1;claimVictory();return false;}},
      {label:'Burn the door',desc:'Refuse &middot; +60% loot for the next 3 rooms',run:p=>{G._luckBoom=3;return 'You smash the gilded threshold. The light flares and dies — your luck swells for the next three rooms.';}},
-     {label:'Touch the threshold',desc:'Risk Miasma; relic if it favors you',run:p=>{if(chance(55)){const r=grantRandomRelic(p);return r?`The gold flares — a relic forms in your hand: ${r}.`:'The gold flares — but you already carry every relic it knows.';}const c=12;addMiasma(12);p.hp=clamp(p.hp-c,1,p.maxHp);return `The threshold drinks from you (-${c} HP, the cold thickens).`;}},
+     {label:'Touch the threshold',desc:'Risk Miasma; relic if it favors you',run:p=>{if(chance(55)){const r=grantRandomRelic(p);return r?`The gold flares — a relic forms in your hand: ${r}.`:'The gold flares — but you already carry every relic it knows.';}const c=12;addMiasma(12);selfHurt(p,c,'miasma');return `The threshold drinks from you (-${c} HP, the cold thickens).`;}},
    ]},
   {id:'mirror',title:'THE CURSED MIRROR',sprite:{src:'assets/players/mage.png',tint:'tint-blue'},art:"  +----+\n  | ?? |\n  | () |\n  +----+",
    text:'A tall mirror shows a warped reflection that moves a heartbeat too late.',
    options:[
-     {label:'Gaze into it',desc:'Random boon or bane',run:p=>{const r=rnd(3);if(r===0){p.maxHp+=18;heal(p,18);return 'Your reflection grows stronger — +18 max HP!';}if(r===1){p.atk+=3;p.crit+=5;return 'It bares its teeth — +3 ATK, +5% crit!';}const c=Math.round(p.maxHp*0.12);p.hp=clamp(p.hp-c,1,p.maxHp);return `It lunges! You take ${c} damage from your own image.`;}},
+     {label:'Gaze into it',desc:'Random boon or bane',run:p=>{const r=rnd(3);if(r===0){p.maxHp+=18;heal(p,18);return 'Your reflection grows stronger — +18 max HP!';}if(r===1){p.atk+=3;p.crit+=5;return 'It bares its teeth — +3 ATK, +5% crit!';}const c=Math.round(p.maxHp*0.12);selfHurt(p,c,'hazard');return `It lunges! You take ${c} damage from your own image.`;}},
      {label:'Shatter it',desc:'Gold among the shards',run:p=>{const g=20+rnd(25);p.gold+=g;if(chance(30)){p.dodge+=8;return `Glass rains down — ${g} gold, and shards grant +8% dodge.`;}return `It shatters into ${g} gold worth of glittering shards.`;}},
      {label:'Walk past',desc:'Trust nothing',run:p=>'You avert your eyes and move on.'},
    ]},
@@ -1410,7 +1410,7 @@ const EVENTS=[
    text:'Dust-choked shelves of forbidden tomes loom in the gloom.',
    options:[
      {label:'Study the tomes',desc:'+12 max mana, +4 regen',run:p=>{p.maxMana+=12;p.mana+=12;p.regen+=4;return 'Arcane knowledge seeps in — +12 max mana, +4 regen.';}},
-     {label:'Search for treasure',desc:'Gold, risk a paper cut curse',run:p=>{const g=18+rnd(22);p.gold+=g;if(chance(35)){const c=8+rnd(8);p.hp=clamp(p.hp-c,1,p.maxHp);return `You find ${g} gold, but a warded page bites for ${c} damage.`;}return `Tucked in a tome: ${g} gold.`;}},
+     {label:'Search for treasure',desc:'Gold, risk a paper cut curse',run:p=>{const g=18+rnd(22);p.gold+=g;if(chance(35)){const c=8+rnd(8);selfHurt(p,c,'hazard');return `You find ${g} gold, but a warded page bites for ${c} damage.`;}return `Tucked in a tome: ${g} gold.`;}},
      {label:'Burn it down',desc:'+2 ATK from dark power',run:p=>{p.atk+=2;return 'You torch the cursed library. The flames whisper strength — +2 ATK.';}},
    ]},
   {id:'goblin',title:'THE TREASURE GOBLIN',sprite:{src:'assets/monsters/goblin.png',tint:'tint-gold'},art:"  ,$$,\n (>o o<)\n  )$$$(\n  d   b",
@@ -1444,14 +1444,14 @@ const EVENTS=[
   {id:'trap',title:'THE TRAPPED CORRIDOR',art:"  /|||||\\\n  X X X X\n  \\|||||/",
    text:'Blades and tripwires bristle across a narrow corridor.',
    options:[
-     {label:'Disarm carefully',desc:'Dodge-based; reward if clean',run:p=>{const ok=chance(40+p.dodge);if(ok){const g=20+rnd(20);p.gold+=g;return `Nimble hands! You disarm it and loot ${g} gold from the mechanism.`;}const c=10+rnd(12);p.hp=clamp(p.hp-c,1,p.maxHp);return `A wire snaps — blades graze you for ${c} damage.`;}},
-     {label:'Sprint through',desc:'Take a hit, save time',run:p=>{const c=6+rnd(8);p.hp=clamp(p.hp-c,1,p.maxHp);return `You barrel through, taking ${c} damage but losing nothing.`;}},
+     {label:'Disarm carefully',desc:'Dodge-based; reward if clean',run:p=>{const ok=chance(40+p.dodge);if(ok){const g=20+rnd(20);p.gold+=g;return `Nimble hands! You disarm it and loot ${g} gold from the mechanism.`;}const c=10+rnd(12);selfHurt(p,c,'hazard');return `A wire snaps — blades graze you for ${c} damage.`;}},
+     {label:'Sprint through',desc:'Take a hit, save time',run:p=>{const c=6+rnd(8);selfHurt(p,c,'hazard');return `You barrel through, taking ${c} damage but losing nothing.`;}},
      {label:'Find another way',desc:'Safe, no reward',run:p=>'You backtrack and find a safer route around.'},
    ]},
   {id:'pit',title:'THE PIT OF COINS',art:"  \\_____/\n  |$ $ $|\n  |$ $ $|",
    text:'A deep pit glitters with centuries of fallen coins.',
    options:[
-     {label:'Dive in!',desc:'Lots of gold, some damage',run:p=>{const g=40+rnd(45);p.gold+=g;const c=8+rnd(10);p.hp=clamp(p.hp-c,1,p.maxHp);return `You scoop ${g} gold but bruise yourself badly (${c} damage).`;}},
+     {label:'Dive in!',desc:'Lots of gold, some damage',run:p=>{const g=40+rnd(45);p.gold+=g;const c=8+rnd(10);selfHurt(p,c,'hazard');return `You scoop ${g} gold but bruise yourself badly (${c} damage).`;}},
      {label:'Climb down slowly',desc:'Less gold, no harm',run:p=>{const g=18+rnd(18);p.gold+=g;return `Careful does it — ${g} gold, no scratches.`;}},
      {label:'Leave it',desc:'Greed is a trap',run:p=>'You resist temptation and walk on.'},
    ]},
@@ -1459,14 +1459,14 @@ const EVENTS=[
    text:'A witch stirs a bubbling cauldron. "A brew for a price, dearie?"',
    options:[
      {label:'Buy a brew (35g)',desc:'Random powerful boon',run:p=>{if(p.gold<35)return 'The witch frowns at your thin purse and shoos you off.';p.gold-=35;const r=rnd(4);if(r===0){p.lifesteal+=15;return 'A crimson brew — +15% lifesteal!';}if(r===1){p.crit+=12;return 'A sparkling brew — +12% crit!';}if(r===2){p.dodge+=12;return 'A misty brew — +12% dodge!';}p.regen+=6;p.maxMana+=12;p.mana+=12;return 'A glowing brew — +12 max mana, +6 regen!';}},
-     {label:'Trade your blood (-15 HP)',desc:'Free relic from her shelf',run:p=>{p.hp=clamp(p.hp-15,1,p.maxHp);const r=grantRandomRelic(p);return r?`She draws your blood and hands you: ${r}.`:'She draws your blood but her shelves are bare of new relics.';}},
+     {label:'Trade your blood (-15 HP)',desc:'Free relic from her shelf',run:p=>{selfHurt(p,15,'hazard');const r=grantRandomRelic(p);return r?`She draws your blood and hands you: ${r}.`:'She draws your blood but her shelves are bare of new relics.';}},
      {label:'Decline politely',desc:'Move on',run:p=>'You thank the witch and continue down the hall.'},
    ]},
   {id:'soulwell',title:'THE SOUL WELL',sprite:{src:'assets/monsters/ghost.png',tint:'tint-blue'},art:"  .===.\n  |~~~|\n  |~~~|",
    text:'A well brimming with swirling, half-remembered souls. They whisper of power... and hunger.',
    options:[
      {label:'Draw essence',desc:'Gain Soul Essence',run:p=>{const e=18+rnd(24);p.essence+=e;return `You draw ${e} ${ESS} essence from the well.`;}},
-     {label:'Plunge your arm in',desc:'More essence, but it bites',run:p=>{const e=42+rnd(34);p.essence+=e;const c=Math.round(p.maxHp*0.12);p.hp=clamp(p.hp-c,1,p.maxHp);return `Souls swarm your arm — +${e} ${ESS} essence, but they tear ${c} HP away.`;}},
+     {label:'Plunge your arm in',desc:'More essence, but it bites',run:p=>{const e=42+rnd(34);p.essence+=e;const c=Math.round(p.maxHp*0.12);selfHurt(p,c,'hazard');return `Souls swarm your arm — +${e} ${ESS} essence, but they tear ${c} HP away.`;}},
      {label:'Leave it',desc:'Souls are not toys',run:p=>'You back away from the whispering dark.'},
    ]},
   {id:'oldforge',title:'AN ABANDONED FORGE',art:"  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|",
@@ -1630,6 +1630,10 @@ function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
 function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp;
   const b=G.battle; if(b&&b.lastStand>0) amt=Math.min(amt,Math.max(0,before-1));
   p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp); return p.hp<=0; }
+/* event/self-cost damage that NEVER kills (floor 1 HP). Still attributes real HP lost
+   to the rollup, so causeOfDeath can credit hazards, self-tax, miasma, etc. */
+function selfHurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return 0; const before=p.hp;
+  p.hp=clamp(p.hp-amt,1,p.maxHp); attrib(src||'hazard',before-p.hp); return before-p.hp; }
 /* TIME DEBT — borrow power now, pay survival later. Answers "how much future do I sacrifice?" */
 function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150); if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
@@ -1892,6 +1896,9 @@ function processDevourCast(p, b){
     return k.boss || !path.includes(k.fam) || sameFamilyChain;
   };
   // Boss fragments always go — Saturated never blocks a boss
+  // Record the boss kill so winBattle's grantMemory call doesn't double-queue it.
+  G._devouredBosses=G._devouredBosses||{};
+  kills.filter(k=>k.boss).forEach(k=>{ G._devouredBosses[k.name]=1; });
   kills.filter(k=>k.boss && eligible(k)).forEach(k=>queueFragmentChoice(p, k.fam));
   // Non-boss
   if(p._saturated>0){
@@ -2520,20 +2527,29 @@ function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
   addHeat(2); addMiasma(1); tickDebt();
   if(worldOnEnter()){ return; }   // environmental hazards can be lethal
   if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
-/* environmental pressure applied on entering a chamber; returns true if it killed you */
-function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,msg='';
+/* environmental pressure applied on entering a chamber; returns true if it killed you.
+   Every damaging tick fires a popup — the player must see what hit them. */
+function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,msg='',popups=[];
   if(heatActive() && G.heat>=10){
     const d=heatChamberDamage();
     dead=hurt(p,d,'heat');
     const t=heatTier();
     const verb=t>=5?'SCORCHES':t>=4?'BLAZES through':t>=3?'BAKES':t>=2?'sears':'singes';
     msg=`&#128293; HEAT ${G.heat} &mdash; the Furnace ${verb} you (-${d} HP).`;
+    if(d>0){ SFX.play('hurt'); popups.push({title:'THE FURNACE BURNS YOU',body:`<p class="shout-red" style="font-size:12px;line-height:1.7">The Furnace ${verb} you for <b>${d} HP</b>.</p><p class="muted" style="font-size:10px;line-height:1.7;margin-top:6px">Heat ${G.heat} &mdash; chamber crossings cost <b>${d}</b> HP. Cool down or you die in your boots.</p>`}); }
   }
   if(!dead && miasmaActive()){ const t=miasmaTier();
-    if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg=`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`; }
-    if(t>=4){ const d=4+rnd(5); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; }
-    if(t>=5){ const d=8+rnd(7); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; } }
+    if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg=`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`; SFX.play('hurt'); popups.push({title:'SOUL ROT',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold gnaws on you. You lose <b>${rot}</b> max HP &mdash; permanently, until you cleanse it.</p>`}); }
+    if(t>=4){ const d=4+rnd(5); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; SFX.play('hurt'); popups.push({title:'THE COLD DRINKS FROM YOU',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The miasma reaches in and takes <b>${d} HP</b>.</p>`}); }
+    if(t>=5){ const d=8+rnd(7); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; SFX.play('hurt'); popups.push({title:'YOU COME UNDONE',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold takes <b>${d} HP</b>. You can feel the seams.</p>`}); }
+  }
   if(msg){ G._worldMsg=msg; }
+  // Show the first environmental popup immediately; queue the rest so they drain in order.
+  if(popups.length && !(p.hp<=0||dead)){
+    const first=popups.shift();
+    if(popups.length){ G._modalQueue=G._modalQueue||[]; popups.forEach(pp=>G._modalQueue.push(pp)); }
+    setTimeout(()=>showInfo(first), 60);
+  }
   if(p.hp<=0||dead){ SFX.play('death'); G.screen='gameover'; render(); return true; }
   return false; }
 
@@ -2680,7 +2696,7 @@ function leaveRoom(){ proceed('You move on.'); }
 function restEmpty(){ heal(G.player,6); G.player.mana=clamp(G.player.mana+4,0,G.player.maxMana); proceed(); }
 function shrine(k){ const p=G.player; let m='';
   if(k==='heal'){ if(miasmaActive()&&G.miasma>0){ cleanse(18); m=' The altar burns the corruption from you (-18 miasma).'; } heal(p,Math.round(p.maxHp*0.36)); p.mana=clamp(p.mana+Math.round(p.maxMana*0.36),0,p.maxMana); SFX.play('heal'); }
-  if(k==='power'){ p.atk+=4; p.hp=clamp(p.hp-12,1,p.maxHp); coolHeat(20); SFX.play('upgrade'); }
+  if(k==='power'){ p.atk+=4; selfHurt(p,12,'self'); coolHeat(20); SFX.play('upgrade'); }
   if(k==='ward'){ p.def+=3; p.maxHp+=8; heal(p,8); SFX.play('upgrade'); }
   proceed(m); }
 function takeRelic(i){ const rl=G.room.options[i]; gainRelic(G.player,rl); proceed(`Relic claimed: ${rl.name}!`); }
@@ -3140,7 +3156,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
     // === MEMORY SKILLS ===
-    case 'glass':{SFX.play('skill');const c=Math.max(1,Math.round(p.hp*0.15));p.hp=clamp(p.hp-c,1,p.maxHp);b.glassNext=1;blog(`Glass Sigil etched in your own blood (-${c} HP). Your next skill will SHATTER.`,'crit');break;}
+    case 'glass':{SFX.play('skill');const c=Math.max(1,Math.round(p.hp*0.15));selfHurt(p,c,'self');b.glassNext=1;blog(`Glass Sigil etched in your own blood (-${c} HP). Your next skill will SHATTER.`,'crit');break;}
     case 'ember':{SFX.play('fire'); b.emberTurns=3; blog('Furnace Ember — your weapon catches with eternal flame for 3 turns!','crit'); break;}
     case 'decree':{SFX.play('crit'); blog('ROYAL DECREE — silence falls. Every foe is STUNNED.','crit');
       aoeHit(i=>{const e=b.enemies[i]; if(e&&e.hp>0){ addStun(e.st,1); const d=Math.round((e.atk||5)*1.6); dealToEnemy(i,d,'The decree turns its strength upon it',false); }}); break;}
@@ -3148,7 +3164,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       aoeHit(i=>{let d=Math.round((24+p.weapon.dmg*0.8+p.maxMana*0.10)*hm); let c=rollCrit(); if(c)d*=critMult(); dealToEnemy(i,d,'Hoard-fire engulfs',c); const e=b.enemies[i]; if(e&&e.hp>0)addBurn(e.st,8,3);}); break;}
     case 'recall':{SFX.play('skill'); const km=1+Math.min(0.80,(p.kills||0)*0.012); blog(`ECHO RECALL — phantoms (x${km.toFixed(2)} from kills) strike all foes!`,'crit');
       aoeHit(i=>{let d=Math.round((p.atk+p.weapon.dmg+10)*0.78*km); let c=rollCrit(); if(c)d*=1.6; dealToEnemy(i,d,'A phantom-you strikes',c);}); break;}
-    case 'tithe':{SFX.play('heal'); const c=Math.max(1,Math.round(p.hp*0.25)); p.hp=clamp(p.hp-c,1,p.maxHp); p.mana=p.maxMana; b.titheCrits=2; blog(`SOUL TITHE — paid ${c} HP. Mana brimmed. Next 2 strikes will CRIT.`,'crit'); break;}
+    case 'tithe':{SFX.play('heal'); const c=Math.max(1,Math.round(p.hp*0.25)); selfHurt(p,c,'self'); p.mana=p.maxMana; b.titheCrits=2; blog(`SOUL TITHE — paid ${c} HP. Mana brimmed. Next 2 strikes will CRIT.`,'crit'); break;}
     case 'devour':{
       // The 4th-slot DEVOUR — every champion starts with this. Mutates by killing.
       const d=p.memory; const dmgMult=(d&&d.dmgMult)||1.5; const aoe=d&&d.aoe;
@@ -3185,7 +3201,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
         for(let s=0;s<strikes;s++){ if(living().length===0)break; ensureTarget(); doHit(b.target,s); }
       }
       // Special post-cast effects
-      if(d && /Black Sacrament/.test(d.name)){ const c2=Math.round(p.maxHp*0.12); p.hp=clamp(p.hp-c2,1,p.maxHp); blog(`The sacrament demands -${c2} HP.`,'info'); }
+      if(d && /Black Sacrament/.test(d.name)){ const c2=Math.round(p.maxHp*0.12); selfHurt(p,c2,'self'); blog(`The sacrament demands -${c2} HP.`,'info'); }
       if(d && /Heart of Iron Flame/.test(d.name)){ if(!p._burningArmor)p.def=(p.def||0)+8; p._burningArmor=3; blog('You are clad in burning armor (+8 DEF, sears attackers) for 3 turns.','crit'); }
       if(d && /Plague Swarm/.test(d.name)){ b.evade=8; b.evadeTurns=Math.max(b.evadeTurns||0,2); blog('The swarm shrouds you (+8 dodge, 2T).','info'); }
       if(d && /Mob Rule/.test(d.name)){ p._mobBuffNextHit=1; blog('Mob Rule — your next basic strike deals +50% damage.','crit'); }
@@ -3396,12 +3412,16 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   addHeat(4+elites*2); addMiasma(3+elites);
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); G._pendingBossDeath='warden'; }
-  if(b.enemies.some(e=>e.name===BOSSES.dragon.name)){ blog(BOSS_DEATHCRY.dragon,'crit'); discoverLore('l4'); if(!p.memory||p.memory.id!=='hoard') grantMemory(p,'hoard'); G._pendingBossDeath='dragon'; }
-  if(b.enemies.some(e=>e.name===BOSSES.king.name)){ blog(BOSS_DEATHCRY.king,'crit'); discoverLore('l13'); if(!p.memory||p.memory.id!=='decree') grantMemory(p,'decree'); G._pendingBossDeath='king'; }
-  if(b.enemies.some(e=>e.name===BOSSES.devourer.name)){ blog(BOSS_DEATHCRY.devourer,'crit'); discoverLore('l10'); discoverLore('l15'); if(!p.memory||p.memory.id!=='devour') grantMemory(p,'devour'); G._pendingBossDeath='devourer'; }
-  if(b.enemies.some(e=>e.name===BOSSES.remembered.name)){ blog(BOSS_DEATHCRY.remembered,'crit'); discoverLore('l15'); discoverLore('l16'); G._rememberedSlain=1; if(!p.memory||p.memory.id!=='curse') grantMemory(p,'curse'); G._pendingBossDeath='remembered'; }
+  // Devour can already have captured these bosses (via processDevourCast). Skip the legacy memory
+  // grant in that case so the player only sees ONE fragment popup per boss.
+  const dvb=G._devouredBosses||{};
+  if(b.enemies.some(e=>e.name===BOSSES.dragon.name)){ blog(BOSS_DEATHCRY.dragon,'crit'); discoverLore('l4'); if(!dvb[BOSSES.dragon.name] && (!p.memory||p.memory.id!=='hoard')) grantMemory(p,'hoard'); G._pendingBossDeath='dragon'; }
+  if(b.enemies.some(e=>e.name===BOSSES.king.name)){ blog(BOSS_DEATHCRY.king,'crit'); discoverLore('l13'); if(!dvb[BOSSES.king.name] && (!p.memory||p.memory.id!=='decree')) grantMemory(p,'decree'); G._pendingBossDeath='king'; }
+  if(b.enemies.some(e=>e.name===BOSSES.devourer.name)){ blog(BOSS_DEATHCRY.devourer,'crit'); discoverLore('l10'); discoverLore('l15'); if(!dvb[BOSSES.devourer.name] && (!p.memory||p.memory.id!=='devour')) grantMemory(p,'devour'); G._pendingBossDeath='devourer'; }
+  if(b.enemies.some(e=>e.name===BOSSES.remembered.name)){ blog(BOSS_DEATHCRY.remembered,'crit'); discoverLore('l15'); discoverLore('l16'); G._rememberedSlain=1; if(!dvb[BOSSES.remembered.name] && (!p.memory||p.memory.id!=='curse')) grantMemory(p,'curse'); G._pendingBossDeath='remembered'; }
   if(b.enemies.some(e=>e.name===BOSSES.paledevourer.name)){ blog(BOSS_DEATHCRY.paledevourer,'crit'); discoverLore('l19'); discoverLore('l20'); G._paleSlain=1; G._pendingBossDeath='paledevourer'; }
-  if(b.enemies.some(e=>e.name===BOSSES.warden.name) && (!p.memory||p.memory.id!=='ember')){ grantMemory(p,'ember'); }
+  if(b.enemies.some(e=>e.name===BOSSES.warden.name) && !dvb[BOSSES.warden.name] && (!p.memory||p.memory.id!=='ember')){ grantMemory(p,'ember'); }
+  G._devouredBosses=null;
   // Whoever the chamber-20 boss was — king, dragon, or otherwise — the lie cracks here. The Triumph screen reflects it.
   if(b.isFinal){ discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
   // Defeating the Collector burns away your debt
@@ -3496,7 +3516,7 @@ function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
   discoverLore('l14');
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
   nextCorridor(); G.screen='corridor'; render(); }
-function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',hazard:'Hazards',debt:'Time Debt'};
+function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',hazard:'Hazards',debt:'Time Debt',self:'Self-Inflicted'};
   const entries=Object.keys(d).filter(k=>d[k]>0).map(k=>[k,d[k]]).sort((a,b)=>b[1]-a[1]);
   const tot=entries.reduce((s,e)=>s+e[1],0); if(!tot)return '';
   const rows=entries.map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">${labels[k]||k}</span><span class="red">${Math.round(v/tot*100)}%</span></div>`).join('');
@@ -3693,9 +3713,9 @@ document.addEventListener('click',e=>{
   const p=e.target.closest('[data-info-path]');
   if(p){ showPathInfo(p.getAttribute('data-info-path')); return; }
 });
-/* Escape closes the info modal */
+/* Escape closes the info modal — through closeInfo so the queue drains */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ const m=document.getElementById('info-modal'); if(m&&!m.classList.contains('hidden')){ m.classList.add('hidden'); } }
+  if(e.key==='Escape'){ const m=document.getElementById('info-modal'); if(m&&!m.classList.contains('hidden')){ closeInfo(); } }
 });
 SFX.refreshUI();
 
