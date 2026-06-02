@@ -1607,7 +1607,7 @@ function addMiasma(n){ if(!miasmaActive())return;
   }
   // FLASHBACKS — fragments of an older conversation, one-shot per run.
   G._flashSeen=G._flashSeen||{};
-  for(const fl of FLASHBACKS){ if(G.miasma>=fl.at && !G._flashSeen[fl.at]){ G._flashSeen[fl.at]=1; G._flashbackMsg=fl.line; SFX.play('frost'); if(fl.at>=55)discoverLore('l15'); } }
+  for(const fl of FLASHBACKS){ if(G.miasma>=fl.at && !G._flashSeen[fl.at]){ G._flashSeen[fl.at]=1; G._flashbackMsg=fl.line; SFX.play('frost'); } }
 }
 function coolHeat(n){ G.heat=clamp(G.heat-n,0,HEAT_MAX); }
 function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
@@ -3126,7 +3126,9 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'tithe':{SFX.play('heal'); const c=Math.max(1,Math.round(p.hp*0.25)); p.hp=clamp(p.hp-c,1,p.maxHp); p.mana=p.maxMana; b.titheCrits=2; blog(`SOUL TITHE — paid ${c} HP. Mana brimmed. Next 2 strikes will CRIT.`,'crit'); break;}
     case 'devour':{
       // The 4th-slot DEVOUR — every champion starts with this. Mutates by killing.
-      const d=p.memory; const dmgMult=(d&&d.dmgMult)||1.5; const aoe=d&&d.aoe; const strikes=Math.max(1,(d&&d.strikes)||1);
+      const d=p.memory; const dmgMult=(d&&d.dmgMult)||1.5; const aoe=d&&d.aoe;
+      // 'multi' (Vermin) trait grants an extra strike even on the no-combo bind path.
+      const strikes=Math.max(1,(d&&d.strikes)||1) + ((d&&(d.effects||[]).includes('multi'))?1:0);
       SFX.play('crit');
       const heatScaled=d && ((d.effects||[]).includes('heat') || /World Eater|Hellforge|Cult of Embers|Pyre/.test(d.name||''));
       const heatScale=heatScaled?(1+(G.heat||0)*( /World Eater/.test(d.name||'')?0.040:0.012 )):1;
@@ -3159,7 +3161,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       }
       // Special post-cast effects
       if(d && /Black Sacrament/.test(d.name)){ const c2=Math.round(p.maxHp*0.12); p.hp=clamp(p.hp-c2,1,p.maxHp); blog(`The sacrament demands -${c2} HP.`,'info'); }
-      if(d && /Heart of Iron Flame/.test(d.name)){ p._burningArmor=3; blog('You are clad in burning armor for 3 turns.','crit'); }
+      if(d && /Heart of Iron Flame/.test(d.name)){ if(!p._burningArmor)p.def=(p.def||0)+8; p._burningArmor=3; blog('You are clad in burning armor (+8 DEF, sears attackers) for 3 turns.','crit'); }
       if(d && /Plague Swarm/.test(d.name)){ b.evade=8; b.evadeTurns=Math.max(b.evadeTurns||0,2); blog('The swarm shrouds you (+8 dodge, 2T).','info'); }
       if(d && /Mob Rule/.test(d.name)){ p._mobBuffNextHit=1; blog('Mob Rule — your next basic strike deals +50% damage.','crit'); }
       if(d && /Wolfstone/.test(d.name)){ b.shadowCrit=1; b.pdef=0.30; b.pdefTurns=Math.max(b.pdefTurns||0,1); blog('Wolfstone — your next strike CRITS, +30% defense this turn.','info'); }
@@ -3218,8 +3220,8 @@ function fleeBattle(){ const p=G.player,b=G.battle;
 
 function tickDoT(entity,st,name){ // returns false if entity died
   const isPlayer=(name==='you'); const ward=(!isPlayer&&entity.statusWard)?0.5:1;   // Warded enemies shrug off DoT
-  if(st.burnT>0){ const d=Math.max(1,Math.round(st.burn*ward)); entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('burn',d); blog(`Burn sears ${name} for ${d}.`,'dmg'); st.burnT--; }
-  if(st.poisonT>0){ const d=Math.max(1,Math.round(st.poison*ward)); entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('poison',d); blog(`Poison wracks ${name} for ${d}.`,'dmg'); st.poisonT--; }
+  if(st.burnT>0){ const d=Math.max(1,Math.round(st.burn*ward)); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('burn',bf-entity.hp); blog(`Burn sears ${name} for ${d}.`,'dmg'); st.burnT--; }
+  if(st.poisonT>0){ const d=Math.max(1,Math.round(st.poison*ward)); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('poison',bf-entity.hp); blog(`Poison wracks ${name} for ${d}.`,'dmg'); st.poisonT--; }
   if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
   return entity.hp>0;
 }
@@ -3261,12 +3263,14 @@ function applyEnemyHit(e,p,b,baseDmg,label){
   if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.12)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
   let lethal=p.hp-dmg<=0;
   if(lethal&&b.lastStand>0){ dmg=Math.max(0,p.hp-1); lethal=false; blog('LAST STAND holds &mdash; the blow cannot fell you!','crit'); }
-  if(lethal&&p.flags.secondWind&&!p._phoenixUsed){ p._phoenixUsed=1; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
-  else { p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',dmg); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
+  if(lethal&&p.flags.secondWind&&!p._phoenixUsed){ p._phoenixUsed=1; const lost0=p.hp; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); attrib('enemy',lost0-p.hp>0?lost0-p.hp:0); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
+  else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
   if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
   if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
   if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
   if(p.flags.thorns&&e.hp>0){ const rf=Math.max(1,Math.round(dmg*0.3)); e.hp=clamp(e.hp-rf,0,e.maxHp); blog(`Thorns reflect ${rf} to ${e.name}.`,'heal'); if(p.flags.synFrost)addWeak(e.st,2); if(e.hp<=0)onEnemyDeath(e); }
+  // Heart of Iron Flame — burning armor sears any attacker that strikes you.
+  if(p._burningArmor>0 && e.hp>0){ addBurn(e.st,7,3); blog(`Your burning armor sears ${e.name}!`,'info'); }
 }
 function executeIntent(e,p,b){
   const it=e.intent; if(!it) return;
@@ -3334,6 +3338,8 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   if(b.lastStand>0){ b.lastStand--; if(b.lastStand===0 && b.lastVuln>0){ addVuln(b.pst,b.lastVuln); b.lastVuln=0; blog('Last Stand fades — you are VULNERABLE.','info'); } }
   // SATURATED — recovery period after harvesting a fragment.
   if(p._saturated>0){ p._saturated--; if(p._saturated===0) blog('You are no longer Saturated &mdash; you can harvest again.','info'); }
+  // Heart of Iron Flame — burning armor fades after 3 turns, removing its DEF bonus.
+  if(p._burningArmor>0){ p._burningArmor--; if(p._burningArmor===0){ p.def=Math.max(0,(p.def||0)-8); blog('Your burning armor cools.','info'); } }
   p.mana=clamp(p.mana+p.regen,0,p.maxMana);
   flash('playerHit');
   if(p.hp<=0){ b.over=true; SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
@@ -3550,8 +3556,15 @@ function closeInfo(e){
   const m=document.getElementById('info-modal');
   if(m)m.classList.add('hidden');
   SFX.play('click');
-  // Drain the build-popup queue — if more achievements were stacked while a modal was open, show the next one.
-  setTimeout(()=>{ if(G && G._buildQueue && G._buildQueue.length && (!G.battle||G.battle.over)) drainBuildQueue(); }, 180);
+  // Re-drain in priority order so a backdrop dismissal never orphans a Devour pick or a queued popup.
+  // Multi-essence choice first, then per-fragment choice, then the build-progression queue.
+  setTimeout(()=>{
+    if(!G) return;
+    const md=document.getElementById('info-modal'); if(md && !md.classList.contains('hidden')) return;
+    if(G._multiEssenceFams && G._multiEssenceFams.length){ showMultiEssenceChoice(); }
+    else if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); }
+    else if(G._buildQueue && G._buildQueue.length && (!G.battle||G.battle.over)){ drainBuildQueue(); }
+  }, 180);
 }
 /* BUILD PROGRESSION POPUPS — every meaningful upgrade interrupts the player so they see what
    their character just earned. Queued during battle, drained at battle end so combat is not
