@@ -2562,8 +2562,14 @@ function scaleEnemy(unit,depth){
       if(ht>=3){ e.hp=Math.round(e.hp*1.1); e.maxHp=e.hp; }
     }
   }
-  // FROZEN BELOW / DEEP: enemies are armored, hardier, and shrug off flame
-  if(miasmaActive()){ e.frozen=true; e.def=(e.def||0)+3; e.maxHp=Math.round(e.maxHp*1.15); e.hp=e.maxHp; }
+  // FROZEN BELOW / DEEP: enemies are armored, hardier, and shrug off flame.
+  // Ramp the buff in over the first few chambers of the zone so the ch21 transition isn't a wall
+  // (full strength by ~4 chambers into the Frozen Below / always full in the Abyss).
+  if(miasmaActive()){ e.frozen=true;
+    const into = G.abyss ? 99 : Math.max(0, G.depth - 20);   // 1..n chambers into zone 2
+    const ramp = Math.min(1, into/4);
+    e.def=(e.def||0)+Math.round(3*ramp);
+    const hpMul=1+0.15*ramp; e.maxHp=Math.round(e.maxHp*hpMul); e.hp=e.maxHp; }
   maybeCounter(e,false);
   return e;
 }
@@ -2990,7 +2996,7 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   if(f.glassCannon)m*=1.5; if(f.stoneSkin)m*=0.8;
   if(f.berserker)m*=1+(1-p.hp/p.maxHp)*0.8;
   const et=f.synReaper?0.45:0.30;
-  if(f.executioner&&e.hp<=e.maxHp*et)m*=2;
+  if(f.executioner&&!G._noExecute&&e.hp<=e.maxHp*et)m*=2;   // ult sets _noExecute so it doesn't double-dip its own missing-HP scaling
   if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15;
   m*=slayerMult(e);
   m*=weaponTraitMult(p);
@@ -3031,7 +3037,8 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   if(p.flags.synOver){ p.mana=clamp(p.mana+8,0,p.maxMana); } }
 function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.player; if(!e||e.hp<=0)return 0;
   let m=playerDamageMult(e); if(e.resist)m*=e.resist; if(crit&&e.noCrit)m*=0.6;   // counter-affixes
-  dmg=Math.max(1,Math.round(dmg*m-(e.def||0)));
+  const raw=dmg*m; const defCut=Math.min(e.def||0, raw*0.5);   // DEF can blunt at most half a hit — chip/AOE builds aren't gutted by flat armor
+  dmg=Math.max(1,Math.round(raw-defCut));
   e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx;
   (b.floats=b.floats||[]).push({idx,text:''+dmg+(e.resist?' &#128737;':''),cls:crit?'crit':'dmg'});
   pushFx(idx, crit?'crit':(_fxKind||'hit'));
@@ -3087,7 +3094,8 @@ function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<10
     aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,10,3);}); }
   else if(p.cls==='warrior'){ blog("&#10022; EXECUTIONER'S WRATH! &#10022;",'crit'); const e=b.enemies[b.target];
     let d=(p.atk+p.weapon.dmg)*3.0+(e?(e.maxHp-e.hp)*0.45:0); let c=rollCrit(); if(c)d*=1.6;
-    dealToEnemy(b.target,d,'A world-ending blow lands',c); const h=Math.round(p.maxHp*0.15); heal(p,h); blog(`You roar with fury — +${h} HP.`,'heal'); }
+    G._noExecute=1; dealToEnemy(b.target,d,'A world-ending blow lands',c); G._noExecute=0;
+    const h=Math.round(p.maxHp*0.15); heal(p,h); blog(`You roar with fury — +${h} HP.`,'heal'); }
   else { blog('&#10022; RAIN OF DEATH! &#10022;','crit'); for(let k=0;k<5;k++){ const liv=living(); if(!liv.length)break;
     const idx=b.enemies.indexOf(pick(liv)); let d=(p.atk*0.8+p.weapon.dmg); let c=chance(effCrit(p)+40); if(c)d*=2; dealToEnemy(idx,d,'Death rains down',c); } }
   afterPlayer(); }
@@ -3101,10 +3109,10 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
   _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow',glass:'arcane',ember:'fire',decree:'crit',hoard:'fire',recall:'arcane',tithe:'heal',devour:'crit',hollow:'frost',curse:'arcane'}[id]||'hit';
   const mm=p.maxMana;
   switch(id){
-    case 'bolt':{SFX.play('skill');let d=10+Math.round(mm*0.14)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
-    case 'fire':{SFX.play('fire'); if(p.flags.kBeam){ let d=26+Math.round(mm*0.28)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
-      else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=12+Math.round(mm*0.10)+p.weapon.dmg;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,5,3);}); } break;}
-    case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');aoeHit(i=>{let d=6+Math.round(mm*0.06);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
+    case 'bolt':{SFX.play('skill');let d=16+Math.round(mm*0.32)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
+    case 'fire':{SFX.play('fire'); if(p.flags.kBeam){ let d=32+Math.round(mm*0.42)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
+      else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=14+Math.round(mm*0.16)+p.weapon.dmg+p.level;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,5,3);}); } break;}
+    case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');aoeHit(i=>{let d=8+Math.round(mm*0.10)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
     case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.7+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
     case 'shield':{SFX.play('skill');b.pdef=0.48;b.pdefTurns=2;blog('You raise your guard! (48% block, 2 turns)','info');break;}
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
