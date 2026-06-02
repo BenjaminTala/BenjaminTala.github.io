@@ -929,7 +929,7 @@ const BOSS_DEATHCRY={
   warden:'"...I tried. I will try again."',
   dragon:'"...not yet. Not like this. Not again."',
   king:'"Sit, then. Wear the crown. I am so tired."',
-  devourer:'"...I have been waiting so long. I am never done waiting."',
+  devourer:'"...oh. Was that all of me? ...so little, in the end."',
   remembered:'"...you should have stayed asleep. I will see you next time."',
   paledevourer:'The thing does not fall &mdash; it simply stops. There is no last word. There is no last thought. Whatever it was, it had nothing to do with you. It was here before any of this. It was here before the cold.',
 };
@@ -1300,14 +1300,14 @@ const EVENTS=[
   {id:'burnedkt',title:'THE BURNED KNIGHT',zone:1,sprite:{src:'assets/players/warrior.png',tint:'tint-red'},art:"  ,---,\n  [o_o]\n  )/|\\(\n  /| |\\",
    text:'A knight in fire-blackened plate sits against a column. He raises his head — and goes very still.',
    options:[
-     {label:'"Who are you?"',desc:'Press him',run:p=>{return '<span class="shout-red">"I know you."</span> He chokes on the words. <span class="shout-red">"No &mdash; that is impossible. It cannot be."</span> He refuses to look at you again.';}},
+     {label:'"Who are you?"',desc:'Press him',run:p=>{return '<span class="shout-red">"You wear his face."</span> He says it very quietly. <span class="shout-red">"The last one. That is all."</span> He refuses to look at you again.';}},
      {label:'"I have never been here before."',desc:'Insist &middot; he may teach you',run:p=>{p.atk+=2;let extra='';if(!p.memory && chance(55)){grantMemory(p,'ember');extra=' He sketches a flame-sigil in the ash; you feel it lodge in your hands.';}return '"...of course you have not." His voice is gentle. He hands you the hilt of a snapped sword. (+2 ATK)'+extra;}},
      {label:'Leave him to his armor',desc:'Walk past',run:p=>'You step past. Behind you, you hear him laugh once, quietly, in disbelief.'},
    ]},
   {id:'cultist',title:'THE DRAGON CULTIST',zone:1,sprite:{src:'assets/monsters/demon.png',tint:'tint-amber'},art:"  ,___,\n  ( ^ )\n  /\\=/\\\n  d   b",
    text:'A figure in scaled robes kneels at the lip of the Furnace, palms up. They do not turn to look at you.',
    options:[
-     {label:'"What are you praying for?"',desc:'Listen',run:p=>'"That you will turn back." The cultist does not raise their head. "The Warden will never let you pass." A pause. "...not again."'},
+     {label:'"What are you praying for?"',desc:'Listen',run:p=>'"That you will turn back." The cultist does not raise their head. "The Warden lets you pass eventually &mdash; that is the cruelty." A pause. "The first door is not the last door."'},
      {label:'"Not AGAIN? What does that mean?"',desc:'Demand an answer',run:p=>'They go silent. The silence is the answer.'},
      {label:'Kick them aside',desc:'+8 gold, -6 HP',run:p=>{const c=6;selfHurt(p,c,'hazard');p.gold+=8;return `You shove past. The cultist topples in. Their purse — ${8} gold — lies abandoned (-${c} HP, scuffle).`;}},
    ]},
@@ -1321,7 +1321,11 @@ const EVENTS=[
   {id:'scholar',title:'THE FROZEN SCHOLAR',zone:2,sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  [_=_]\n  ( o )\n  )===( \n  /| |\\",
    text:'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.',
    options:[
-     {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3);return '"A record of every champion who came this far." She turns the ledger. Your name is there. Yours. In your handwriting. (+8 max mana, the cold thickens)';}},
+     {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3);
+       // Handwriting beat is a heavy hand. Only land it once the player has heard a couple of flashbacks
+       // (Miasma >= 18 means the second flashback has fired). Before that, soften to a generic ledger line.
+       const punch = (G.miasma>=18) ? 'Your name is there. Yours. <b>In your handwriting.</b>' : 'There are a great many names.';
+       return `"A record of every champion who came this far." She turns the ledger. ${punch} (+8 max mana, the cold thickens)`;}},
      {label:'"Have you remembered yet?"',desc:'She asked you',run:p=>'<span class="shout-purple">"...then there is still time."</span> She does not look sad. She looks tired. She closes the ledger and is gone.'},
      {label:'Leave her',desc:'No questions',run:p=>'You walk on. The desk and the scholar are not behind you when you glance back.'},
    ]},
@@ -1494,7 +1498,7 @@ const LORE=[
   {id:'l2',t:'The Warm Crypt',x:'The upper halls were a prison, then a tomb, then forgotten. The warmth was never comfort. It was containment. Something down here has been kept warm on purpose.'},
   {id:'l3',t:'The Furnace',x:'Below the tombs, the heat is deliberate. Someone lit a fire and fed it for an age. Fire is a lock. Heat is a warning. The hotter it burns, the closer you are to the thing it cages.'},
   {id:'l4',t:'The Warden',x:'The dragon is older than the crypt around it. It does not move from its door. It does not call itself a guardian — it calls itself something gentler, which is somehow worse. Champions never quite know what to make of that, and they do not get the chance to ask twice.'},
-  {id:'l5',t:'What the Cold Is',x:'When the Warden falls the fire dies, and a cold older than fire seeps up from below. The furnace was holding the cold OUT. You have just let it in.'},
+  {id:'l5',t:'What the Cold Is',x:'When the Warden falls the fire dies. Something below stops being warm. The furnace was not a furnace &mdash; it was a fever, and you have just broken it.'},
   {id:'l6',t:'Miasma',x:'The cold is not weather. It is appetite. It does not freeze the body — it erodes the memory of being alive. Down here, wounds forget how to close.'},
   {id:'l7',t:'The Echoes',x:'The dead you meet were champions like you. The crypt did not eat their bodies — it kept their last moment, looping, lying. Speak gently. They misremember everything now.'},
   {id:'l8',t:'Time Debt',x:'Power taken early is existence borrowed late. The Collector keeps perfect accounts. It does not want your gold. It wants the years you will never get to live.'},
@@ -2381,7 +2385,12 @@ function echoChoice(kind){ const p=G.player,ec=G.room.echo;
     // KNOWING — in Zone 2+ (or Abyss), the echo occasionally lets slip something it should not know.
     const zoneNow=G.abyss?3:zoneOf(G.depth);
     const knowing=zoneNow>=2 && chance(28);
-    if(knowing){ line=pick(ECHO_KNOWING); discoverLore('l12'); if(!p.memory && chance(38)){ grantMemory(p,'recall'); line+=' &mdash; <i class="purple">a forgotten technique surfaces in your mind.</i>'; } }
+    if(knowing){ line=pick(ECHO_KNOWING);
+      // l12 ("Why You Persist") is a strong meta-reveal. Gate it behind G.collapsed (post-Warden)
+      // so the knowing-echo beats still land in zone 2, but the codex page only opens once the
+      // player has crossed the Warden threshold and the cold has actually fallen.
+      if(G.collapsed) discoverLore('l12');
+      if(!p.memory && chance(38)){ grantMemory(p,'recall'); line+=' &mdash; <i class="purple">a forgotten technique surfaces in your mind.</i>'; } }
     if(corrupt&&chance(50)){ const c=8+rnd(8); hurt(p,c,'hazard'); SFX.play('hurt'); if(p.hp<=0){G.screen='gameover';return render();}
       line=`"...${line}" — its jaw unhinges; the words turn to a scream that claws ${c} from you.`;
       showInfo({title:'THE ECHO SCREAMS',body:`<p class="shout-red" style="font-size:11px;line-height:1.8">Its peace was a lie. <b>You take ${c} damage</b> from the scream.</p>`}); }
@@ -3480,8 +3489,10 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   if(b.enemies.some(e=>e.name===BOSSES.paledevourer.name)){ blog(BOSS_DEATHCRY.paledevourer,'crit'); discoverLore('l19'); discoverLore('l20'); G._paleSlain=1; G._pendingBossDeath='paledevourer'; }
   if(b.enemies.some(e=>e.name===BOSSES.warden.name) && !dvb[BOSSES.warden.name] && (!p.memory||p.memory.id!=='ember')){ grantMemory(p,'ember'); }
   G._devouredBosses=null;
-  // Whoever the chamber-20 boss was — king, dragon, or otherwise — the lie cracks here. The Triumph screen reflects it.
-  if(b.isFinal){ discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
+  // Whoever the final-chamber boss was — king, dragon, or otherwise — the lie cracks. But we delay the
+  // discoverLore('l15') by one chamber so the boss's own intimate death-cry doesn't get crushed
+  // under the bigger meta-reveal. Flagged here, fired in proceed().
+  if(b.isFinal){ G._pendingTruth=1; }
   // Defeating the Collector burns away your debt
   if(b.enemies.some(e=>e._collector)){ G.debt=0; G.collectorEta=0; blog('The Collector shatters — your debt dies with it.','lvl'); discoverLore('l8'); }
   SFX.play(b.hadBoss?'win':'gold');
@@ -3545,6 +3556,9 @@ function takeReward(i){ const p=G.player,pd=G.pending;
    FLOW / END
    ============================================================ */
 function proceed(msg){
+  // Truth-of-the-throne reveal fires here instead of inside winBattle so the final boss's
+  // own death-cry has a moment of air before the meta-reveal lands on top of it.
+  if(G._pendingTruth){ G._pendingTruth=0; discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
   // Triumph requires the throne to actually fall — winBattle sets player.won on isFinal.
   // Otherwise the chamber-20 boss reappears and you must face it.
   if(!G.abyss && G.depth>=RUN_LENGTH && G.player.won){ SFX.play('win'); G.screen='triumph'; return render(); }
