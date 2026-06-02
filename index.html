@@ -1134,7 +1134,7 @@ const PASSIVES={
 const SETS={
   Shadowdancer:{name:'Shadowdancer',pieces:2,desc:'2pc: +15% dodge; a dodge guarantees your next hit CRITS',stats:{dodge:15},flags:['shadowDodge']},
   Archmage:{name:'Archmage',pieces:2,desc:'2pc: gain a Mana Shield (any class); when it fully blocks a hit, STUN the attacker',stats:{maxMana:25},flags:['gearManaShield','aegisStun']},
-  Bloodforged:{name:'Bloodforged',pieces:2,desc:'2pc: +14% lifesteal, +3 ATK; kills heal you',stats:{lifesteal:14,atk:3},flags:['bloodKill']},
+  Bloodforged:{name:'Bloodforged',pieces:2,desc:'2pc: +14% lifesteal, +1 ATK; kills heal you',stats:{lifesteal:14,atk:1},flags:['bloodKill']},
 };
 const SET_ITEMS=[
   {slot:'boots',set:'Shadowdancer',name:'Shadowweave Treads',stats:{def:2,dodge:7},aff:{g:1}},
@@ -1206,9 +1206,9 @@ const SYNERGIES=[
    OMENS  (run modifiers — pick 1 of 3 each run)
    ============================================================ */
 const OMENS=[
-  {id:'none',name:'Calm Descent',note:'No modifier. A balanced run.',apply:()=>{}},
+  {id:'none',name:'Calm Descent',note:'+10% player damage. A steady, even run.',apply:g=>{g.pDmg=(g.pDmg||1)*1.10;}},
   {id:'blood',name:'Bloodmoon',note:'Enemies deal +15% damage, but drop +60% gold.',apply:g=>{g.eDmg*=1.15;g.goldMul*=1.6;}},
-  {id:'arcane',name:'Arcane Surge',note:'All skills cost 35% less mana.',apply:g=>{g.skillCost=0.65;}},
+  {id:'arcane',name:'Arcane Surge',note:'All skills cost 20% less mana.',apply:g=>{g.skillCost=0.80;}},
   {id:'brittle',name:'Brittle Bones',note:'Enemies have -22% HP, but you have -12% max HP.',apply:(g,p)=>{g.eHp*=0.78;const c=Math.round(p.maxHp*0.12);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
   {id:'greedy',name:'Greedy Halls',note:'Far more chests & merchants; gold is plentiful.',apply:g=>{g.greedy=1;g.goldMul*=1.3;}},
   {id:'veteran',name:"Veteran's Path",note:'Start at level 4, but enemies +12% HP.',apply:(g,p)=>{g.eHp*=1.12;for(let i=0;i<3;i++)levelUp(p,true);}},
@@ -1834,32 +1834,35 @@ function devourMutate(p, fam, choice){
   if(choice==='evolve'){
     const combo=evolveCombo(d, fam);
     if(combo){
+      // EVOLVE on a real combo is now the biggest numerical bump AND unlocks the named clause.
+      // Previously EMPOWER strictly dominated EVOLVE; rebalanced so the combo is the headline reward.
       d.name=combo.name; d.desc=combo.desc; d.stage=(d.stage||0)+1;
       d.path.push(fam);
       d.aoe=!!combo.aoe;
       d.strikes=combo.strikes||1;
       if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
-      d.dmgMult=(d.dmgMult||1.5)+0.25+slayBonus;
-      // Cost scales with power. AOE evolutions cost more.
-      d.cost=Math.min(36, (d.cost||10)+(combo.aoe?6:4));
+      d.dmgMult=(d.dmgMult||1.5)+0.35+slayBonus;
     } else {
       d.stage=(d.stage||0)+1; d.path.push(fam);
       if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
       d.dmgMult=(d.dmgMult||1.5)+0.20+slayBonus;
-      d.cost=Math.min(36, (d.cost||10)+3);
       d.name=`${fdef.label} ${d.name}`;
       d.desc=`Heavy strike + ${fdef.desc.toLowerCase()}.`;
     }
   } else if(choice==='empower'){
-    d.stage=(d.stage||0)+1; d.dmgMult=(d.dmgMult||1.5)+0.40+slayBonus;
-    d.cost=Math.min(36, (d.cost||10)+3);
+    // EMPOWER trimmed 0.40 -> 0.25 — no longer the strictly-correct pick over EVOLVE.
+    d.stage=(d.stage||0)+1; d.dmgMult=(d.dmgMult||1.5)+0.25+slayBonus;
     d.desc=d.desc+` <span class="amber">[empowered +${d.stage}]</span>`;
   } else if(choice==='replace'){
-    d.path=[fam]; d.effects=[fdef.trait]; d.stage=1; d.dmgMult=1.7+slayBonus;
-    d.cost=12; d.aoe=false; d.strikes=1;
+    // REPLACE is now a real "snowball harder" choice: 2.0 base + slayer momentum carries forward.
+    d.path=[fam]; d.effects=[fdef.trait]; d.stage=1; d.dmgMult=2.0+slayBonus*1.5;
+    d.aoe=false; d.strikes=1;
     d.name=`${fdef.label} Strike`;
     d.desc=`Reborn from ${fdef.label}. Heavy single strike + ${fdef.desc.toLowerCase()}.`;
   }
+  // Cost now scales cleanly with stage so spamming a high-stage Devour is mana-expensive.
+  // No upper cap — at stage 8+ this exceeds 40 mana and becomes a genuine investment.
+  d.cost = 10 + (d.stage||0)*4 + (d.aoe?4:0);
   // DEVOUR -> AFFINITY merge: consuming a fragment deepens the family's path. The centerpiece
   // skill now builds your Wrath / Guile / Veil identity instead of sitting outside it.
   const path=DEVOUR_FAM_PATH[fam];
@@ -1908,7 +1911,7 @@ function processDevourCast(p, b){
     const fams=[...new Set(nonBoss.map(k=>k.fam))];
     if(fams.length===1){
       queueFragmentChoice(p, fams[0]);
-      p._saturated=2;
+      p._saturated=3;
     } else if(fams.length>1){
       // Multi-choice popup
       G._multiEssenceFams=fams;
@@ -1937,7 +1940,7 @@ function showMultiEssenceChoice(){
 }
 function pickMultiEssence(fam){
   G._multiEssenceFams=null;
-  G.player._saturated=2;
+  G.player._saturated=3;
   const modal=document.getElementById('info-modal'); if(modal)modal.classList.add('hidden');
   queueFragmentChoice(G.player, fam);
   setTimeout(()=>showFragmentChoice(), 220);
@@ -3026,9 +3029,12 @@ function addVuln(st,t){ t+=statusBonusTurns(st); st.vuln=0.25; st.vulnT=Math.max
 function addStun(st,t){ st.stunT=Math.max(st.stunT,t); }
 /* ----- damage ----- */
 function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
-  if(f.glassCannon)m*=1.5; if(f.stoneSkin)m*=0.8;
+  // Glass Cannon was 1.5x — too strong stacked with Executioner. Trim to 1.35.
+  if(f.glassCannon)m*=1.35; if(f.stoneSkin)m*=0.8;
   if(f.berserker)m*=1+(1-p.hp/p.maxHp)*0.8;
-  const et=f.synReaper?0.45:0.30;
+  // Executioner threshold tightened: 0.20 base / 0.30 with Glass Reaper synergy.
+  // The old 0.30/0.45 stacked with Wrath capstones to a sustained 5-7x.
+  const et=f.synReaper?0.30:0.20;
   if(f.executioner&&!G._noExecute&&e.hp<=e.maxHp*et)m*=2;   // ult sets _noExecute so it doesn't double-dip its own missing-HP scaling
   if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15;
   m*=slayerMult(e);
@@ -3142,14 +3148,20 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
   _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow',glass:'arcane',ember:'fire',decree:'crit',hoard:'fire',recall:'arcane',tithe:'heal',devour:'crit',hollow:'frost',curse:'arcane'}[id]||'hit';
   const mm=p.maxMana;
   switch(id){
-    case 'bolt':{SFX.play('skill');let d=16+Math.round(mm*0.32)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
-    case 'fire':{SFX.play('fire'); if(p.flags.kBeam){ let d=32+Math.round(mm*0.42)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
-      else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=14+Math.round(mm*0.16)+p.weapon.dmg+p.level;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,5,3);}); } break;}
-    case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');aoeHit(i=>{let d=8+Math.round(mm*0.10)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
+    // Spell scaling: cap maxMana contribution at 160 so Arcane Battery + mana rolls
+    // can't snowball Bolt/Supernova into an infinite damage button.
+    case 'bolt':{SFX.play('skill');const cm=Math.min(160,mm);let d=16+Math.round(cm*0.28)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
+    case 'fire':{SFX.play('fire'); const cm=Math.min(160,mm); if(p.flags.kBeam){ let d=32+Math.round(cm*0.36)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
+      else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=14+Math.round(cm*0.14)+p.weapon.dmg+p.level;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,5,3);}); } break;}
+    // Frost Nova was a strictly worse Fireball. Match Fireball's mana scaling but with a lower base —
+    // the role becomes "slightly less damage for a strong AOE Weaken", not "cheaper but useless".
+    case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');const cm=Math.min(160,mm);aoeHit(i=>{let d=6+Math.round(cm*0.16)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
     case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.7+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
     case 'shield':{SFX.play('skill');b.pdef=0.48;b.pdefTurns=2;blog('You raise your guard! (48% block, 2 turns)','info');break;}
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
-      aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.6:1.35)+rnd(5);let c=rollCrit();if(c)d*=1.4;dealToEnemy(i,d,'Whirlwind rends',c);});
+      // Base Whirlwind bumped 1.35 -> 1.50 (was the worst skill without the keystone).
+      // Keystone reduced 1.60 -> 1.45 so kWhirl is "strict AOE + safety", not "AOE + more damage".
+      aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.45:1.50)+rnd(5);let c=rollCrit();if(c)d*=1.4;dealToEnemy(i,d,'Whirlwind rends',c);});
       if(k){ const h=Math.round(p.maxHp*0.05); heal(p,h); blog(`The cyclone restores ${h} HP.`,'heal'); } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
     case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.35;let c=chance(effCrit(p)+22);if(c)d*=2.0;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
       else { let d=(p.atk+p.weapon.dmg)*1.58;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,5,3); } break;}
@@ -3174,8 +3186,11 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       const heatScaled=d && ((d.effects||[]).includes('heat') || /World Eater|Hellforge|Cult of Embers|Pyre/.test(d.name||''));
       const heatScale=heatScaled?(1+(G.heat||0)*( /World Eater/.test(d.name||'')?0.040:0.012 )):1;
       const killScale=d && d.name && /Pyre|Curse|Night Hunter/.test(d.name)?1+Math.min(0.60,(p.kills||0)*0.008):1;
+      // Devour while Saturated still works on bosses (they bypass Saturated), but the damage is
+      // throttled to *0.6 so the player can't trivially spam Devour on a boss after a kill.
+      const satDebuff = (p._saturated>0) ? 0.6 : 1;
       const doHit=(idx,strikeIdx)=>{
-        let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale; if(strikeIdx>0) dmg*=0.70;
+        let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale*satDebuff; if(strikeIdx>0) dmg*=0.70;
         let c=rollCrit();
         // Same-family combo locks: Wolf Pack and Hellbeast always crit; Night Hunter execute
         if(d && /Hellbeast|Wolf Pack/.test(d.name)) c=true;
@@ -3293,7 +3308,10 @@ function applyEnemyHit(e,p,b,baseDmg,label){
   const mt2=miasmaActive()?miasmaTier():0;
   if(mt2>=2){ const before=dmg; dmg=Math.round(dmg*(1+Math.min(0.25,mt2*0.045)));
     if(chance(22) && dmg>before) blog(`&#9763; MIASMA &mdash; the cold lets it land harder (+${dmg-before}).`,'dmg'); }
-  const dodgeChance=Math.max(0,Math.min(60,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
+  // Dodge capped at 50% (was 60%). Ranger could permanently sit at the cap with Evade up,
+  // making physical attacks no-ops; meanwhile caster statuses ignore dodge entirely, so the
+  // higher cap mostly trivialized melee zones without helping vs caster packs.
+  const dodgeChance=Math.max(0,Math.min(50,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
   if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; return; }
   let red=(b.pdefTurns>0?b.pdef:0);
   dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.6)));
@@ -3408,8 +3426,10 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   b.enemies.forEach(e=>{ if(e.goldBonus)gold+=e.goldBonus; });
   gold=Math.round(gold*G.mods.goldMul); p.gold+=gold;
   // fighting stokes the Furnace / deepens the cold's hold
+  // Heat from battles was too steep (4+elites*2) — players hit HEAT 30+ involuntarily by mid-zone.
+  // Trimmed so a careful player can stay below the cliff without skipping fights.
   const elites=b.enemies.filter(e=>e.elite).length;
-  addHeat(4+elites*2); addMiasma(3+elites);
+  addHeat(2+elites); addMiasma(3+elites);
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); G._pendingBossDeath='warden'; }
   // Devour can already have captured these bosses (via processDevourCast). Skip the legacy memory
@@ -3581,7 +3601,7 @@ const INFO_TEXT={
     `Special <b>armor + trinket pairs</b> that grant a build-defining 2-piece bonus when both are equipped together. Set pieces drop at Rare or higher rarity, and replace the normal item passive on that slot.<br><br>
      &bull; <span class="teal">Shadowdancer</span> &mdash; cloak + band &rarr; +15% dodge; a dodge guarantees your next hit crits.<br>
      &bull; <span class="purple">Archmage</span> &mdash; robes + orb &rarr; mana shield for any class; full block stuns the attacker.<br>
-     &bull; <span class="red">Bloodforged</span> &mdash; plate + pendant &rarr; +14% lifesteal, +3 ATK; kills heal you.<br><br>
+     &bull; <span class="red">Bloodforged</span> &mdash; plate + pendant &rarr; +14% lifesteal, +1 ATK; kills heal you.<br><br>
      Look for set pieces from chests, relic rooms, and the merchant.`},
   relics:{title:'RELICS',body:
     `<b>Permanent run-defining artifacts</b> that change how you play. Most modify damage formulas, grant new effects on hit, or give powerful conditional bonuses.<br><br>
