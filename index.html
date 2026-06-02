@@ -951,17 +951,17 @@ const CLASSES={
     ]},
   warrior:{name:'WARRIOR',color:'red',affinity:'FURY',
     affinityText:'Brutal attacks. Build TANK (defense + Shield Wall) or LIFESTEAL (vampiric gear).',
-    hp:124,mana:30,atk:12,def:4,dodge:0,crit:8,lifesteal:0,regen:4,
+    hp:130,mana:30,atk:13,def:5,dodge:0,crit:8,lifesteal:0,regen:5,
     weapon:{name:'Rusty Sword',dmg:8,type:'melee'},
     sprite:"  _____\n [_+_]\n  (oo)\n /|##|\\\n  d  b",
     skills:[
-      {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.9).'},
+      {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.85).'},
       {id:'shield',name:'Shield Wall',cost:6,desc:'Take 48% less for 2 turns.'},
       {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'Hit ALL hard, drop guard.'},
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
-    hp:124,mana:30,atk:11,def:4,dodge:27,crit:21,lifesteal:0,regen:5,
+    hp:124,mana:36,atk:13,def:4,dodge:30,crit:23,lifesteal:0,regen:6,
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
@@ -1825,7 +1825,7 @@ const DEVOUR_EVOLUTIONS={
   // === SAME-FAMILY DOUBLINGS — feeding the skill more of the same kind hardens its identity ===
   'Ooze|Ooze':           {name:'Acid Tide',       desc:'AOE poison cloud. Every foe takes damage and stacks POISON twice.', aoe:true},
   'Demon|Demon':         {name:'Hellforge',       desc:'Massive BURN nuke. +8 Heat to YOU. The fire is yours now.'},
-  'Beast|Beast':         {name:'Wolf Pack',       desc:'Three savage strikes across the field. Each one POISONS.', aoe:true, strikes:3},
+  'Beast|Beast':         {name:'Wolf Pack',       desc:'Two savage strikes across the field. Each one POISONS.', aoe:true, strikes:2},
   'Vermin|Vermin':       {name:'Plague Swarm',    desc:'AOE; hits every foe twice. Spreads POISON. You become harder to hit (+8% dodge 2T).', aoe:true, strikes:2},
   'Construct|Construct': {name:'Living Bulwark',  desc:'Heavy hit + STUN target + you gain a BARRIER equal to 30% of damage dealt.'},
   'Undead|Undead':       {name:'Grave Voice',     desc:'AOE wail — WEAKEN + VULN every foe. Heals you for 18% of damage dealt.', aoe:true},
@@ -3231,20 +3231,24 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     // can't snowball Bolt/Supernova into an infinite damage button. (Was 160 — too tight,
     // mage felt weaker than warrior/ranger across mid-game.)
     case 'bolt':{SFX.play('skill');const cm=Math.min(180,mm);let d=16+Math.round(cm*0.30)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
-    case 'fire':{SFX.play('fire'); const cm=Math.min(180,mm); if(p.flags.kBeam){ let d=32+Math.round(cm*0.36)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
+    case 'fire':{SFX.play('fire'); const cm=Math.min(180,mm); if(p.flags.kBeam){ let d=26+Math.round(cm*0.30)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
       else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=14+Math.round(cm*0.14)+p.weapon.dmg+p.level;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,5,3);}); } break;}
     // Frost Nova was a strictly worse Fireball. Match Fireball's mana scaling but with a lower base —
     // the role becomes "slightly less damage for a strong AOE Weaken", not "cheaper but useless".
     case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');const cm=Math.min(180,mm);aoeHit(i=>{let d=6+Math.round(cm*0.16)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
-    case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.7+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
+    case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.85+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
     case 'shield':{SFX.play('skill');b.pdef=0.48;b.pdefTurns=2;blog('You raise your guard! (48% block, 2 turns)','info');break;}
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
-      // Whirlwind base 1.40 (was 1.50 — slightly too strong relative to mage/ranger); keystone 1.45.
-      // Still better than the original 1.35 baseline, but warrior shouldn't dominate.
-      aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.45:1.40)+rnd(5);let c=rollCrit();if(c)d*=1.4;dealToEnemy(i,d,'Whirlwind rends',c);});
-      if(k){ const h=Math.round(p.maxHp*0.05); heal(p,h); blog(`The cyclone restores ${h} HP.`,'heal'); } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
-    case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.35;let c=chance(effCrit(p)+22);if(c)d*=2.0;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
-      else { let d=(p.atk+p.weapon.dmg)*1.58;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,5,3); } break;}
+      // Whirlwind base 1.45 / keystone 1.55. Eternal Cyclone now also stacks +1 ATK per cast this fight
+      // (capped at +5) so it becomes a real ramp instead of just "AOE + a small heal".
+      aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.55:1.45)+rnd(5);let c=rollCrit();if(c)d*=1.4;dealToEnemy(i,d,'Whirlwind rends',c);});
+      if(k){
+        const h=Math.round(p.maxHp*0.07); heal(p,h);
+        b._cycloneStack=(b._cycloneStack||0); if(b._cycloneStack<5){ b._cycloneStack++; p.atk+=1; b._cycloneAtk=(b._cycloneAtk||0)+1; blog(`The cyclone restores ${h} HP and your fury hardens (+1 ATK, stack ${b._cycloneStack}/5).`,'heal'); }
+        else blog(`The cyclone restores ${h} HP.`,'heal');
+      } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
+    case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.50;let c=chance(effCrit(p)+22);if(c)d*=2.0;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,5,3);}); }
+      else { let d=(p.atk+p.weapon.dmg)*1.70;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,6,3); } break;}
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+Math.round(p.level*0.5)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
     // === MEMORY SKILLS ===
@@ -3359,7 +3363,7 @@ function fleeBattle(){ const p=G.player,b=G.battle;
     addMiasma(2);
     // Fleeing abandons any unresolved Devour queue from this fight so the modal
     // doesn't surface mid-corridor next room.
-    G._multiEssenceFams=null; G._fragQueue=[]; if(b)b._castKills=[];
+    G._multiEssenceFams=null; G._fragQueue=[]; if(b){b._castKills=[]; if(b._cycloneAtk){p.atk-=b._cycloneAtk; b._cycloneAtk=0;}}
     blog(`You break away — claws and cold take ${tax} HP from your back.`,'info');
     showInfo({title:'FLED &mdash; WOUNDED',body:`<p class="shout-red" style="font-size:11px">You turned your back to the dark. Claws and cold took <b>${tax} HP</b> from you on the way out, and the cold has thickened around you (+2 Miasma).</p>`});
     b.over=true; render(); setTimeout(()=>proceed('You escaped — wounded.'),700);
@@ -3513,6 +3517,8 @@ function flash(kind){ const scene=$('scene');
 function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   // carry ultimate charge to the next fight
   p._charge=clamp(b.charge||0,0,100);
+  // Eternal Cyclone stacks per-fight ATK that must be unwound at battle end.
+  if(b._cycloneAtk){ p.atk-=b._cycloneAtk; b._cycloneAtk=0; }
   // ECHO LOOT — if you killed an Echo, the gear it carried (and its relic) drops to you.
   // Weapons from a different class are reskinned to your own, same rarity/ilvl.
   const echoEnemyKilled=b.enemies.find(e=>e._echo);
