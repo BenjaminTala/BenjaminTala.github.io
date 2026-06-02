@@ -965,7 +965,7 @@ const CLASSES={
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
-      {id:'aim',name:'Aimed Shot',cost:8,desc:'Single shot, very high crit + BLEED.'},
+      {id:'aim',name:'Aimed Shot',cost:8,desc:'Single shot, very high crit + POISON.'},
       {id:'evade',name:'Evade',cost:6,desc:'+45% dodge for 2 turns.'},
       {id:'volley',name:'Volley',cost:12,aoe:true,desc:'3 arrows across the foes.'},
     ]},
@@ -1759,7 +1759,7 @@ function rollRarity(depth){ let w=[Math.max(3,42-depth*2.2),30,13+depth*0.7,4+de
   let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<5;i++){ if(r<w[i])return i; r-=w[i]; } return 0; }
 function rollIlvl(depth){ return clamp(depth+rnd(3)-1,1,30); }
 const WEAPON_TRAITS={
-  bleed:  {name:'Bleeding',  short:'BLEED',  desc:'Crits apply heavy BLEED.',            color:'red',    fxKind:'poison'},
+  bleed:  {name:'Bleeding',  short:'POISON', desc:'Crits apply heavy POISON.',           color:'red',    fxKind:'poison'},
   cursed: {name:'Cursed',    short:'CURSED', desc:'+25% DMG. Each strike adds +1 Miasma.',color:'purple', fxKind:'arcane'},
   soul:   {name:'Soulbound', short:'SOUL',   desc:'+0.4% DMG per kill this run (cap 32%).',color:'amber',fxKind:'crit'},
   furnace:{name:'Furnace-forged',short:'FURNACE',desc:'+0.5% DMG per Heat point (cap 50%).',color:'red',fxKind:'fire'},
@@ -1783,7 +1783,7 @@ const WEAPON_TRAIT_KEYS=Object.keys(WEAPON_TRAITS);
 const DEVOUR_FAMILIES={
   Ooze:     {label:'Ooze',     trait:'poison', ico:'&#9763;', desc:'+POISON on hit'},
   Demon:    {label:'Infernal', trait:'burn',   ico:'&#128293;', desc:'+BURN on hit'},
-  Beast:    {label:'Feral',    trait:'bleed',  ico:'&#129704;', desc:'+BLEED (stacking poison) on hit'},
+  Beast:    {label:'Feral',    trait:'bleed',  ico:'&#129704;', desc:'+heavy POISON on hit (deep wounds, lasts longer)'},
   Vermin:   {label:'Swarm',    trait:'multi',  ico:'&#128001;', desc:'second small hit'},
   Construct:{label:'Stone',    trait:'stun',   ico:'&#128737;', desc:'chance to STUN'},
   Undead:   {label:'Grave',    trait:'weaken', ico:'&#9760;',   desc:'WEAKEN on hit'},
@@ -1793,9 +1793,9 @@ const DEVOUR_FAMILIES={
 const DEVOUR_FAMILY_KEYS=Object.keys(DEVOUR_FAMILIES);
 // Named EVOLVE combinations — two paths merging. Order doesn't matter; sorted alphabetically.
 const DEVOUR_EVOLUTIONS={
-  'Beast|Ooze':     {name:'Toxic Maw',       desc:'Heavy bite + BLEED + POISON; you HEAL for 30% of damage dealt.'},
+  'Beast|Ooze':     {name:'Toxic Maw',       desc:'Heavy bite + heavy POISON; you HEAL for 30% of damage dealt.'},
   'Demon|Ooze':     {name:'Caustic Flame',   desc:'AOE inferno — every foe takes damage, BURN, and POISON.', aoe:true},
-  'Beast|Demon':    {name:'Hellbeast',       desc:'Massive single hit + BLEED + BURN; +30% crit chance on this strike.'},
+  'Beast|Demon':    {name:'Hellbeast',       desc:'Massive single hit + POISON + BURN; +30% crit chance on this strike.'},
   'Construct|Demon':{name:'Molten Bastion',  desc:'Heavy hit + BURN. You gain a BARRIER equal to 25% of damage dealt.'},
   'Humanoid|Undead':{name:'Soul Winter',     desc:'Hits ALL foes for cold damage. WEAKEN + VULN them. +4 Miasma to YOU.', aoe:true},
   'Beast|Undead':   {name:'Night Hunter',    desc:'Crit-locked single hit. Executes any target under 35% HP.'},
@@ -1813,9 +1813,9 @@ const DEVOUR_EVOLUTIONS={
   'Demon|Vermin':   {name:'Imp Swarm',       desc:'Three small strikes across the field. Each one BURNS.', aoe:true, strikes:3},
   'Demon|Undead':   {name:'Wraithfire',      desc:'Heavy hit + BURN + WEAKEN. You HEAL for 20% of damage dealt.'},
   'Demon|Dragon':   {name:'Hellfire Storm',  desc:'AOE inferno. Damage scales with HEAT. +6 Heat to YOU.', aoe:true},
-  'Beast|Vermin':   {name:'Bloodpack',       desc:'Three savage strikes across the field. Each one BLEEDS.', aoe:true, strikes:3},
-  'Beast|Humanoid': {name:'Werewolf Form',   desc:'Heavy single hit + BLEED + VULN. Your next basic strike CRITS.'},
-  'Beast|Dragon':   {name:'Wyvern Strike',   desc:'Single nuclear strike + BLEED. Damage scales with HEAT.'},
+  'Beast|Vermin':   {name:'Bloodpack',       desc:'Three savage strikes across the field. Each one POISONS.', aoe:true, strikes:3},
+  'Beast|Humanoid': {name:'Werewolf Form',   desc:'Heavy single hit + POISON + VULN. Your next basic strike CRITS.'},
+  'Beast|Dragon':   {name:'Wyvern Strike',   desc:'Single nuclear strike + heavy POISON. Damage scales with HEAT.'},
   'Construct|Vermin':{name:'Brass Locusts',  desc:'Three small strikes across the field. Each one may STUN.', aoe:true, strikes:3},
   'Undead|Vermin':  {name:'Carrion Swarm',   desc:'AOE wail &mdash; hits every foe twice. WEAKENS every foe.', aoe:true, strikes:2},
   'Humanoid|Vermin':{name:'Plague Mob',      desc:'AOE riot &mdash; hits every foe twice. POISON + VULN.', aoe:true, strikes:2},
@@ -1825,7 +1825,7 @@ const DEVOUR_EVOLUTIONS={
   // === SAME-FAMILY DOUBLINGS — feeding the skill more of the same kind hardens its identity ===
   'Ooze|Ooze':           {name:'Acid Tide',       desc:'AOE poison cloud. Every foe takes damage and stacks POISON twice.', aoe:true},
   'Demon|Demon':         {name:'Hellforge',       desc:'Massive BURN nuke. +8 Heat to YOU. The fire is yours now.'},
-  'Beast|Beast':         {name:'Wolf Pack',       desc:'Three savage strikes across the field. Each one BLEEDS.', aoe:true, strikes:3},
+  'Beast|Beast':         {name:'Wolf Pack',       desc:'Three savage strikes across the field. Each one POISONS.', aoe:true, strikes:3},
   'Vermin|Vermin':       {name:'Plague Swarm',    desc:'AOE; hits every foe twice. Spreads POISON. You become harder to hit (+8% dodge 2T).', aoe:true, strikes:2},
   'Construct|Construct': {name:'Living Bulwark',  desc:'Heavy hit + STUN target + you gain a BARRIER equal to 30% of damage dealt.'},
   'Undead|Undead':       {name:'Grave Voice',     desc:'AOE wail — WEAKEN + VULN every foe. Heals you for 18% of damage dealt.', aoe:true},
@@ -1859,7 +1859,7 @@ function applyDevourEffects(e, d, b){
   (d.effects||[]).forEach(eff=>{
     if(eff==='poison'){ addPoison(e.st, 5+d.stage, 3); blog(`${e.name} is POISONED!`,'info'); }
     else if(eff==='burn'){ addBurn(e.st, 5+d.stage, 3); blog(`${e.name} BURNS!`,'info'); }
-    else if(eff==='bleed'){ addPoison(e.st, 6+d.stage, 4); blog(`${e.name} BLEEDS!`,'info'); }
+    else if(eff==='bleed'){ addPoison(e.st, 6+d.stage, 4); blog(`${e.name} is POISONED!`,'info'); }
     else if(eff==='weaken'){ addWeak(e.st, 2); blog(`${e.name} is WEAKENED!`,'info'); }
     else if(eff==='vuln'){ addVuln(e.st, 2); blog(`${e.name} is VULNERABLE!`,'info'); }
     else if(eff==='stun' && chance(35)){ addStun(e.st, 1); blog(`${e.name} is STUNNED!`,'crit'); }
@@ -3024,7 +3024,7 @@ function intentBadgeHtml(e){
 function setTarget(i){ if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }
 function stChips(st){ let c='';
   if(st.burnT>0)   c+=`<span class="chip c-burn" title="BURN — ${Math.max(1,Math.round(st.burn))} damage at end of every turn. ${st.burnT} turn(s) left.">BURN ${st.burnT}</span>`;
-  if(st.poisonT>0) c+=`<span class="chip c-pois" title="POISON / BLEED — ${Math.max(1,Math.round(st.poison))} damage at end of every turn. ${st.poisonT} turn(s) left.">PSN ${st.poisonT}</span>`;
+  if(st.poisonT>0) c+=`<span class="chip c-pois" title="POISON — ${Math.max(1,Math.round(st.poison))} damage at end of every turn. ${st.poisonT} turn(s) left.">PSN ${st.poisonT}</span>`;
   if(st.weakT>0)   c+=`<span class="chip c-weak" title="WEAKEN — outgoing damage reduced by ~40%. ${st.weakT} turn(s) left.">WEAK ${st.weakT}</span>`;
   if(st.vulnT>0)   c+=`<span class="chip c-vuln" title="VULNERABLE — takes +25% damage from all sources. ${st.vulnT} turn(s) left.">VULN ${st.vulnT}</span>`;
   if(st.stunT>0)   c+=`<span class="chip c-stun" title="STUN — skips next turn entirely.">STUN</span>`;
@@ -3175,7 +3175,7 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   const e=b.enemies[idx];
   // WEAPON TRAITS — cursed pollutes, bleed cuts on crit
   if(p.weapon.trait==='cursed'){ if(miasmaActive()) addMiasma(1); else addHeat(1); }
-  if(p.weapon.trait==='bleed' && c && e && e.hp>0){ addPoison(e.st,6,3); blog(`${e.name} BLEEDS!`,'info'); }
+  if(p.weapon.trait==='bleed' && c && e && e.hp>0){ addPoison(e.st,6,3); blog(`${e.name} is POISONED!`,'info'); }
   // Memory: Furnace Ember adds raging BURN per hit
   if(b.emberTurns>0 && e && e.hp>0){ addBurn(e.st,8,3); }
   // Avatar of Wrath: cleave splash to other foes
