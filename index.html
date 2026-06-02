@@ -169,7 +169,11 @@
   .hr{border:none;border-top:2px dashed var(--line);margin:14px 0}
   .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.menu-grid .btn{margin:0}
   .footer{text-align:center;color:var(--dim);font-size:8px;margin-top:8px}
-  .evtext{font-size:11px;line-height:2;color:#dcd6ff;margin:10px 0}
+  /* Long-form prose drops Press Start 2P (great for labels, exhausting for paragraphs) for a
+     readable monospace so lore/event/info bodies don't read as walls of pixel text. */
+  .readtext{font-family:'Courier New',ui-monospace,monospace;letter-spacing:.2px}
+  .evtext{font-family:'Courier New',ui-monospace,monospace;letter-spacing:.2px;font-size:13px;line-height:1.65;color:#dcd6ff;margin:10px 0}
+  .info-card .body{font-family:'Courier New',ui-monospace,monospace;letter-spacing:.2px}
   /* SHOUT — for important lines players must not skim past. Used by boss intros, lore reveals, NPC truths. */
   .shout{display:inline-block;background:linear-gradient(180deg,rgba(255,207,77,.18),rgba(255,207,77,.06));padding:2px 6px;border-left:3px solid var(--amber);color:#ffe9a0;letter-spacing:.5px;font-weight:bold}
   .shout-red{display:inline-block;background:linear-gradient(180deg,rgba(255,90,90,.18),rgba(255,90,90,.06));padding:2px 6px;border-left:3px solid var(--red);color:#ffb0b0;letter-spacing:.5px;font-weight:bold}
@@ -224,7 +228,7 @@
     .chip{font-size:7px;padding:2px 5px;margin:2px 2px 2px 0}
     .bar .lbl{font-size:8px}
     .slot{padding:6px 8px;font-size:9px;line-height:1.6}
-    .evtext{font-size:9px;line-height:1.9}
+    .evtext{font-size:12px;line-height:1.6}
     .tgt{font-size:7px;padding:5px 3px}
     .footer{font-size:7px;line-height:1.7}
     #audio-toggles button{font-size:7px;padding:5px 6px}
@@ -298,7 +302,7 @@
     box-shadow:0 0 0 3px #000,8px 8px 0 rgba(0,0,0,.5);
     animation:fade .15s ease-out}
   .info-card h3{font-size:12px;color:var(--amber);margin:0 0 12px;line-height:1.6}
-  .info-card .body{font-size:10px;line-height:1.9;color:var(--ink);margin-bottom:14px;max-height:60vh;overflow-y:auto}
+  .info-card .body{font-size:12.5px;line-height:1.65;color:var(--ink);margin-bottom:14px;max-height:60vh;overflow-y:auto}
   .info-card .body b{color:var(--amber)}
   .info-card .body .muted{color:var(--dim)}
   .info-card .btn{margin:0}
@@ -314,7 +318,7 @@
   .tipline:hover{filter:brightness(1.3)}
   @media (max-width:560px){
     .info-card{padding:14px;border-width:2px}
-    .info-card h3{font-size:11px}.info-card .body{font-size:9px}
+    .info-card h3{font-size:11px}.info-card .body{font-size:11.5px}
   }
   /* event illustration (sprite-based, with CSS recolors for variety) */
   .ev-sprite{display:block;margin:8px auto;image-rendering:pixelated;
@@ -1727,23 +1731,9 @@ const WEAPON_TRAITS={
 };
 const WEAPON_TRAIT_KEYS=Object.keys(WEAPON_TRAITS);
 
-/* ============================================================
-   MEMORY SKILLS — the 4th skill slot. Starts EMPTY. Filled by
-   echoes, NPCs, boss deaths, relics. Different every run.
-   "What ability will I discover this time?"
-   ============================================================ */
-const MEMORY_SKILLS={
-  ember:  {id:'ember',  name:'Furnace Ember',     cost:14, desc:'Raging BURN on your weapon for 3 turns.',                                        aoe:false, mem:1, source:'A burned knight whispered it.'},
-  decree: {id:'decree', name:'Royal Decree',      cost:24, aoe:true,  desc:'STUN every foe 1 turn. They each take their own ATK as damage.',     mem:1, source:'A forgotten king commanded it.'},
-  hoard:  {id:'hoard',  name:"Dragon's Hoard",    cost:22, aoe:true,  desc:'Fire breath across all foes. Scales hard with HEAT.',               mem:1, source:'A dragon-memory granted it.'},
-  recall: {id:'recall', name:'Echo Recall',       cost:16, aoe:true,  desc:'Phantoms of you strike every foe. Scales with KILLS this run.',     mem:1, source:'An elder echo taught you.'},
-  tithe:  {id:'tithe',  name:'Soul Tithe',        cost:0,  desc:'Pay 25% current HP. Restore all mana + next 2 strikes always CRIT.',           mem:1, source:'A dying priest taught it.'},
-  devour: {id:'devour', name:'Devourer Bite',     cost:20, desc:'Heavy single hit. You HEAL for the full damage you deal.',                     mem:1, source:'The Devourer left this in you.'},
-  hollow: {id:'hollow', name:'Hollow Step',       cost:28, desc:'Step out of time — the next enemy turn is skipped entirely.',                  mem:1, source:'A frozen child showed you the trick.'},
-  curse:  {id:'curse',  name:"Champion's Curse",  cost:22, desc:'Single-target devastation, scales with KILLS this run. Target WEAKENED 3.',    mem:1, source:'The Champion Who Remembered carved it into you.'},
-  glass:  {id:'glass',  name:'Glass Sigil',       cost:14, desc:'Pay 15% HP. Your next single-target skill SHATTERS across every foe.',         mem:1, source:'A cursed mirror etched it.'},
-};
-const MEMORY_KEYS=Object.keys(MEMORY_SKILLS);
+/* The 4th skill is DEVOUR (see makeDevourBase / DEVOUR_* below). The legacy fixed Memory-Skill
+   table was superseded — boss/NPC "memory" hooks now route through grantMemory() into Devour
+   fragments. (Old MEMORY_SKILLS / MEMORY_KEYS / grantRandomMemory removed as dead code.) */
 
 /* ============================================================
    DEVOUR — the 4th skill is no longer empty. Every champion begins
@@ -1820,9 +1810,13 @@ function applyDevourEffects(e, d, b){
     else if(eff==='stun' && chance(35)){ addStun(e.st, 1); blog(`${e.name} is STUNNED!`,'crit'); }
   });
 }
+// Each devoured family deepens an affinity PATH — the skill you grow IS your build identity.
+const DEVOUR_FAM_PATH={ Demon:'w', Beast:'w', Dragon:'w', Ooze:'g', Vermin:'g', Humanoid:'g', Construct:'v', Undead:'v' };
 function devourMutate(p, fam, choice){
   const d=p.memory; if(!d||!d.devour)return;
   const fdef=DEVOUR_FAMILIES[fam]; if(!fdef){ return; }
+  // SLAYER -> DEVOUR merge: the more of this family you've slain, the more its essence empowers you.
+  const slayBonus=slayerTier(p.slayer[fam]||0)*0.10;
   if(choice==='evolve'){
     const combo=evolveCombo(d, fam);
     if(combo){
@@ -1831,27 +1825,31 @@ function devourMutate(p, fam, choice){
       d.aoe=!!combo.aoe;
       d.strikes=combo.strikes||1;
       if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
-      d.dmgMult=(d.dmgMult||1.5)+0.25;
+      d.dmgMult=(d.dmgMult||1.5)+0.25+slayBonus;
       // Cost scales with power. AOE evolutions cost more.
       d.cost=Math.min(36, (d.cost||10)+(combo.aoe?6:4));
     } else {
       d.stage=(d.stage||0)+1; d.path.push(fam);
       if(!d.effects.includes(fdef.trait)) d.effects.push(fdef.trait);
-      d.dmgMult=(d.dmgMult||1.5)+0.20;
+      d.dmgMult=(d.dmgMult||1.5)+0.20+slayBonus;
       d.cost=Math.min(36, (d.cost||10)+3);
       d.name=`${fdef.label} ${d.name}`;
       d.desc=`Heavy strike + ${fdef.desc.toLowerCase()}.`;
     }
   } else if(choice==='empower'){
-    d.stage=(d.stage||0)+1; d.dmgMult=(d.dmgMult||1.5)+0.40;
+    d.stage=(d.stage||0)+1; d.dmgMult=(d.dmgMult||1.5)+0.40+slayBonus;
     d.cost=Math.min(36, (d.cost||10)+3);
     d.desc=d.desc+` <span class="amber">[empowered +${d.stage}]</span>`;
   } else if(choice==='replace'){
-    d.path=[fam]; d.effects=[fdef.trait]; d.stage=1; d.dmgMult=1.7;
+    d.path=[fam]; d.effects=[fdef.trait]; d.stage=1; d.dmgMult=1.7+slayBonus;
     d.cost=12; d.aoe=false; d.strikes=1;
     d.name=`${fdef.label} Strike`;
     d.desc=`Reborn from ${fdef.label}. Heavy single strike + ${fdef.desc.toLowerCase()}.`;
   }
+  // DEVOUR -> AFFINITY merge: consuming a fragment deepens the family's path. The centerpiece
+  // skill now builds your Wrath / Guile / Veil identity instead of sitting outside it.
+  const path=DEVOUR_FAM_PATH[fam];
+  if(path){ addAffinity(p,{[path]:1}); checkAffinityTiers(p); p._lastDevourPath=path; }
 }
 function queueFragmentChoice(p, fam){
   G._fragQueue=G._fragQueue||[];
@@ -1994,7 +1992,6 @@ function grantMemory(p,key){
   }
   return false;
 }
-function grantRandomMemory(p,pool){ const keys=(pool||MEMORY_KEYS).filter(k=>!p.memory||p.memory.id!==k); if(!keys.length)return false; return grantMemory(p,pick(keys)); }
 function allSkills(p){ const out=p.skills.slice(); if(p.memory) out.push(p.memory); return out; }
 
 function weaponTraitMult(p){ const t=p.weapon&&p.weapon.trait; if(!t)return 1;
@@ -2785,6 +2782,10 @@ function forgeReforge(slot){ const p=G.player,it=p.equip[slot]; if(!it||it.rarit
 function forgeImbue(){ const p=G.player,w=p.weapon,cost=24; if(p.essence<cost||w.proc)return false; p.essence-=cost;
   const o=pick([{proc:{burn:[7,3,55]},name:'Flaming',d:'hits may BURN'},{proc:{poison:[7,3,55]},name:'Venomous',d:'hits may POISON'},{proc:{vuln:[2]},name:'Sundering',d:'hits apply VULNERABLE'}]);
   w.proc=o.proc; w.passiveDesc=o.d; if(!/^(Flaming|Venomous|Sundering)/.test(w.name))w.name=o.name+' '+w.name; return true; }
+// SOUL ESSENCE -> AFFINITY: a late-game sink that feeds the identity system instead of capping out.
+function forgeAttune(path){ const p=G.player,cost=40; if(p.essence<cost)return false; p.essence-=cost;
+  addAffinity(p,{[path]:2}); checkAffinityTiers(p); return true; }
+function fAttune(path){ SFX.play(forgeAttune(path)?'upgrade':'fail'); renderForge(); }
 function fUpgrade(s){ SFX.play(forgeUpgrade(s)?'upgrade':'fail'); renderForge(); }
 function fReforge(s){ SFX.play(forgeReforge(s)?'upgrade':'fail'); renderForge(); }
 function fImbue(){ SFX.play(forgeImbue()?'upgrade':'fail'); renderForge(); }
@@ -2797,12 +2798,15 @@ function renderForge(){ const p=G.player; discoverLore('l11');
   const im=p.weapon.proc?'':fb('Imbue weapon with an element',24,'add a random on-hit effect (BURN / POISON / VULN)',`fImbue()`,p.essence>=24);
   const re=slots.map(s=>{const it=p.equip[s];if(!it||it.rarity>=4)return '';const c=30+it.rarity*16;
     return fb(`Reforge ${s.toUpperCase()}: <span class="${RARITY[it.rarity].cls}">${RARITY[it.rarity].name}</span> &rarr; <span class="${RARITY[it.rarity+1].cls}">${RARITY[it.rarity+1].name}</span>`,c,'raise rarity; may grant a passive',`fReforge('${s}')`,p.essence>=c);}).join('');
+  // Pour essence into your PATH — the late-game essence sink that feeds affinity (Wrath/Guile/Veil).
+  const at=['w','g','v'].map(k=>{const meta=AFF_META[k];
+    return fb(`Attune to ${meta.name}`,40,`+2 ${meta.name} affinity (toward the tier capstones)`,`fAttune('${k}')`,p.essence>=40);}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in">
       <pre class="sprite amber">  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|</pre>
       <h3 class="center amber" style="margin:8px 0">THE SOUL FORGE</h3>
       <p class="muted center" style="font-size:9px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS} essence</span> to grow stronger.</p>
-      ${up}${im}${re}
+      ${up}${im}${re}${at}
       <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button>
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
@@ -3554,6 +3558,8 @@ function showInfo(key){
   const i=typeof key==='object'?key:INFO_TEXT[key];
   if(!i)return;
   const m=document.getElementById('info-modal');
+  // Serialize — if a modal is already open, queue this one instead of overwriting it.
+  if(m && !m.classList.contains('hidden')){ G._modalQueue=G._modalQueue||[]; G._modalQueue.push(i); return; }
   document.getElementById('info-title').textContent=i.title;
   document.getElementById('info-text').innerHTML=i.body;
   if(m)m.classList.remove('hidden');
@@ -3569,7 +3575,8 @@ function closeInfo(e){
   setTimeout(()=>{
     if(!G) return;
     const md=document.getElementById('info-modal'); if(md && !md.classList.contains('hidden')) return;
-    if(G._multiEssenceFams && G._multiEssenceFams.length){ showMultiEssenceChoice(); }
+    if(G._modalQueue && G._modalQueue.length){ showInfo(G._modalQueue.shift()); }
+    else if(G._multiEssenceFams && G._multiEssenceFams.length){ showMultiEssenceChoice(); }
     else if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); }
     else if(G._buildQueue && G._buildQueue.length && (!G.battle||G.battle.over)){ drainBuildQueue(); }
   }, 180);
