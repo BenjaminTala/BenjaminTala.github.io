@@ -931,7 +931,7 @@ const BOSS_DEATHCRY={
   king:'"Sit, then. Wear the crown. I am so tired."',
   devourer:'"...I have been waiting so long. I am never done waiting."',
   remembered:'"...you should have stayed asleep. I will see you next time."',
-  paledevourer:'',
+  paledevourer:'The thing does not fall &mdash; it simply stops. There is no last word. There is no last thought. Whatever it was, it had nothing to do with you. It was here before any of this. It was here before the cold.',
 };
 
 /* ============================================================
@@ -1339,6 +1339,16 @@ const EVENTS=[
      {label:'"What is at the bottom?"',desc:'Press',run:p=>{discoverLore('l15');return '"...the rest of you." They glance at you for the first time. "Go on. We have been waiting."';}},
      {label:'Step away from the edge',desc:'Take their relic if you can',run:p=>{const r=grantRandomRelic(p);return r?`You pull them back from the lip. They press a relic into your hands and sit. (relic: ${r})`:'You pull them back. They thank you with a relic you already carry — and refuse to take it back.';}},
    ]},
+  // === DEVOUR-GATED — only surface once you have actually started eating things ===
+  {id:'watcher',title:'THE WATCHFUL PRISONER',zone:2,available:p=>p.memory && p.memory.path && p.memory.path.length>=2,
+   sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  ,---,\n  |[ ]|\n  ( - )\n  )===( \n  /| |\\",
+   text:'A man sits chained to a pillar of black iron. The chains are old. So is he. He watches you walk in, and his face goes very still — not afraid, exactly. Recognising something.',
+   options:[
+     {label:'"You know what I have been doing."',desc:'Acknowledge',run:p=>{discoverLore('l19');const fams=(p.memory.path||[]).slice(-2).join(', ');return `<span class="shout-purple">"I can taste it on you."</span> He does not flinch. <span class="shout-purple">"That is how He started. Small things. Then the ${fams}. Then everything else."</span> A long pause. "You should stop. You will not stop."`;}},
+     {label:'"Who is HE?"',desc:'Press',run:p=>{discoverLore('l18');return '"The one this place was built around." He nods toward the floor &mdash; downward. "We took him apart. We hid the pieces in the only place nothing leaves." He looks at you again. <span class="shout-red">"You have been finding them."</span>';}},
+     {label:'"Break your chains?"',desc:'Free him &middot; +relic, +6 Miasma',run:p=>{const r=grantRandomRelic(p);addMiasma(6);return (r?`You snap the irons. He does not stand. He presses a small black relic into your hand &mdash; <b>${r}</b> &mdash; and closes his eyes. "Thank you. I have been here a long time."`:'You snap the irons. He does not stand. He presses something into your hand that you already carry, and closes his eyes.')+' (the cold thickens)';}},
+     {label:'Walk past in silence',desc:'No reward, no cost',run:p=>'He watches you the whole way across the room. He does not call after you. He does not need to.'},
+   ]},
   // ===== ORIGINAL EVENTS =====
   {id:'knight',title:'THE WOUNDED KNIGHT',sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
    text:'A dying knight slumps against the wall. "Please... mend me, and take my blade."',
@@ -1566,8 +1576,8 @@ const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds n
 const FLASHBACKS=[
   {at:8,  line:'A memory — not yours? <i>"...seal it. Now. While we still can."</i>'},
   {at:18, line:'A memory — not yours? <i>"He cannot be destroyed. Not by gods, not by fire."</i>'},
-  {at:32, line:'A memory — not yours? <i>"Then divide him. Split him into pieces small enough to forget."</i>'},
-  {at:48, line:'The voice was yours. <i>"...I volunteered."</i>'},
+  {at:32, line:'A memory — not yours? <i>"It cannot leave this place. None of us can."</i>'},
+  {at:48, line:'A memory — almost familiar. <i>"...we agreed. We all agreed."</i>'},
 ];
 function flashWorld(){ G._worldPulse=1; }
 // Every 10 Heat, the player gets a clear line explaining what the meter now does.
@@ -2257,8 +2267,11 @@ function makeRoom(depth){
   return {type:'empty',peek:peek('empty')};
 }
 function pickEvent(){
-  let avail=EVENTS.filter(e=>!G.seenEvents.includes(e.id));
-  if(!avail.length){ G.seenEvents=[]; avail=EVENTS; }
+  const p=G.player;
+  const gateOk=e=>!e.available || e.available(p);
+  let avail=EVENTS.filter(e=>!G.seenEvents.includes(e.id) && gateOk(e));
+  if(!avail.length){ G.seenEvents=[]; avail=EVENTS.filter(gateOk); }
+  if(!avail.length) avail=EVENTS;
   // Mystery zone-bias: ~78% chance the event is one tagged for THIS zone (the NPC drip).
   // The mystery layer needs to actually surface — these encounters carry the story.
   const z=G.abyss?3:zoneOf(G.depth);
@@ -3387,7 +3400,7 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   if(b.enemies.some(e=>e.name===BOSSES.king.name)){ blog(BOSS_DEATHCRY.king,'crit'); discoverLore('l13'); if(!p.memory||p.memory.id!=='decree') grantMemory(p,'decree'); G._pendingBossDeath='king'; }
   if(b.enemies.some(e=>e.name===BOSSES.devourer.name)){ blog(BOSS_DEATHCRY.devourer,'crit'); discoverLore('l10'); discoverLore('l15'); if(!p.memory||p.memory.id!=='devour') grantMemory(p,'devour'); G._pendingBossDeath='devourer'; }
   if(b.enemies.some(e=>e.name===BOSSES.remembered.name)){ blog(BOSS_DEATHCRY.remembered,'crit'); discoverLore('l15'); discoverLore('l16'); G._rememberedSlain=1; if(!p.memory||p.memory.id!=='curse') grantMemory(p,'curse'); G._pendingBossDeath='remembered'; }
-  if(b.enemies.some(e=>e.name===BOSSES.paledevourer.name)){ blog('The thing in the room is gone. The room is colder for having held it.','crit'); discoverLore('l19'); discoverLore('l20'); G._paleSlain=1; }
+  if(b.enemies.some(e=>e.name===BOSSES.paledevourer.name)){ blog(BOSS_DEATHCRY.paledevourer,'crit'); discoverLore('l19'); discoverLore('l20'); G._paleSlain=1; G._pendingBossDeath='paledevourer'; }
   if(b.enemies.some(e=>e.name===BOSSES.warden.name) && (!p.memory||p.memory.id!=='ember')){ grantMemory(p,'ember'); }
   // Whoever the chamber-20 boss was — king, dragon, or otherwise — the lie cracks here. The Triumph screen reflects it.
   if(b.isFinal){ discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
@@ -3477,9 +3490,10 @@ function confirmAbyss(){
   if(!confirm('THE ABYSS IS ENDLESS. There is no final boss, no victory screen — only escalating bosses until you die. You will lose everything you have built when it kills you. Are you sure?')) return;
   startAbyss();
 }
-function claimVictory(){ SFX.play('win'); discoverLore('l12'); discoverLore('l14'); G.screen='victory'; render(); }
+function claimVictory(){ SFX.play('win'); discoverLore('l12'); G.screen='victory'; render(); }
 function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
   G.mods.essMul=(G.mods.essMul||1)*1.6; G.mods.luck=1; G.mods.goldMul*=1.3;
+  discoverLore('l14');
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
   nextCorridor(); G.screen='corridor'; render(); }
 function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',hazard:'Hazards',debt:'Time Debt'};
