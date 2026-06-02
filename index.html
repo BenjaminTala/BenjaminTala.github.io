@@ -3205,7 +3205,7 @@ function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foe
   warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
   ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
 function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<100)return; b.charge=0;
-  SFX.play('win'); flash('playerHit'); const mm=Math.min(160,p.maxMana); ensureTarget();
+  SFX.play('win'); flash('playerHit'); const mm=Math.min(180,p.maxMana); ensureTarget();
   _fxKind=p.cls==='mage'?'fire':p.cls==='ranger'?'arrow':'crit';
   if(p.cls==='mage'){ blog('&#10022; ARCANE SUPERNOVA! &#10022;','crit');
     aoeHit(i=>{let d=40+Math.round(mm*0.4)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(i,d,'Supernova engulfs',c);});
@@ -3227,31 +3227,32 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
   _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow',glass:'arcane',ember:'fire',decree:'crit',hoard:'fire',recall:'arcane',tithe:'heal',devour:'crit',hollow:'frost',curse:'arcane'}[id]||'hit';
   const mm=p.maxMana;
   switch(id){
-    // Spell scaling: cap maxMana contribution at 160 so Arcane Battery + mana rolls
-    // can't snowball Bolt/Supernova into an infinite damage button.
-    case 'bolt':{SFX.play('skill');const cm=Math.min(160,mm);let d=16+Math.round(cm*0.28)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
-    case 'fire':{SFX.play('fire'); const cm=Math.min(160,mm); if(p.flags.kBeam){ let d=32+Math.round(cm*0.36)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
+    // Spell scaling: cap maxMana contribution at 180 so Arcane Battery + mana rolls
+    // can't snowball Bolt/Supernova into an infinite damage button. (Was 160 — too tight,
+    // mage felt weaker than warrior/ranger across mid-game.)
+    case 'bolt':{SFX.play('skill');const cm=Math.min(180,mm);let d=16+Math.round(cm*0.30)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'Arcane Bolt blasts',c);break;}
+    case 'fire':{SFX.play('fire'); const cm=Math.min(180,mm); if(p.flags.kBeam){ let d=32+Math.round(cm*0.36)+p.weapon.dmg+p.level*2;let c=rollCrit();if(c)d*=critMult();dealToEnemy(b.target,d,'A SINGULARITY BEAM annihilates',c);const e=b.enemies[b.target];if(e&&e.hp>0)addBurn(e.st,10,3); }
       else { blog('Fireball erupts across the foes!','info');aoeHit(i=>{let d=14+Math.round(cm*0.14)+p.weapon.dmg+p.level;dealToEnemy(i,d,'Flames engulf');});aoeHit(i=>{const e=b.enemies[i];if(e.hp>0)addBurn(e.st,5,3);}); } break;}
     // Frost Nova was a strictly worse Fireball. Match Fireball's mana scaling but with a lower base —
     // the role becomes "slightly less damage for a strong AOE Weaken", not "cheaper but useless".
-    case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');const cm=Math.min(160,mm);aoeHit(i=>{let d=6+Math.round(cm*0.16)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
+    case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');const cm=Math.min(180,mm);aoeHit(i=>{let d=6+Math.round(cm*0.16)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
     case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.7+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
     case 'shield':{SFX.play('skill');b.pdef=0.48;b.pdefTurns=2;blog('You raise your guard! (48% block, 2 turns)','info');break;}
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
-      // Base Whirlwind bumped 1.35 -> 1.50 (was the worst skill without the keystone).
-      // Keystone reduced 1.60 -> 1.45 so kWhirl is "strict AOE + safety", not "AOE + more damage".
-      aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.45:1.50)+rnd(5);let c=rollCrit();if(c)d*=1.4;dealToEnemy(i,d,'Whirlwind rends',c);});
+      // Whirlwind base 1.40 (was 1.50 — slightly too strong relative to mage/ranger); keystone 1.45.
+      // Still better than the original 1.35 baseline, but warrior shouldn't dominate.
+      aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*(k?1.45:1.40)+rnd(5);let c=rollCrit();if(c)d*=1.4;dealToEnemy(i,d,'Whirlwind rends',c);});
       if(k){ const h=Math.round(p.maxHp*0.05); heal(p,h); blog(`The cyclone restores ${h} HP.`,'heal'); } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
     case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.35;let c=chance(effCrit(p)+22);if(c)d*=2.0;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,4,2);}); }
       else { let d=(p.atk+p.weapon.dmg)*1.58;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,5,3); } break;}
     case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
-    case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.5+p.weapon.dmg)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
+    case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+Math.round(p.level*0.5)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
     // === MEMORY SKILLS ===
     case 'glass':{SFX.play('skill');const c=Math.max(1,Math.round(p.hp*0.15));selfHurt(p,c,'self');b.glassNext=1;blog(`Glass Sigil etched in your own blood (-${c} HP). Your next skill will SHATTER.`,'crit');break;}
     case 'ember':{SFX.play('fire'); b.emberTurns=3; blog('Furnace Ember — your weapon catches with eternal flame for 3 turns!','crit'); break;}
     case 'decree':{SFX.play('crit'); blog('ROYAL DECREE — silence falls. Every foe is STUNNED.','crit');
       aoeHit(i=>{const e=b.enemies[i]; if(e&&e.hp>0){ addStun(e.st,1); const d=Math.round((e.atk||5)*1.6); dealToEnemy(i,d,'The decree turns its strength upon it',false); }}); break;}
-    case 'hoard':{SFX.play('fire'); const ht=heatTier(); const hm=1+(ht*0.30)+(G.heat*0.030); const hmm=Math.min(160,p.maxMana); blog(`DRAGON'S HOARD — fire breath, x${hm.toFixed(2)} from heat!`,'crit');
+    case 'hoard':{SFX.play('fire'); const ht=heatTier(); const hm=1+(ht*0.30)+(G.heat*0.030); const hmm=Math.min(180,p.maxMana); blog(`DRAGON'S HOARD — fire breath, x${hm.toFixed(2)} from heat!`,'crit');
       aoeHit(i=>{let d=Math.round((24+p.weapon.dmg*0.8+hmm*0.10)*hm); let c=rollCrit(); if(c)d*=critMult(); dealToEnemy(i,d,'Hoard-fire engulfs',c); const e=b.enemies[i]; if(e&&e.hp>0)addBurn(e.st,8,3);}); break;}
     case 'recall':{SFX.play('skill'); const km=1+Math.min(0.80,(p.kills||0)*0.012); blog(`ECHO RECALL — phantoms (x${km.toFixed(2)} from kills) strike all foes!`,'crit');
       aoeHit(i=>{let d=Math.round((p.atk+p.weapon.dmg+10)*0.78*km); let c=rollCrit(); if(c)d*=1.6; dealToEnemy(i,d,'A phantom-you strikes',c);}); break;}
@@ -3269,10 +3270,15 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       // throttled to *0.6 so the player can't trivially spam Devour on a boss after a kill.
       const satDebuff = (p._saturated>0) ? 0.6 : 1;
       const doHit=(idx,strikeIdx)=>{
-        let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale*satDebuff; if(strikeIdx>0) dmg*=0.70;
-        let c=rollCrit();
-        // Same-family combo locks: Wolf Pack and Hellbeast always crit; Night Hunter execute
-        if(d && /Hellbeast|Wolf Pack/.test(d.name)) c=true;
+        // Multi-strike follow-ups deal 0.55x (was 0.70). A 3-strike combo like Wolf Pack now
+        // totals 1 + 0.55 + 0.55 = 2.1x base, down from 2.4x — still hard, no longer one-shot.
+        let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale*satDebuff; if(strikeIdx>0) dmg*=0.55;
+        // Hellbeast/Wolf Pack used to auto-crit on every strike. That combined with 3 strikes
+        // and stacked dmgMult was one-shotting rooms (and one-shotting the player back if it
+        // didn't clear). Now: Hellbeast gets a real +30% crit chance per its description; Wolf
+        // Pack gets a smaller +15% on each strike since it fires three of them.
+        const critBonus = (d && /Hellbeast/.test(d.name)) ? 30 : (d && /Wolf Pack/.test(d.name)) ? 15 : 0;
+        let c = critBonus ? chance(effCrit(p)+critBonus) : rollCrit();
         if(c)dmg*=critMult();
         const e=b.enemies[idx]; const before=e?e.hp:0;
         // Night Hunter execute: compensate for the upcoming DEF cut in dealToEnemy
@@ -3398,10 +3404,9 @@ function applyEnemyHit(e,p,b,baseDmg,label){
   const mt2=miasmaActive()?miasmaTier():0;
   if(mt2>=2){ const before=dmg; dmg=Math.round(dmg*(1+Math.min(0.25,mt2*0.045)));
     if(chance(22) && dmg>before) blog(`&#9763; MIASMA &mdash; the cold lets it land harder (+${dmg-before}).`,'dmg'); }
-  // Dodge capped at 50% (was 60%). Ranger could permanently sit at the cap with Evade up,
-  // making physical attacks no-ops; meanwhile caster statuses ignore dodge entirely, so the
-  // higher cap mostly trivialized melee zones without helping vs caster packs.
-  const dodgeChance=Math.max(0,Math.min(50,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
+  // Dodge capped at 55% (was 50, was originally 60). The 50 cap nuked ranger too hard;
+  // 55 keeps Evade meaningful without making physical hits no-ops.
+  const dodgeChance=Math.max(0,Math.min(55,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
   if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; return; }
   let red=(b.pdefTurns>0?b.pdef:0);
   dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.6)));
