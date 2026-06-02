@@ -1543,12 +1543,15 @@ const BOSS_BIO={
   dragon:"The crypt's warden once, then the prison itself.",
   devourer:'It does not eat flesh. It eats every future that ever could have been.',
   remembered:'A figure that waits at the bottom. It does not introduce itself, and it does not need to: it speaks as if it has known you for centuries. Believe what it says, or do not.',
-  paledevourer:'',
+  paledevourer:'It was not built. It was not summoned. It was found here. The crypt is its shell, not its prison.',
 };
-function showBossIntro(key){ if(!BOSS_BIO[key]||!BOSSES[key])return;
+function showBossIntro(key){ if(BOSS_BIO[key]===undefined||!BOSSES[key])return;
   // Per-run gate: every new run reintroduces every boss you face. The lines should be impossible to miss.
   G._seenBoss=G._seenBoss||{}; if(G._seenBoss[key])return; G._seenBoss[key]=1;
-  showInfo({title:BOSSES[key].name,body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_CRY[key]||''}</p><p style="font-size:10px;line-height:1.9;color:#cfcbef;margin-top:10px">${BOSS_BIO[key]}</p>`}); }
+  // Omit the cry paragraph if BOSS_CRY is empty so silence reads as silence, not as a layout glitch.
+  const cry=BOSS_CRY[key]?`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_CRY[key]}</p>`:'';
+  const bio=BOSS_BIO[key]?`<p style="font-size:10px;line-height:1.9;color:#cfcbef;margin-top:10px">${BOSS_BIO[key]}</p>`:'';
+  showInfo({title:BOSSES[key].name,body:cry+bio}); }
 function showBossDeath(key){ if(!BOSS_DEATHCRY[key]||!BOSSES[key])return;
   showInfo({title:BOSSES[key].name+' — falls',body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_DEATHCRY[key]}</p>`}); }
 let G=null;
@@ -2800,10 +2803,14 @@ function forgeUpgrade(slot){ const p=G.player,it=p.equip[slot]; if(!it)return fa
 function forgeReforge(slot){ const p=G.player,it=p.equip[slot]; if(!it||it.rarity>=4)return false;
   const cost=30+it.rarity*16; if(p.essence<cost)return false; p.essence-=cost;
   applyItemStats(p,it,-1);
+  // Clear any existing passive flag so a higher rarity can roll a new one.
+  // Previously: items that already had a passive at Rare could never gain one at Epic/Legendary,
+  // and the player silently paid essence for stat bumps only.
+  if(it.passiveFlag){ removeFlag(p,it.passiveFlag); it.passiveFlag=null; it.passiveDesc=null; }
   const oldR=it.rarity,newR=oldR+1,f=RARITY[newR].mult/RARITY[oldR].mult;
   for(const k in it.stats) it.stats[k]=Math.max(it.stats[k]+1,Math.round(it.stats[k]*f));
   it.rarity=newR; let newFlag=null;
-  if(RARITY[newR].passive&&!it.passiveFlag&&!it.proc&&!it.set&&PASSIVES[passPool(slot)]){
+  if(RARITY[newR].passive&&!it.proc&&!it.set&&PASSIVES[passPool(slot)]){
     const pas=pick(PASSIVES[passPool(slot)]);
     if(pas.stat)for(const k in pas.stat)it.stats[k]=(it.stats[k]||0)+pas.stat[k];
     if(pas.proc&&slot==='weapon')it.proc=pas.proc;
@@ -3196,7 +3203,9 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
         if(d && /Hellbeast|Wolf Pack/.test(d.name)) c=true;
         if(c)dmg*=critMult();
         const e=b.enemies[idx]; const before=e?e.hp:0;
-        if(d && /Night Hunter/.test(d.name) && e && e.hp<=e.maxHp*0.35) dmg=Math.max(dmg, e.hp+1);
+        // Night Hunter execute: compensate for the upcoming DEF cut in dealToEnemy
+        // (min(def, raw*0.5)) so the execute actually executes on high-armor enemies.
+        if(d && /Night Hunter/.test(d.name) && e && e.hp<=e.maxHp*0.35) dmg=Math.max(dmg, e.hp + (e.def||0) + 2);
         const done=dealToEnemy(idx,dmg,`${d.name} rends`,c);
         if(e && e.hp>0) applyDevourEffects(e,d,b);
         // Acid Tide / Grave Voice / Plague Swarm — apply trait twice on first strike for big AOE pulse
@@ -3262,8 +3271,11 @@ function fleeBattle(){ const p=G.player,b=G.battle;
   }
   if(p.cls==='ranger'?chance(82):chance(55)){
     const tax=Math.max(6,Math.round(p.hp*0.18));
-    p.hp=clamp(p.hp-tax,1,p.maxHp); attrib('hazard',tax);
+    selfHurt(p,tax,'hazard');
     addMiasma(2);
+    // Fleeing abandons any unresolved Devour queue from this fight so the modal
+    // doesn't surface mid-corridor next room.
+    G._multiEssenceFams=null; G._fragQueue=[]; if(b)b._castKills=[];
     blog(`You break away — claws and cold take ${tax} HP from your back.`,'info');
     showInfo({title:'FLED &mdash; WOUNDED',body:`<p class="shout-red" style="font-size:11px">You turned your back to the dark. Claws and cold took <b>${tax} HP</b> from you on the way out, and the cold has thickened around you (+2 Miasma).</p>`});
     b.over=true; render(); setTimeout(()=>proceed('You escaped — wounded.'),700);
@@ -3322,7 +3334,12 @@ function applyEnemyHit(e,p,b,baseDmg,label){
   if(e.manaburn&&p.mana>0){ const mb=Math.min(p.mana,Math.round(p.maxMana*0.12)); if(mb>0){p.mana-=mb;blog(`${e.name} devours ${mb} mana!`,'info');} }
   let lethal=p.hp-dmg<=0;
   if(lethal&&b.lastStand>0){ dmg=Math.max(0,p.hp-1); lethal=false; blog('LAST STAND holds &mdash; the blow cannot fell you!','crit'); }
-  if(lethal&&p.flags.secondWind&&!p._phoenixUsed){ p._phoenixUsed=1; const lost0=p.hp; p.hp=Math.max(1,Math.round(p.maxHp*0.25)); attrib('enemy',lost0-p.hp>0?lost0-p.hp:0); SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
+  if(lethal&&p.flags.secondWind&&!p._phoenixUsed){ p._phoenixUsed=1;
+    // Attribute the lethal hit to enemy so cause-of-death is honest even if Phoenix saved you.
+    // The previous formula (lost0 - p.hp) went negative when revive HP > current HP and credited 0.
+    attrib('enemy', Math.max(0, p.hp));
+    p.hp=Math.max(1,Math.round(p.maxHp*0.25));
+    SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
   else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
   if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
   if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
