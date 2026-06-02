@@ -608,6 +608,7 @@ const SFX=(()=>{
     hit:    ()=>{tone(220,0.06,{type:'square',vol:0.3,slide:90});noise(0.08,0.18);},
     crit:   ()=>{tone(660,0.06,{type:'square',vol:0.3});aft(40,()=>tone(1175,0.1,{type:'square',vol:0.3}));aft(95,()=>tone(2349,0.10,{type:'square',vol:0.22}));noise(0.14,0.22);},
     hurt:   ()=>{tone(160,0.18,{type:'sawtooth',vol:0.28,slide:70});noise(0.18,0.18);},
+    heartbeat:()=>{tone(96,0.24,{type:'sine',vol:0.36,slide:-30});aft(160,()=>tone(72,0.28,{type:'sine',vol:0.34,slide:-22}));},
     dodge:  ()=>tone(660,0.06,{type:'sine',vol:0.22,slide:1320}),
     heal:   ()=>{[523,659,784].forEach((f,i)=>aft(i*55,()=>tone(f,0.1,{type:'sine',vol:0.25})));},
     potion: ()=>{[440,659,880].forEach((f,i)=>aft(i*55,()=>tone(f,0.08,{type:'triangle',vol:0.26})));},
@@ -1160,10 +1161,10 @@ const UPGRADES=[
 ];
 const RELICS=[
   {id:'battery',name:'Arcane Battery',aff:{v:2},note:'+45 max mana, +6 regen',apply:p=>{p.maxMana+=45;p.mana+=45;p.regen+=6;}},
-  {id:'glass',name:'Glass Cannon',aff:{w:2},note:'+50% damage, -35% max HP',apply:p=>{addFlag(p,'glassCannon');const c=Math.round(p.maxHp*0.35);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
+  {id:'glass',name:'Glass Cannon',aff:{w:2},note:'+35% damage, -35% max HP',apply:p=>{addFlag(p,'glassCannon');const c=Math.round(p.maxHp*0.35);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
   {id:'stone',name:'Stone Skin',aff:{v:2},note:'+6 DEF, -20% damage dealt',apply:p=>{p.def+=6;addFlag(p,'stoneSkin');}},
   {id:'berserk',name:"Berserker's Heart",aff:{w:2},note:'up to +80% dmg the lower your HP',apply:p=>{addFlag(p,'berserker');}},
-  {id:'exec',name:'Executioner',aff:{w:2},note:'x2 damage to foes below 30% HP',apply:p=>{addFlag(p,'executioner');}},
+  {id:'exec',name:'Executioner',aff:{w:2},note:'x2 damage to foes below 20% HP',apply:p=>{addFlag(p,'executioner');}},
   {id:'thorns',name:'Thornmail',aff:{v:2},note:'+3 DEF, reflect 30% damage taken',apply:p=>{p.def+=3;addFlag(p,'thorns');}},
   {id:'vamp',name:'Vampiric Aura',aff:{w:1,v:1},note:'+20% lifesteal',apply:p=>{p.lifesteal+=20;}},
   {id:'swift',name:'Swift Boots',aff:{g:2},note:'+15% dodge, +8% crit',apply:p=>{p.dodge+=15;p.crit+=8;}},
@@ -1194,7 +1195,7 @@ const AFF_TIER_TITLE={
 };
 /* ---------- synergies (named relic-combo payoffs) ---------- */
 const SYNERGIES=[
-  {name:'Glass Reaper',need:['Glass Cannon','Executioner'],flag:'synReaper',desc:'Execute foes below 45% HP (was 30%)'},
+  {name:'Glass Reaper',need:['Glass Cannon','Executioner'],flag:'synReaper',desc:'Execute foes below 30% HP (was 20%)'},
   {name:'Sanguine Pact',need:['Vampiric Aura','Blood Pact'],flag:'synSanguine',desc:'+10% lifesteal; kills heal twice over',onForm:p=>{p.lifesteal+=10;}},
   {name:'Frozen Thorns',need:['Thornmail','Frostbrand'],flag:'synFrost',desc:'Reflected damage also WEAKENS attackers'},
   {name:'Virulent Strike',need:['Toxic Coating','Concussive Rounds'],flag:'synViru',desc:'Your STUNS also inflict heavy POISON'},
@@ -1633,17 +1634,23 @@ function addMiasma(n){ if(!miasmaActive())return;
 function coolHeat(n){ G.heat=clamp(G.heat-n,0,HEAT_MAX); }
 function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
 function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
+/* One-shot heartbeat the first time the player is BELOW 25% in a battle, regardless of
+   which damage source got them there. Uses a distinct 'heartbeat' SFX (not 'hurt' which
+   is indistinguishable from a normal incoming hit) and also logs a visible warning. */
+function checkLowHpHeartbeat(p){ const b=G.battle; if(!b)return;
+  if(!b._lowHpWarned && p.hp>0 && p.hp<p.maxHp*0.25){ b._lowHpWarned=1; SFX.play('heartbeat'); blog('&#9829; LOW HP &mdash; one more hit could end you.','crit'); } }
 /* damage the player from a tracked source; returns true if it killed them */
 function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp;
   const b=G.battle; if(b&&b.lastStand>0) amt=Math.min(amt,Math.max(0,before-1));
   p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp);
-  // One-shot heartbeat warning the first time HP crosses below 25% in a battle.
-  if(b && !b._lowHpWarned && p.hp>0 && p.hp<p.maxHp*0.25 && before>=p.maxHp*0.25){ b._lowHpWarned=1; SFX.play('hurt'); }
+  checkLowHpHeartbeat(p);
   return p.hp<=0; }
 /* event/self-cost damage that NEVER kills (floor 1 HP). Still attributes real HP lost
    to the rollup, so causeOfDeath can credit hazards, self-tax, miasma, etc. */
 function selfHurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return 0; const before=p.hp;
-  p.hp=clamp(p.hp-amt,1,p.maxHp); attrib(src||'hazard',before-p.hp); return before-p.hp; }
+  p.hp=clamp(p.hp-amt,1,p.maxHp); attrib(src||'hazard',before-p.hp);
+  checkLowHpHeartbeat(p);
+  return before-p.hp; }
 /* TIME DEBT — borrow power now, pay survival later. Answers "how much future do I sacrifice?" */
 function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150); if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
@@ -1967,11 +1974,13 @@ function showFragmentChoice(){
   const title=revealed?`FRAGMENT &mdash; ${fdef.label}`:`ESSENCE &mdash; ${fdef.label}`;
   const combo=evolveCombo(d, fam);
   const evolveLabel=combo?combo.name:`Bind in ${fdef.label}`;
-  const evolveDesc=combo?combo.desc:`Add <b>${fdef.desc}</b> to ${d.name}, +0.20 damage scaling.`;
+  const evolveDesc=combo
+    ? `${combo.desc} <span class="amber">(+0.35 damage scaling)</span>`
+    : `Add <b>${fdef.desc}</b> to ${d.name}, +0.20 damage scaling.`;
   const empowerLabel=`Deepen ${d.name}`;
-  const empowerDesc=`Improve current path. +0.40 damage scaling, effects last longer.`;
+  const empowerDesc=`Improve current path. +0.25 damage scaling, effects last longer.`;
   const replaceLabel=`Become ${fdef.label} Strike`;
-  const replaceDesc=`Abandon ${d.name} entirely. Adopt a pure ${fdef.label} skill (${fdef.desc}).`;
+  const replaceDesc=`Abandon ${d.name} entirely. Adopt a pure ${fdef.label} skill (${fdef.desc}). Resets to 2.0x + slayer momentum.`;
   const body=
     `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; You ${verb} a <b>${fdef.label} ${noun}</b>.</p>`+
     `<p class="muted" style="font-size:9px;margin:8px 0">Current: <b>${d.name}</b> &middot; path: ${d.path.length?d.path.join(' &rarr; '):'(none)'}</p>`+
@@ -2052,6 +2061,9 @@ function makeItem(slot,cls,depth,opts){ opts=opts||{};
   }
   if(passive&&passive.flag)item.passiveFlag=passive.flag;
   if(passive)item.passiveDesc=passive.desc;
+  // Snapshot the passive's stat contribution so forgeReforge can subtract it before re-rolling.
+  // Without this, each reforge bakes the old passive's stats permanently into the item.
+  if(passive&&passive.stat)item._passiveStats=Object.assign({},passive.stat);
   return item;
 }
 const STAT_LBL={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT',dodge:'DODGE',lifesteal:'LS',regen:'RGN'};
@@ -2571,10 +2583,11 @@ function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,ms
     if(t>=5){ const d=8+rnd(7); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; SFX.play('hurt'); popups.push({title:'YOU COME UNDONE',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold takes <b>${d} HP</b>. You can feel the seams.</p>`}); }
   }
   if(msg){ G._worldMsg=msg; }
-  // Show the first environmental popup immediately; queue the rest so they drain in order.
-  if(popups.length && !(p.hp<=0||dead)){
-    const first=popups.shift();
-    if(popups.length){ G._modalQueue=G._modalQueue||[]; popups.forEach(pp=>G._modalQueue.push(pp)); }
+  if(popups.length){
+    // Show the first popup immediately. If the tick was lethal, the LAST popup is the killer —
+    // pop that one so the gameover screen is preceded by an explanation of what killed you.
+    const first = (p.hp<=0||dead) ? popups[popups.length-1] : popups.shift();
+    if(!(p.hp<=0||dead) && popups.length){ G._modalQueue=G._modalQueue||[]; popups.forEach(pp=>G._modalQueue.push(pp)); }
     setTimeout(()=>showInfo(first), 60);
   }
   if(p.hp<=0||dead){ SFX.play('death'); G.screen='gameover'; render(); return true; }
@@ -2824,6 +2837,9 @@ function forgeUpgrade(slot){ const p=G.player,it=p.equip[slot]; if(!it)return fa
 function forgeReforge(slot){ const p=G.player,it=p.equip[slot]; if(!it||it.rarity>=4)return false;
   const cost=30+it.rarity*16; if(p.essence<cost)return false; p.essence-=cost;
   applyItemStats(p,it,-1);
+  // Subtract the OLD passive's stat contribution before scaling, so reforging doesn't
+  // permanently bake +12 crit / +22 mana from a prior affix into the base item.
+  if(it._passiveStats){ for(const k in it._passiveStats){ it.stats[k]=Math.max(0,(it.stats[k]||0)-it._passiveStats[k]); } it._passiveStats=null; }
   // Clear any existing passive flag so a higher rarity can roll a new one.
   // Previously: items that already had a passive at Rare could never gain one at Epic/Legendary,
   // and the player silently paid essence for stat bumps only.
@@ -2833,7 +2849,7 @@ function forgeReforge(slot){ const p=G.player,it=p.equip[slot]; if(!it||it.rarit
   it.rarity=newR; let newFlag=null;
   if(RARITY[newR].passive&&!it.proc&&!it.set&&PASSIVES[passPool(slot)]){
     const pas=pick(PASSIVES[passPool(slot)]);
-    if(pas.stat)for(const k in pas.stat)it.stats[k]=(it.stats[k]||0)+pas.stat[k];
+    if(pas.stat){ for(const k in pas.stat)it.stats[k]=(it.stats[k]||0)+pas.stat[k]; it._passiveStats=Object.assign({},pas.stat); }
     if(pas.proc&&slot==='weapon')it.proc=pas.proc;
     if(pas.flag){it.passiveFlag=pas.flag;newFlag=pas.flag;}
     it.passiveDesc=pas.desc; it.name=(pas.prefix||'')+it.name+(pas.suffix||''); }
@@ -2884,6 +2900,9 @@ function startBattle(intro){
   const p=G.player;
   if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
   let bar=0; if(p.affTier.v>=3)bar+=Math.round(p.maxHp*0.22); if(p.flags.gearBarrier)bar+=Math.round(p.maxHp*0.12); G.battle.barrier=bar;
+  // If the player walks in already under 25% HP, fire the heartbeat now so the warning isn't
+  // skipped just because no incoming hit crossed the boundary.
+  checkLowHpHeartbeat(p);
   G.log=[];
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
@@ -3163,7 +3182,7 @@ function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foe
   warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
   ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
 function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<100)return; b.charge=0;
-  SFX.play('win'); flash('playerHit'); const mm=p.maxMana; ensureTarget();
+  SFX.play('win'); flash('playerHit'); const mm=Math.min(160,p.maxMana); ensureTarget();
   _fxKind=p.cls==='mage'?'fire':p.cls==='ranger'?'arrow':'crit';
   if(p.cls==='mage'){ blog('&#10022; ARCANE SUPERNOVA! &#10022;','crit');
     aoeHit(i=>{let d=40+Math.round(mm*0.4)+p.weapon.dmg;let c=rollCrit();if(c)d*=critMult();dealToEnemy(i,d,'Supernova engulfs',c);});
@@ -3209,8 +3228,8 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'ember':{SFX.play('fire'); b.emberTurns=3; blog('Furnace Ember — your weapon catches with eternal flame for 3 turns!','crit'); break;}
     case 'decree':{SFX.play('crit'); blog('ROYAL DECREE — silence falls. Every foe is STUNNED.','crit');
       aoeHit(i=>{const e=b.enemies[i]; if(e&&e.hp>0){ addStun(e.st,1); const d=Math.round((e.atk||5)*1.6); dealToEnemy(i,d,'The decree turns its strength upon it',false); }}); break;}
-    case 'hoard':{SFX.play('fire'); const ht=heatTier(); const hm=1+(ht*0.30)+(G.heat*0.030); blog(`DRAGON'S HOARD — fire breath, x${hm.toFixed(2)} from heat!`,'crit');
-      aoeHit(i=>{let d=Math.round((24+p.weapon.dmg*0.8+p.maxMana*0.10)*hm); let c=rollCrit(); if(c)d*=critMult(); dealToEnemy(i,d,'Hoard-fire engulfs',c); const e=b.enemies[i]; if(e&&e.hp>0)addBurn(e.st,8,3);}); break;}
+    case 'hoard':{SFX.play('fire'); const ht=heatTier(); const hm=1+(ht*0.30)+(G.heat*0.030); const hmm=Math.min(160,p.maxMana); blog(`DRAGON'S HOARD — fire breath, x${hm.toFixed(2)} from heat!`,'crit');
+      aoeHit(i=>{let d=Math.round((24+p.weapon.dmg*0.8+hmm*0.10)*hm); let c=rollCrit(); if(c)d*=critMult(); dealToEnemy(i,d,'Hoard-fire engulfs',c); const e=b.enemies[i]; if(e&&e.hp>0)addBurn(e.st,8,3);}); break;}
     case 'recall':{SFX.play('skill'); const km=1+Math.min(0.80,(p.kills||0)*0.012); blog(`ECHO RECALL — phantoms (x${km.toFixed(2)} from kills) strike all foes!`,'crit');
       aoeHit(i=>{let d=Math.round((p.atk+p.weapon.dmg+10)*0.78*km); let c=rollCrit(); if(c)d*=1.6; dealToEnemy(i,d,'A phantom-you strikes',c);}); break;}
     case 'tithe':{SFX.play('heal'); const c=Math.max(1,Math.round(p.hp*0.25)); selfHurt(p,c,'self'); p.mana=p.maxMana; b.titheCrits=2; blog(`SOUL TITHE — paid ${c} HP. Mana brimmed. Next 2 strikes will CRIT.`,'crit'); break;}
@@ -3499,6 +3518,10 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   blog('The chamber is clear!','info'); render();
   setTimeout(()=>{
     if(G._pendingBossDeath){ showBossDeath(G._pendingBossDeath); G._pendingBossDeath=null; }
+    // Fire the truth-of-the-throne reveal right before triumph (not in proceed, which is never
+    // called on the final-boss path). Still ordered after the boss-death modal so the King's
+    // intimate beat lands first.
+    if(G._pendingTruth){ G._pendingTruth=0; discoverLore('l15'); blog('Something in the stone exhales. The story you were told... is not the story.','crit'); }
     if(b.isFinal){ SFX.play('win'); p.won=true; G.screen='triumph'; return render(); }
     G.pending={source:'battle',boss:b.hadBoss,gold}; G.screen='reward'; buildRewards(); render(); playTransition('#5a4410');
     // Drain multi-essence / fragment / build popups that queued during the fight.
@@ -3641,7 +3664,7 @@ const INFO_TEXT={
      <span class="muted">Examples:</span><br>
      &bull; <b>Sanguine Pact</b> = Vampiric Aura + Blood Pact &rarr; +10% lifesteal; kills heal twice.<br>
      &bull; <b>Stormfury</b> = Twin Fang + Eagle Eye &rarr; critical hits trigger an extra strike.<br>
-     &bull; <b>Glass Reaper</b> = Glass Cannon + Executioner &rarr; execute foes below 45% HP.<br><br>
+     &bull; <b>Glass Reaper</b> = Glass Cannon + Executioner &rarr; execute foes below 30% HP.<br><br>
      Earned synergies appear as <span class="teal">teal chips</span>. Hover a chip to see its exact effect.`},
   affinity:{title:'AFFINITY PATHS',body:
     `Every relic and gear piece grants <b>affinity points</b> in one of three colors. As your totals grow, you unlock <b>tier capstones</b> that reshape how your hero fights.<br><br>
