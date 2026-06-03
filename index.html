@@ -74,6 +74,31 @@
     border:2px solid #4a4070;color:var(--dim);font-family:inherit;font-size:9px;
     text-align:center;cursor:pointer;letter-spacing:1px}
   .abyss-offer .ao-back:hover{color:var(--amber);border-color:var(--amber)}
+  /* THE ABYSS — past the throne the whole interface changes its grain. Panels gain pale-frost
+     borders and a violet-glow shadow; the page floats a faint thin haze; the floortag drifts; the
+     buttons read a touch colder. None of this is information — it's TEXTURE. The deep should not
+     look like the chambers above. */
+  body.abyss{filter:saturate(.86) brightness(.96)}
+  body.abyss::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:138;
+    background:radial-gradient(ellipse at 50% -8%,rgba(180,150,220,.10) 0%,transparent 65%),
+               radial-gradient(circle at 12% 88%,rgba(120,90,170,.06) 0%,transparent 24%),
+               radial-gradient(circle at 88% 78%,rgba(120,90,170,.06) 0%,transparent 24%);
+    mix-blend-mode:screen;animation:abyssDrift 9s ease-in-out infinite alternate}
+  @keyframes abyssDrift{from{opacity:.55;transform:translateY(-2px)}to{opacity:.95;transform:translateY(2px)}}
+  body.abyss .panel{border-color:#5a4080;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 28px rgba(100,60,160,.10)}
+  body.abyss .panel::before{content:'';position:absolute;inset:-1px;pointer-events:none;
+    border:1px solid rgba(192,168,230,.18);box-shadow:inset 0 0 0 1px rgba(80,50,140,.4)}
+  body.abyss .panel{position:relative}
+  body.abyss .btn{border-color:#4a3a70;background:linear-gradient(180deg,#1c1830,#15122a)}
+  body.abyss .btn:hover{border-color:#c0a0ff;color:#fff;text-shadow:0 0 6px rgba(192,160,255,.55)}
+  body.abyss .floortag{color:#c9b6ff;letter-spacing:2px;text-shadow:0 0 10px rgba(160,100,220,.55)}
+  body.abyss .floortag::before{content:'\\2767 \\2009';opacity:.55;color:#a08acc}
+  body.abyss .floortag::after{content:'\\2009 \\2767';opacity:.55;color:#a08acc}
+  body.abyss .slot{border-color:#4a3a70;background:#0a0716}
+  body.abyss .pstrip{border-color:#5a4080}
+  body.abyss .invtabs button{border-color:#3a2a60}
+  body.abyss h3{text-shadow:0 0 6px rgba(160,100,220,.35)}
+  body.abyss .panel.tight{border-color:#5a4080}
   .center{text-align:center}.muted{color:var(--dim)}
   .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
   pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
@@ -2432,6 +2457,8 @@ const ZONE_BG=['radial-gradient(circle at 50% 15%, #2a1e10 0%, #0d0b16 58%, #070
   'radial-gradient(circle at 50% 15%, #20123a 0%, #0c0a1d 58%, #060611 100%)'];
 function setZoneBg(){ try{ const inRun=G.player&&['corridor','room','event','reward','battle','triumph','merchant','inventory'].includes(G.screen);
   document.body.style.background = inRun ? (G.abyss?ZONE_BG[3]:ZONE_BG[zoneOf(G.depth)]) : '';
+  // Past the throne the WHOLE UI changes its grain — panel chrome, button glow, floor tag treatment.
+  document.body.classList.toggle('abyss', !!G.abyss);
   // Heat and Miasma should be felt — apply body classes that tint the whole UI.
   const ht=heatActive()?heatTier():0, mt=miasmaActive()?miasmaTier():0;
   document.body.classList.toggle('world-warm',   ht===1);
@@ -3213,7 +3240,11 @@ function sagaNpcLine(id){ const n=npcState(id); if(!n.met)return null;
     watcher: [
       'Chained to his pillar. Recognises something in you.',
       'Says you carry more of HIM each visit. He sounds tired.',
-      'Watches you go past in silence now. He has stopped asking you to stop.']};
+      'Watches you go past in silence now. He has stopped asking you to stop.'],
+    merchant: [
+      'A stall in a place that should not have stalls. He took your coin without asking your name.',
+      'He recognises you on sight now. Pours something warm without being asked.',
+      'You have an arrangement. He says he will be sad when something takes you.']};
   const tier = n.met>=4?2 : n.met>=2?1 : 0;
   return (lines[id]||['','',''])[tier];
 }
@@ -3263,7 +3294,7 @@ function renderSagaBody(){ const p=G.player; const r=loadRecords();
   // more out there" without naming bosses you haven't seen.
   const hiddenRow = hiddenCount>0 ? `<div class="slot muted" style="display:flex;justify-content:space-between;align-items:center"><span>▣▣▣ ▣▣▣▣ ▣▣▣▣▣ <span class="muted" style="font-size:8px;opacity:.7">(${hiddenCount} more never met)</span></span><span class="muted">?</span></div>` : '';
   // ----- 3) ANCHOR NPCS -----
-  const npcs=[{id:'lantern',name:'THE LANTERN KEEPER'},{id:'cartog',name:'THE LAST CARTOGRAPHER'},{id:'cardinal',name:'THE CARDINAL WITHOUT A FACE'},{id:'scholar',name:'THE FROZEN SCHOLAR'},{id:'wsmith',name:'THE WEEPING SMITH'},{id:'watcher',name:'THE WATCHFUL PRISONER'}];
+  const npcs=[{id:'lantern',name:'THE LANTERN KEEPER'},{id:'cartog',name:'THE LAST CARTOGRAPHER'},{id:'cardinal',name:'THE CARDINAL WITHOUT A FACE'},{id:'scholar',name:'THE FROZEN SCHOLAR'},{id:'wsmith',name:'THE WEEPING SMITH'},{id:'watcher',name:'THE WATCHFUL PRISONER'},{id:'merchant',name:'THE MERCHANT'}];
   // Only MET anchors get a row; the unmet collapse to one teasing line (no column of "never met").
   const metNpcs=npcs.filter(n=>npcState(n.id).met);
   const unmet=npcs.length-metNpcs.length;
@@ -3587,18 +3618,42 @@ function openChest(){
 /* ---------- MERCHANT ---------- */
 function renderMerchant(){
   const p=G.player;
+  // First visit to this stall THIS run — bump the meet counter once. The merchant is now an anchor
+  // NPC with persistent state in crypt_npc, same pattern as the Lantern Keeper / Cardinal / Scholar.
+  if(!G.room._merchMet){ npcMeet('merchant'); G.room._merchMet=1; }
   if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(SLOTS); let pm=(heatActive()&&heatTier()>=2)?1.3:1; if(G.room.discount)pm*=0.75;
     G.room.stock={relic:rp.length?pick(rp):null, gear:makeItem(gslot,p.cls,G.depth+1), pm}; }
   const st=G.room.stock; const mc=b=>Math.round(b*(st.pm||1));
+  // === THE MERCHANT'S VOICE — state-aware flavor that makes the stall feel like a person ===
+  // Hook order: most psychologically loaded first.
+  //   - in-debt visit (Collector marked or close)  - "your debt is showing"
+  //   - many-times visitor                          - "you again. you owe a lot of people"
+  //   - bought from him many times across runs     - "I'll be sad when something takes you"
+  //   - skinflint (visited a lot, never bought)    - "you look but never buy"
+  //   - returning this run vs returning at all     - "back so soon" vs "you. again."
+  //   - first-ever visit                            - the original line
+  const mst=npcState('merchant'); const met=mst.met||0; const buys=mst.buys||0; const spent=mst.spent||0;
+  const runs=loadRecords().runs||0; const sameRun=(mst.lastBuyRun||0)===runs && buys>0;
+  let greet, sub;
+  if(G.collectorEta>0 && G.debt>=40){ greet='"Your debt is showing, traveler. I notice these things. They follow you in here too."'; sub='He does not stop arranging his wares. He does not need to look up.'; }
+  else if(G.debt>=25 && met>=2){ greet='"Brave, what you owe. Or stupid. I respect both. The two are kin down here."'; sub='He weighs a coin in his palm and sets it back, gently, like a body.'; }
+  else if(buys>=10){ greet='"I will be sad when something down here takes you. You are good for business, and I have stopped pretending otherwise."'; sub='He pours something into a small cup and hands it across without being asked. It is warm.'; }
+  else if(met>=5 && buys<=1){ greet='"You look. You never buy. I am patient. The crypt is patient too &mdash; just slower about it."'; sub='He does not move from his stool. He has heard this conversation before.'; }
+  else if(met>=4){ greet='"You again. You owe a lot of people on the surface, do not you? It is the way you stand."'; sub='He clears space on the table for you without being asked.'; }
+  else if(sameRun){ greet='"Back so soon. You did not like my prices, or you found gold in something you killed?"'; sub='A small smile, the kind a man gives a regular.'; }
+  else if(met===2 || met===3){ greet='"Ah. You. Coin for comfort, as we agreed."'; sub='He recognises you the way a riverbed recognises water.'; }
+  else { greet='"Coin for comfort, traveler. I do not ask your name."'; sub='An old man at a stall in a place that should not have stalls.'; }
   const heatNote=(st.pm||1)>1?`<div class="center red" style="font-size:8px">The Furnace's heat has driven prices up.</div>`:'';
   const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
   const relicBtn=st.relic?item('Relic: '+st.relic.name,mc(70),st.relic.note,"buy('relic')",p.gold>=mc(70)):'';
   const gcost=st.gear?mc(40+st.gear.rarity*22):0;
   const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,itemStatsText(st.gear),"buy('gear')",p.gold>=gcost):'';
+  const arrangement = (buys>=5) ? `<p class="muted center" style="font-size:8px;opacity:.75;margin-top:4px">&#9670; he has our arrangement &middot; ${spent}g spent here, across ${met} visits</p>` : '';
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p,true)}
     <div class="panel fade room-in shop-panel">
       <h3 class="center amber" style="margin:2px 0 2px">&#128176; THE MERCHANT</h3>
-      <p class="muted center" style="font-size:8px">"Coin for comfort, traveler. I do not ask your name."</p>
+      <p class="evtext center" style="font-size:9px;line-height:1.7;margin:6px 4px 2px">${greet}</p>
+      <p class="muted center" style="font-size:8px;line-height:1.6;opacity:.75">${sub}</p>
       <div class="coinbar"><span class="amber">&#128176; ${p.gold} GOLD</span><span class="teal">&#9670; ${p.essence}</span></div>${heatNote}
       <div class="shop-grid">
       ${item('Health Potion',mc(25),'+1 potion (40% heal in battle)',"buy('potion')",p.gold>=mc(25))}
@@ -3607,15 +3662,17 @@ function renderMerchant(){
       ${item('Mystery Upgrade',mc(40),'a random permanent upgrade',"buy('upgrade')",p.gold>=mc(40))}
       </div>
       ${gearBtn}${relicBtn}
+      ${arrangement}
       <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>`;
 }
-function buy(kind){ const p=G.player,st=G.room.stock; let bought=false; const mc=b=>Math.round(b*(st.pm||1));
-  if(kind==='potion'&&p.gold>=mc(25)){p.gold-=mc(25);p.potions++;SFX.play('potion');bought=true;}
-  else if(kind==='heal'&&p.gold>=mc(18)){p.gold-=mc(18);heal(p,Math.round(p.maxHp*0.5));SFX.play('heal');bought=true;}
-  else if(kind==='mana'&&p.gold>=mc(14)){p.gold-=mc(14);p.mana=p.maxMana;SFX.play('heal');bought=true;}
-  else if(kind==='upgrade'&&p.gold>=mc(40)){p.gold-=mc(40);gainUpgrade(p,pick(UPGRADES));SFX.play('upgrade');bought=true;}
-  else if(kind==='gear'&&st.gear){const c=mc(40+st.gear.rarity*22);if(p.gold>=c){p.gold-=c;equipItem(p,st.gear);st.gear=null;SFX.play('upgrade');bought=true;}}
-  else if(kind==='relic'&&p.gold>=mc(70)&&st.relic){p.gold-=mc(70);gainRelic(p,st.relic);st.relic=null;bought=true;}
+function buy(kind){ const p=G.player,st=G.room.stock; let bought=false; let spent=0; const mc=b=>Math.round(b*(st.pm||1));
+  if(kind==='potion'&&p.gold>=mc(25)){spent=mc(25);p.gold-=spent;p.potions++;SFX.play('potion');bought=true;}
+  else if(kind==='heal'&&p.gold>=mc(18)){spent=mc(18);p.gold-=spent;heal(p,Math.round(p.maxHp*0.5));SFX.play('heal');bought=true;}
+  else if(kind==='mana'&&p.gold>=mc(14)){spent=mc(14);p.gold-=spent;p.mana=p.maxMana;SFX.play('heal');bought=true;}
+  else if(kind==='upgrade'&&p.gold>=mc(40)){spent=mc(40);p.gold-=spent;gainUpgrade(p,pick(UPGRADES));SFX.play('upgrade');bought=true;}
+  else if(kind==='gear'&&st.gear){const c=mc(40+st.gear.rarity*22);if(p.gold>=c){spent=c;p.gold-=c;equipItem(p,st.gear);st.gear=null;SFX.play('upgrade');bought=true;}}
+  else if(kind==='relic'&&p.gold>=mc(70)&&st.relic){spent=mc(70);p.gold-=spent;gainRelic(p,st.relic);st.relic=null;bought=true;}
+  if(bought && spent>0){ const m=npcState('merchant'); npcSet('merchant',{spent:(m.spent||0)+spent, buys:(m.buys||0)+1, lastBuyRun:(loadRecords().runs||0)}); }
   if(!bought)SFX.play('fail');
   renderMerchant();
 }
