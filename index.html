@@ -1274,6 +1274,7 @@ const EVENTS=[
        if(n.bought===2) return '"You bought one before." He hands you another green lantern. It hums against your palm in the same rhythm as the first. He notices the matching and does not say anything. (+10 max HP)';
        return `He hands you the ${ordinal(n.bought)} lantern without being asked. "Some of you collect them. I have stopped wondering why." (+10 max HP)`;}},
      {label:'"How many have you lit?"',desc:'Press him',run:p=>{discoverLore('l17'); npcSet('lantern',{stage:Math.max(2,npcState('lantern').stage),pressed:1}); const r=loadRecords(); const deaths=Math.max(0,(r.runs||0)-(r.wins||0));
+       if(paleRumor()) return '"I light one every time somebody dies." A long pause. <span class="shout-red">"Twice now I have reached to light one and found nothing to light it FOR. The death was there. The person was not. There had never been a person."</span> He folds his hands. "Those are the ones that went all the way to the bottom."';
        if(deaths<=2) return '"Stopped counting around the Sixth Expedition." A long pause. "There was one after that. We do not talk about it."';
        if(deaths<=10) return `"Stopped counting around the Sixth Expedition." A pause. "Of your run though, I do keep count. ${deaths}. So far."`;
        return `He turns the frame so you can see the bottom row. ${deaths} small green lights, in neat order. <span class="shout-red">"I do not light them for everyone. Only the ones the crypt keeps sending back."</span>`;}},
@@ -1286,6 +1287,7 @@ const EVENTS=[
    },
    options:[
      {label:'"Which god do you serve?"',desc:'Ask',run:p=>{discoverLore('l19'); const n=npcState('cardinal');
+       if(paleRumor()) return '"A patient one." A long silence under the hood. <span class="shout-red">"There is a deep she will not consecrate. She told me there was nothing down there worth blessing."</span> A pause. <span class="shout-red">"She lied to me. There is something. It is only older than blessing &mdash; older than the thing blessing was invented to keep out."</span>';
        if(n.met<=2) return '"A patient one." He does not turn his head. <span class="shout">"She does not enter the lower chambers."</span> A pause. <span class="shout-red">"I would not, if I were her."</span>';
        npcSet('cardinal',{stage:Math.max(1,n.stage),asked:1});
        return '"A patient one." A long pause. "She has watched you come back. She is curious about you. She is afraid OF you." <span class="shout-red">"That is not a thing a god should be."</span>';}},
@@ -1299,7 +1301,9 @@ const EVENTS=[
   {id:'wsmith',title:'THE WEEPING SMITH',zone:2,sprite:{src:'assets/monsters/golem.png',tint:'tint-amber'},art:"  ,---,\n  |( )|\n  )===( \n /|fire|\\\n  d   b",
    text:'A blacksmith sits at a cold anvil. He is not making anything. He is taking blade after blade from a stack at his feet and snapping each one with his bare hands. He is crying.',
    options:[
-     {label:'"Why are you breaking them?"',desc:'Ask',run:p=>{discoverLore('l19');return '<span class="shout">"They always bring them back."</span> He does not look up. He keeps snapping. <span class="shout">"Fire wins against everything."</span> A pause. <span class="shout-red">"Except that."</span>';}},
+     {label:'"Why are you breaking them?"',desc:'Ask',run:p=>{discoverLore('l19');
+       if(paleRumor()) return '<span class="shout">"They always bring them back."</span> He snaps another blade. <span class="shout">"Fire takes everything down here. Rust. Bone. The cold itself, if you get the bellows screaming."</span> A pause. <span class="shout-red">"There is one thing at the bottom the fire slides off of. Does not resist it. Ignores it. Like the fire is the part that was never real."</span>';
+       return '<span class="shout">"They always bring them back."</span> He does not look up. He keeps snapping. <span class="shout">"Fire wins against everything."</span> A pause. <span class="shout-red">"Except that."</span>';}},
      {label:'"Whose swords were these?"',desc:'Press',run:p=>{discoverLore('l18');return '"Champions." He says it without looking up. "Like you. Some of them were even good." He keeps snapping.';}},
      {label:'Give him a piece to destroy',desc:'-1 armor piece, +random upgrade',run:p=>{const slots=['head','chest','legs','boots','ring'].filter(s=>p.equip[s]);if(!slots.length)return 'He shakes his head at your bare hands.';const slot=pick(slots);const it=p.equip[slot];unequip(p,slot);const up=pick(UPGRADES);gainUpgrade(p,up);return `He takes your ${it.name} and breaks it across his knee. Something old comes loose. (${up.note})`;}},
    ]},
@@ -1314,6 +1318,7 @@ const EVENTS=[
        if(n.met<=2) return '"This." He gestures at the wall. "It is not where it was yesterday." He goes back to his sketching, unbothered.';
        return '"This." He gestures at the wall. A pause. "And you. I started mapping you about three of your visits ago. You take the same wrong turn at the same corner, every time. I find it comforting."';}},
      {label:'"Have you mapped the bottom?"',desc:'Press',run:p=>{discoverLore('l19'); const r=loadRecords(); npcSet('cartog',{stage:Math.max(1,npcState('cartog').stage),askedBottom:1});
+       if(paleRumor()) return '<span class="shout">"Mapped it?"</span> He turns to the last page. It is blank. He taps it. <span class="shout-red">"My pen will not go here. Not will not &mdash; cannot. The ink dries before it lands. The paper already knows to leave it out."</span> He turns the page back, quickly.';
        if(r.deepest<RUN_LENGTH) return '<span class="shout">"Once."</span> He does not look up. <span class="shout-red">"Never again."</span> He does not say why.';
        return `<span class="shout">"Once."</span> Now he looks up. "You have been further than me, you know. Past the throne." <span class="shout-red">"There is a thing in the cold below the throne. It does not have a name. Even the dragon would not look at it."</span>`;}},
      {label:'Buy a partial map (-40 gold)',desc:'Next 2 corridors hit louder loot',run:p=>{if(p.gold<40)return 'He shrugs without looking up.';p.gold-=40;G._luckBoom=2; const n=npcState('cartog');
@@ -1384,6 +1389,7 @@ const EVENTS=[
    },
    options:[
      {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3); npcSet('scholar',{stage:Math.max(1,npcState('scholar').stage),read:1});
+       if(paleRumor()) return '"A record of every champion who came this far." She runs a finger down a column. <span class="shout-purple">"I keep a column for how each of you ends. The cold. The King. Your own greed."</span> A pause. <span class="shout-purple">"For a few, the column is blank. Not unknown &mdash; blank. As though no death was ever owed. As though there had been no one to die."</span> (+8 max mana, the cold thickens)';
        const r=loadRecords(); const showHand=(G.miasma>=18 || (r.runs||0)>=2);
        const punch = showHand
          ? `She turns the ledger. Your name is there ${(r.runs||0)>=2?`<b>${r.runs} times</b>`:'<b>once</b>'}. <b>In your handwriting.</b> The most recent entry is dated today.`
@@ -1412,7 +1418,9 @@ const EVENTS=[
    text:'A man sits chained to a pillar of black iron. The chains are old. So is he. He watches you walk in, and his face goes very still — not afraid, exactly. Recognising something.',
    options:[
      {label:'"You know what I have been doing."',desc:'Acknowledge',run:p=>{discoverLore('l19');const fams=(p.memory.path||[]).slice(-2).join(', ');return `<span class="shout-purple">"I can taste it on you."</span> He does not flinch. <span class="shout-purple">"That is how He started. Small things. Then the ${fams}. Then everything else."</span> A long pause. "You should stop. You will not stop."`;}},
-     {label:'"Who is HE?"',desc:'Press',run:p=>{discoverLore('l18');return '"The one this place was built around." He nods toward the floor &mdash; downward. "We took him apart. We hid the pieces in the only place nothing leaves." He looks at you again. <span class="shout-red">"You have been finding them."</span>';}},
+     {label:'"Who is HE?"',desc:'Press',run:p=>{discoverLore('l18');
+       if(paleRumor()) return '"The one this place was built around." He grips the chain until it creaks. <span class="shout-red">"It does not &mdash; listen. It does not EAT you. Eating leaves something. A bone. A name said less and less."</span> His voice splinters. <span class="shout-red">"It un-happens you. I had a brother. I think. I cannot find the place where he was."</span>';
+       return '"The one this place was built around." He nods toward the floor &mdash; downward. "We took him apart. We hid the pieces in the only place nothing leaves." He looks at you again. <span class="shout-red">"You have been finding them."</span>';}},
      {label:'"Break your chains?"',desc:'Free him &middot; +relic, +6 Miasma',run:p=>{const r=grantRandomRelic(p);addMiasma(6);return (r?`You snap the irons. He does not stand. He presses a small black relic into your hand &mdash; <b>${r}</b> &mdash; and closes his eyes. "Thank you. I have been here a long time."`:'You snap the irons. He does not stand. He presses something into your hand that you already carry, and closes his eyes.')+' (the cold thickens)';}},
      {label:'Walk past in silence',desc:'No reward, no cost',run:p=>'He watches you the whole way across the room. He does not call after you. He does not need to.'},
    ]},
@@ -1603,6 +1611,20 @@ function npcMeet(id){ const r=loadRecords(); const s=loadNpc(); const cur=Object
   cur.met=(cur.met||0)+1; cur.lastRun=r.runs||0; s[id]=cur; saveNpc(s); return cur; }
 // Human-readable ordinal for run/meeting counters: 1st, 2nd, 3rd, 4th...
 function ordinal(n){ n=n|0; const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+/* ============================================================
+   THE PALE — myth seeding. References to the thing at the bottom are RARE and grow slightly
+   more frequent the deeper the player has historically gone. A true first-timer hears nothing
+   (the world greets them before it warns them); by the time someone nears the Abyss they have
+   caught fragments from frightened mouths — but never the whole truth. Voices stay distinct;
+   nothing ever states what it IS.
+   ============================================================ */
+function paleRumorChance(){ const d=(loadRecords().deepest)||0;
+  if(d<11) return 0;            // run 1 / barely descended — let the world be ordinary first
+  if(d>=RUN_LENGTH) return 48;  // reached the throne — the deep is openly afraid for you now
+  if(d>=30) return 36;          // far into the cold
+  if(d>=18) return 23;          // past the Warden
+  return 11; }                  // a faint, rare fragment
+function paleRumor(){ return chance(paleRumorChance()); }
 /* atmospheric whispers — drip the world into the player run by run */
 const WHISPERS={
   0:['You hear something turn over in its sleep, far below.','Dust falls in still air. The crypt is listening.','A name is scratched into the stone — you do not know it. Yet.','The torches here are newer than the tombs.','A single boot lies forgotten. Its owner did not walk back this way.'],
@@ -1610,7 +1632,19 @@ const WHISPERS={
   2:['Your breath is the loudest sound in the world now.','Frost forms on the rim of your eye.','A whisper, barely there: "you opened it."','Wounds you do not remember taking weep slowly.','You think you saw your own reflection turn a corner ahead.'],
   3:['Reality grows thin like worn cloth.','You step where there is no floor and do not fall.','You catch yourself thinking thoughts that are not yours.','The Deep has been waiting a very long time. It is patient.','A voice that sounds like yours says: "we are almost home."'],
 };
-function whisperFor(d){ if(G.abyss)return pick(WHISPERS[3]); return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
+// Rare wall-inscriptions about the Pale — only deep (zone 3 / Abyss) and double-gated so even
+// there they are uncommon. The walls themselves are too afraid to say it plainly.
+const PALE_INSCRIPTIONS=[
+  'Scratched into the wall, very small: "IT IS COLDER FURTHER DOWN. IT IS COLDER THAN DOWN."',
+  'Someone has written, crossed out, and written again: "do not name it · do not name it · do not"',
+  'Gouged deep into the stone: "the dragon could look at anything. it would not look at this."',
+  'Words worn nearly smooth: "before hunger had a name, this was already hungry."',
+  'Tally marks, then a final line struck clean through all of them, then nothing at all.',
+  'Carved by a shaking hand: "it leaves no echo. i checked. i checked for mine."',
+];
+function whisperFor(d){
+  if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)) return pick(PALE_INSCRIPTIONS);
+  if(G.abyss)return pick(WHISPERS[3]); return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
 /* boss bios — shown the first time you meet each boss across all your runs */
 const BOSS_BIO={
   ogre:'An old warlord who chose this crypt over a soft death. He keeps the gate as a kindness — to himself.',
@@ -2458,6 +2492,10 @@ const ECHO_KNOWING=[
   'I left a relic for you, two zones up. You walked past it.',
   'It is colder than last time. Or maybe I am older.',
   'When you get there — and you will — try to remember our name.',
+  // Pale fragments — confused recognition from versions of you that reached too far.
+  'I got further than this once. I do not remember a bottom. I remember it not remembering me.',
+  'There is a cold past the cold. Do not let it learn your name — it does not give names back.',
+  'One of us reached the very end. I cannot tell you what they found. There is no them left to have found it.',
 ];
 function echoLine(cause){ return pick(ECHO_LINE[cause]||ECHO_LINE.null); }
 function saveEcho(){ const p=G.player; if(!p)return; const cause=topCause();
