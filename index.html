@@ -1217,9 +1217,9 @@ const RELICS=[
 const AFF_THRESH=[3,6,9];
 const AFF_META={w:{key:'w',name:'WRATH',color:'red'},g:{key:'g',name:'GUILE',color:'teal'},v:{key:'v',name:'VEIL',color:'blue'}};
 const AFF_TIER_TITLE={
-  w:['','WRATH I: +12% damage','WRATH II: +12% damage, +8% crit','AVATAR OF WRATH: +15% dmg & your hits CLEAVE'],
-  g:['','GUILE I: +12% crit, +10% dodge','GUILE II: status effects last longer, +8% crit','TRICKSTER: basic hits inflict random status; crits refund mana'],
-  v:['','VEIL I: +18 max HP, +12 mana','VEIL II: regenerate HP each combat turn','WARDEN: begin each battle with a damage BARRIER'],
+  w:['','WRATH I: +12% damage &middot; RENDING EDGE — every 3rd strike sinks deeper (+60% dmg)','WRATH II: +12% damage, +8% crit','AVATAR OF WRATH: +15% dmg & your hits CLEAVE'],
+  g:['','GUILE I: +12% crit, +10% dodge &middot; FEINT — the strike after DEFEND is guaranteed crit','GUILE II: status effects last longer, +8% crit','TRICKSTER: basic hits inflict random status; crits refund mana'],
+  v:['','VEIL I: +18 max HP, +12 mana &middot; STEADY HEART — every 3rd hit you take heals you','VEIL II: regenerate HP each combat turn','WARDEN: begin each battle with a damage BARRIER'],
 };
 /* ---------- synergies (named relic-combo payoffs) ---------- */
 const SYNERGIES=[
@@ -1291,10 +1291,17 @@ const EVENTS=[
    },
    options:[
      {label:'"Which god do you serve?"',desc:'Ask',run:p=>{discoverLore('l19'); const n=npcState('cardinal');
-       if(paleRumor()) return '"A patient one." A long silence under the hood. <span class="shout-red">"There is a deep she will not consecrate. She told me there was nothing down there worth blessing."</span> A pause. <span class="shout-red">"She lied to me. There is something. It is only older than blessing &mdash; older than the thing blessing was invented to keep out."</span>';
-       if(n.met<=2) return '"A patient one." He does not turn his head. <span class="shout">"She does not enter the lower chambers."</span> A pause. <span class="shout-red">"I would not, if I were her."</span>';
+       // Path-aware tail: he names YOUR god, reflected back. Fires only when you've committed enough
+       // to a single path to be unmistakable (T2+). Cheap to add, multiplies how "seen" the world feels.
+       const top = (p.affTier.w>=2)?'w' : (p.affTier.v>=2)?'v' : (p.affTier.g>=2)?'g' : null;
+       const yourGod = top==='w' ? '<span class="shout-red">"Yours is HUNGER. He approves of you. He approves of you a great deal."</span>'
+                    : top==='v' ? '<span class="shout">"Yours is PATIENCE. He has watched you bleed and not stop. He is the one I would pray to, if I could."</span>'
+                    : top==='g' ? '<span class="shout-purple">"Yours is THE TURN — the one between intention and proof. He laughs at me. He laughs at me kindly."</span>'
+                    : null;
+       if(paleRumor()) return '"A patient one." A long silence under the hood. <span class="shout-red">"There is a deep she will not consecrate. She told me there was nothing down there worth blessing."</span> A pause. <span class="shout-red">"She lied to me. There is something. It is only older than blessing &mdash; older than the thing blessing was invented to keep out."</span>'+(yourGod?' '+yourGod:'');
+       if(n.met<=2) return '"A patient one." He does not turn his head. <span class="shout">"She does not enter the lower chambers."</span> A pause. <span class="shout-red">"I would not, if I were her."</span>'+(yourGod?' '+yourGod:'');
        npcSet('cardinal',{stage:Math.max(1,n.stage),asked:1});
-       return '"A patient one." A long pause. "She has watched you come back. She is curious about you. She is afraid OF you." <span class="shout-red">"That is not a thing a god should be."</span>';}},
+       return '"A patient one." A long pause. "She has watched you come back. She is curious about you. She is afraid OF you." <span class="shout-red">"That is not a thing a god should be."</span>'+(yourGod?' '+yourGod:'');}},
      {label:'Make an offering (-25 gold)',desc:'+12 max HP, partial heal',run:p=>{if(p.gold<25)return 'He says nothing about your empty purse. It is somehow worse than disapproval.';p.gold-=25;p.maxHp+=12;heal(p,Math.round(p.maxHp*0.18)); const n=npcState('cardinal'); npcSet('cardinal',{stage:Math.max(2,n.stage),offered:(n.offered||0)+1});
        const o=(n.offered||0)+1;
        if(o===1) return 'The coin is gone before it reaches the altar. You feel briefly, terribly observed. (+12 max HP)';
@@ -3812,6 +3819,16 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   const mt=miasmaActive()?miasmaTier():0;
   if(mt>=3 && chance(Math.min(28,(mt-2)*7))){ SFX.play('dodge'); blog(`Your arm forgets the strike for a moment — you miss.`,'info'); return; }
   let d=p.atk+p.weapon.dmg+rnd(4); let c=rollCrit(); if(b.shadowCrit){c=true;b.shadowCrit=0;} if(b.titheCrits>0){c=true;b.titheCrits--;} if(c)d*=critMult();
+  // === AFFINITY T1 RHYTHM HOOKS — small per-path mechanics that change HOW you fight, not just
+  //     the numbers attached to attacks. Each is one counter/flag, no new resource. The goal is
+  //     that WRATH-warrior plays differently from VEIL-warrior, not just hits for more.
+  // WRATH I — RENDING EDGE: every 3rd basic strike sinks deeper. Rewards aggression cadence.
+  if(p.affTier.w>=1 && !isExtra){ p._wrathStrikes=(p._wrathStrikes||0)+1;
+    if(p._wrathStrikes>=3){ p._wrathStrikes=0; d=Math.round(d*1.6); blog('&#9876; RENDING EDGE — your blow sinks deeper!','crit'); SFX.play('crit'); } }
+  // GUILE I — FEINT: the strike immediately after a DEFEND is guaranteed crit. Rewards a
+  //   defend-then-strike rhythm.
+  if(p.affTier.g>=1 && p._feintPrimed && !isExtra){ p._feintPrimed=0;
+    if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); blog('&#10022; FEINT — the opening you waited for!','crit'); SFX.play('crit'); } }
   // Mob Rule consumes a one-shot +50% buff on next basic strike
   if(p._mobBuffNextHit){ d*=1.5; p._mobBuffNextHit=0; blog('Mob Rule strikes through you!','crit'); }
   SFX.play(c?'crit':'hit');
@@ -3881,7 +3898,9 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     // the role becomes "slightly less damage for a strong AOE Weaken", not "cheaper but useless".
     case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');const cm=Math.min(180,mm);aoeHit(i=>{let d=6+Math.round(cm*0.16)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
     case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.95+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
-    case 'shield':{SFX.play('skill');b.pdef=0.55;b.pdefTurns=2;blog('You raise your guard! (55% block, 2 turns)','info');break;}
+    case 'shield':{SFX.play('skill');b.pdef=0.55;b.pdefTurns=2;blog('You raise your guard! (55% block, 2 turns)','info');
+      // GUILE I — FEINT primer: defending opens the door to the next strike.
+      if(p.affTier.g>=1){ p._feintPrimed=1; blog('&#10022; You read the gap. Your next strike is a FEINT.','info'); } break;}
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
       // Whirlwind base 1.45 / keystone 1.55. Eternal Cyclone now also stacks +1 ATK per cast this fight
       // (capped at +5) so it becomes a real ramp instead of just "AOE + a small heal".
@@ -4094,7 +4113,10 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
     p.hp=Math.max(1,Math.round(p.maxHp*0.25));
     SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
   else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');}
-    if(p.hp<=0){ G._killingBlow='enemy'; G._killingBlowName=e.name; } }   // enemy/boss landed the final blow — remember WHO
+    if(p.hp<=0){ G._killingBlow='enemy'; G._killingBlowName=e.name; }
+    // VEIL I — STEADY HEART: every 3rd hit you absorb folds back into you. Rewards the trade.
+    if(dmg>0 && p.hp>0 && p.affTier.v>=1){ p._veilHits=(p._veilHits||0)+1;
+      if(p._veilHits>=3){ p._veilHits=0; const h=Math.max(2,Math.round(p.maxHp*0.06)); heal(p,h); blog(`&#9774; STEADY HEART — the wound seals (+${h} HP).`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); } } }   // enemy/boss landed the final blow — remember WHO
   if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
   if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
   if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
