@@ -932,18 +932,18 @@ const BOSS_CRY={
   necro:'"You will serve me in death."', titan:'"...INTRUDER. CRUSH. CRUSH."', tyrant:'"This crypt is MINE, little champion."',
   demon:'"Your soul will burn for a thousand years."', lich:'"Flesh is such a fleeting indulgence."', flameknight:'"Ash to ash, hero."',
   dragon:'"Every time you reach me, you think you are the first."',
-  king:'"You should not be tired yet. You will be."',
+  king:'"...if you would just. No. If you. ...what was I. Sit down. No &mdash; do not sit down, do not ever &mdash; ...who are you again."',
   devourer:'"...closer. I have been so quiet. ...come closer."',
-  warden:'"You mistake mercy for obstruction. You always do."',
-  remembered:'"Do you understand now? ... No? Good. Then you still have a chance."',
+  warden:'"The door is mine to keep. The keeper does not ask why. The champion will try the door. The champion always tries the door."',
+  remembered:'"Oh. It is you. It is always you. You have my walk, you know. You never could see it."',
   paledevourer:'',
 };
 const BOSS_DEATHCRY={
-  warden:'"...I tried. I will try again."',
+  warden:'"...post abandoned. The keeper falls. Another keeper will be found. There is always another keeper."',
   dragon:'"...not yet. Not like this. Not again."',
-  king:'"Sit, then. Wear the crown. I am so tired."',
+  king:'"...take it. The weight. I cannot remember why I &mdash; just take it. I was going to. I was always going to get up in a &mdash;"',
   devourer:'"...oh. Was that all of me? ...so little, in the end."',
-  remembered:'"...you should have stayed asleep. I will see you next time."',
+  remembered:'"...there. That is what I wanted. Go up. Carry me up. I will be the cold in your hands. See you soon. We always do."',
   paledevourer:'The thing does not fall &mdash; it simply stops. There is no last word. There is no last thought. Whatever it was, it had nothing to do with you. It was here before any of this. It was here before the cold.',
 };
 
@@ -1514,26 +1514,26 @@ const EVENTS=[
    Pulls the player deeper: find the next piece, learn how it ends.
    ============================================================ */
 const LORE=[
-  {id:'l1',t:'The Descent',x:'They all came for the hoarded power of the crypt. None came back up. You will be the exception — or you will be an Echo for the next fool.'},
+  {id:'l1',t:'The Descent',x:'Everyone who comes here is told the same thing in town: go down, take the power, come back rich. Nobody in town has ever met someone who did the last part. You go down anyway. So did they.'},
   {id:'l2',t:'The Warm Crypt',x:'The upper halls were a prison, then a tomb, then forgotten. The warmth was never comfort. It was containment. Something down here has been kept warm on purpose.'},
   {id:'l3',t:'The Furnace',x:'Below the tombs, the heat is deliberate. Someone lit a fire and fed it for an age. Fire is a lock. Heat is a warning. The hotter it burns, the closer you are to the thing it cages.'},
   {id:'l4',t:'The Warden',x:'The dragon is older than the crypt around it. It does not move from its door. It does not call itself a guardian — it calls itself something gentler, which is somehow worse. Champions never quite know what to make of that, and they do not get the chance to ask twice.'},
-  {id:'l5',t:'What the Cold Is',x:'When the Warden falls the fire dies. Something below stops being warm. The furnace was not a furnace &mdash; it was a fever, and you have just broken it.'},
+  {id:'l5',t:'What the Cold Is',x:'When the Warden falls the fire goes out all at once, like a held breath let go. The cold that comes up the stairs to meet you is not the cold of a dead hearth. It is the cold of something that was running a temperature, and has just gone still.'},
   {id:'l6',t:'Miasma',x:'The cold is not weather. It is appetite. It does not freeze the body — it erodes the memory of being alive. Down here, wounds forget how to close.'},
   {id:'l7',t:'The Echoes',x:'The dead you meet were champions like you. The crypt did not eat their bodies — it kept their last moment, looping, lying. Speak gently. They misremember everything now.'},
   {id:'l8',t:'Time Debt',x:'Power taken early is existence borrowed late. The Collector keeps perfect accounts. It does not want your gold. It wants the years you will never get to live.'},
   {id:'l9',t:'The Silent Deep',x:'Beneath everything, reality runs thin. There are no walls here, only the suggestion of them. The Deep is where possibility goes to be unmade.'},
   {id:'l10',t:'The Devourer',x:'It does not eat flesh. It eats what you might have become. Every champion it takes is un-happened. That is why none of them are remembered — not even by their mothers.'},
-  {id:'l11',t:'The Phantom Forge',x:'The smith hammering starlight was the first champion to reach this depth. It chose to stay, because to leave was to be forgotten. It helps you. It also envies you, terribly.'},
+  {id:'l11',t:'The Phantom Forge',x:'The smith works a metal that throws no heat. He never looks up from the anvil &mdash; except once, when you turned to leave, and his hammer went quiet behind you. He did not say anything. He has not got a name on him anywhere, and he hammers like a man making sure he is still here.'},
   {id:'l12',t:'Why You Persist',x:'You return because the crypt let exactly one possibility survive: yours. Each run, a little more of the story stays with you. The crypt is learning you. You are learning it.'},
-  {id:'l13',t:'The Forgotten King',x:'He sat upon the throne to hold the Deep shut with the weight of a crown. He has held it so long he no longer remembers ever refusing the cold its meal.'},
+  {id:'l13',t:'The Forgotten King',x:'There is a throne set directly over the dark, and a man in it who has not stood in longer than the crypt has had a name. He is not guarding it. He is just heavy, and tired, and he has forgotten there was ever a choice in sitting down.'},
   {id:'l14',t:'The Last Truth',x:'The crypt opens. Something inside you does not leave. Every champion who escapes carries a sliver of the Deep back into the light. That is how it spreads. That is how it always wins.'},
-  {id:'l15',t:'The Lie You Were Told',x:'A Champion did not enter the Crypt to slay the Devourer. The Champion IS the Devourer — split apart in an age before language, sealed in pieces, sent back as a stranger to itself. Every descent is the same pilgrimage: you, looking for the rest of you, and not knowing what you will find.'},
-  {id:'l16',t:'Why You Persist (the real reason)',x:'Time Debt is borrowed from a future Champion who will pay for it. Echoes are previous attempts that almost made it. Miasma is the seal weakening as you near the rest of yourself. The Dragon is begging you not to open the door. The Forgotten King is what you become if you sit. The Devourer is what waits if you finish the journey. The Champion Who Remembered is the only one of you who chose to stop.'},
+  {id:'l15',t:'The Lie You Were Told',x:'You came down to kill it. You are sure of that. But every door opens for you, every chain was sized for your wrists, and the pieces you keep finding fit your hands like they were measured. You are not closing in on it. You are gathering it. You have always been gathering it.'},
+  {id:'l16',t:'Why You Persist (the real reason)',x:'You keep a tally in the back of your skull that you never started. It only goes up. The Echoes count too &mdash; you have caught them mouthing your number under their breath. One of them stopped at the bottom and would not take another step. You understand him better than you would like.'},
   {id:'l17',t:'The Seventh Expedition',x:'There are records of six descents in the upper archives. The seventh is mentioned only in the margins, in the same hand, getting smaller. Nobody knows what happened to them. Nobody quite knows what happened to the records, either.'},
   {id:'l18',t:'Chambers Older Than the Crypt',x:'Some rooms down here are carved from a darker stone than the rest of the crypt. The cartographer claims those chambers do not stay in the same place between maps. The smith claims they were here before the door was. Whoever is right, the implication is unkind.'},
   {id:'l19',t:'Rumours of the Pale',x:'The smith says fire wins against everything except one thing. The cardinal says her god does not enter the lower chambers. The cartographer mapped the bottom once and refuses to do so again. None of them say the same name for it. None of them say its name aloud.'},
-  {id:'l20',t:'The Thing Before',x:'The Devourer was not born — it was discovered. The crypt was built around a fragment of something older: a cold place that existed before fire, before stars, before any of this. The dragon was not warding the Devourer. The dragon was warding what the Devourer was carved from.'},
+  {id:'l20',t:'The Thing Before',x:'The lowest stone is colder than ice has any right to make it, and it is older than the marks the masons left. They did not build a cage down here. They built around something they found and could not move. Even the Devourer was cut from it. Even the Devourer is a splinter.'},
 ];
 function loadLore(){ try{ return JSON.parse(localStorage.getItem('crypt_lore')||'[]'); }catch(e){ return []; } }
 function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg;
@@ -2265,23 +2265,23 @@ function rollAffix(depth){
 // Door peeks — sensory, ambiguous. The player should suspect, not know.
 const PEEKS={
   enemy:[
-    'Scratching. Steady, patient scratching.',
+    'The air past the door is warm, and close, and smells of something living.',
     'Something paces. It stops when you stop.',
     'A wet, rhythmic sound. Breathing. Or chewing.',
-    'A growl that lasts longer than one breath.',
+    'Stillness, the wrong kind — the stillness of something holding very still.',
     'Iron and salt. Whatever is past this door is bleeding.',
     'You hear knuckles drumming on stone.',
   ],
   chest:[
     'The smell of old gold and oiled cloth.',
-    'A glint past the threshold. A coin? A tooth?',
+    'A dull shine past the threshold. Treasure, or teeth, or just wet stone.',
     'Hinges. The unmistakable sound of hinges that have not moved in a long time.',
     'Coins scattered near the threshold, as if dropped on the way out.',
     'A heavy wooden corner, just visible past the dark.',
   ],
   event:[
     'You hear voices. Or something that wants to be voices.',
-    'Someone is in there. They are not surprised to hear you.',
+    'Someone in there has been expecting company. You cannot tell what kind.',
     'A draught carries a word you almost recognise. Then another.',
     'A door covered in old wax seals — every one of them broken.',
     'Sobbing. Or a kind of laughter that has forgotten how to be either.',
@@ -2289,39 +2289,39 @@ const PEEKS={
   ],
   relic:[
     'A faint pressure in the air. Old power, badly stored.',
-    'A plinth, empty-looking. Your eye keeps refusing to focus on it.',
+    'Something rests on a plinth. It looks valuable. It looks like it is owed.',
     'A humming, very quiet, in a key you do not know.',
     'A cold weight in the air. Whatever rests here remembers being worshipped.',
   ],
   merchant:[
-    'A warm glow. The smell of pipe smoke that has no business being down here.',
+    'A warm glow leaks through the cracks. Something down here is still lit.',
     'Quiet humming. Someone at work, ignoring the dark.',
     'Lamplight, and the clink of coins being counted by patient fingers.',
-    'A figure waits, lined up like he has been there a thousand years.',
+    'Something is laid out in rows past the dark. Wares, or bones.',
   ],
   forge:[
     'A hammer ringing on metal that should not exist any more.',
-    'Heat. Real heat — not the Furnace. A working forge.',
+    'Heat rolls out under the door. Not the crypt\'s cold for once.',
     'Sparks falling from somewhere overhead. Someone is at an anvil.',
     'The smell of quenched iron. Someone is finishing a blade.',
   ],
   shrine:[
-    'A faint glow. The kind that comes from things that have been prayed to for a long time.',
+    'A faint glow, low and patient. Something here has been still a long time.',
     'A cracked altar, dark from old offerings.',
     'Old incense. Something here still listens. Barely.',
     'A statue, face worn smooth from too many forehead-touches.',
   ],
   fountain:[
-    'Running water. Down here. That should not be possible.',
+    'The smell of clean cold water, where there should be none.',
     'A shimmer. The smell of wet stone, very clean.',
     'A bowl of water, too still. It does not catch the torchlight properly.',
     'Glassy ripples, with no wind. No movement. No reason.',
   ],
   empty:[
     'Cold stone. No sound. A moment to remember you are alive.',
-    'Empty. As far as you can see. As far as you can see.',
+    'Dust, undisturbed. Nothing has come this way in a long time. Probably.',
     'Quiet. The crypt is taking a breath.',
-    'A long, plain corridor. Suspiciously plain.',
+    'A long corridor, too quiet, too open. Your skin says ambush. Your skin is often wrong.',
     'Nothing here. So why does it feel like something is here.',
   ],
   echo:[
@@ -2331,8 +2331,8 @@ const PEEKS={
     'A champion stopped here. They never started again.',
   ],
   boss:[
-    'Something is waiting in there. It has been waiting for you specifically.',
-    'A pressure on your chest you cannot explain. Whatever is past this door knows your face.',
+    'The air past this door is heavier. Something in there has weight.',
+    'A pressure on your chest, and no reason for it. The cold here has a shape.',
     'No sound at all. The kind of silence that has teeth.',
     'A presence — bored, patient, terrible.',
   ],
@@ -2515,7 +2515,7 @@ function takeAllRewards(){ const p=G.player,pd=G.pending; if(!pd||!pd.options)re
 function groupPeek(g){
   // Sensory only — the player should hear it before they see it.
   if(g.length===1){ const u=g[0]; return peek('enemy')+(u.affix?' Something about it is wrong.':''); }
-  return 'Several. Moving in the dark together.'+(g.some(u=>u.affix)?' One of them feels heavier than the rest.':'');
+  return 'More than one thing moves in there, and they move together.'+(g.some(u=>u.affix)?' One of them feels heavier than the rest.':'');
 }
 // Door hint is just the room's sensory peek — players should suspect, not know.
 function doorHint(room){ return room.peek||'A door. Closed.'; }
@@ -2533,7 +2533,7 @@ function nextCorridor(){ G.depth++;
       else if(floor>=12 && chance(28) && !G._rememberedSlain) key='remembered';
       else key=chance(35)?'devourer':pick(Object.keys(BOSSES).filter(k=>k!=='remembered'&&k!=='paledevourer'));
       if(key==='paledevourer') peek='The cold hurts before the door opens.';
-      else if(key==='remembered') peek='A familiar silhouette waits at the end of the corridor. It has been waiting longer than you have been alive.';
+      else if(key==='remembered') peek='A silhouette at the end of the corridor. You know the shape of it, and you wish you didn\'t.';
       else peek='A horror of the deep stirs. It has been waiting.';
       G.doors=[{type:'enemy',boss:key,peek}]; }
     else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
