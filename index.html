@@ -1663,13 +1663,34 @@ const BOSS_BIO={
   remembered:'A figure that waits at the bottom. It does not introduce itself, and it does not need to: it speaks as if it has known you for centuries. Believe what it says, or do not.',
   paledevourer:'It was not built. It was not summoned. It was found here. The crypt is its shell, not its prison.',
 };
+// BOSS AWARENESS — at most one extra line, reacting to HOW the player arrived: overheated, frozen,
+// deep in Devour, or returning to a boss that has killed them before. Makes bosses feel aware of
+// the run without changing their mechanics. Returns '' for an ordinary arrival.
+function bossAwareLine(key){
+  const p=G.player; if(!p) return '';
+  const r=loadRecords(); const bd=(r.bossDeaths&&r.bossDeaths[key])||0;
+  const wrap=(cls,t)=>`<p class="${cls}" style="font-size:11px;line-height:1.7;margin-bottom:8px">${t}</p>`;
+  // Prior-death recognition wins over arrival-state — being remembered is the stronger beat.
+  if(bd>=2) return wrap('shout-purple','It regards you the way you regard a door you have already walked through. "You. Again. We both know how this goes."');
+  if(key==='warden'){
+    if(heatTier()>=4) return wrap('shout-red','Steam screams off your armour as you near it. The Warden\'s head turns, slow and deliberate. "You come carrying the Furnace itself. Good. It will be quicker for both of us."');
+    if(G.heat<=8) return wrap('shout','"You came cold." It sounds, almost, disappointed. "The others ran hot. They burned out before the door. You... you might make me move."');
+  }
+  if(key==='remembered' && miasmaActive() && miasmaTier()>=4) return wrap('shout-purple','"You are mostly cold now. Good. There is so much less of you to argue with this time."');
+  if((key==='king'||key==='dragon'||key==='devourer') && p.memory && p.memory.path && p.memory.path.length>=3) return wrap('shout-red','It sees what you have been eating on the way down. It goes very still. "...oh. You are doing it on purpose this time."');
+  if(key==='devourer' && (G.debt||0)>=60) return wrap('shout-purple','"You owe so much already. Borrowing against a future you will not be allowed to keep." It almost sounds kind.');
+  return '';
+}
 function showBossIntro(key){ if(BOSS_BIO[key]===undefined||!BOSSES[key])return;
   // Per-run gate: every new run reintroduces every boss you face. The lines should be impossible to miss.
   G._seenBoss=G._seenBoss||{}; if(G._seenBoss[key])return; G._seenBoss[key]=1;
+  const aware=bossAwareLine(key);
   // Omit the cry paragraph if BOSS_CRY is empty so silence reads as silence, not as a layout glitch.
   const cry=BOSS_CRY[key]?`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_CRY[key]}</p>`:'';
   const bio=BOSS_BIO[key]?`<p style="font-size:10px;line-height:1.9;color:#cfcbef;margin-top:10px">${BOSS_BIO[key]}</p>`:'';
-  showInfo({title:BOSSES[key].name,body:cry+bio}); }
+  showInfo({title:BOSSES[key].name,body:aware+cry+bio}); }
+// Persisted per-boss death tally — feeds bossAwareLine's "you again" recognition.
+function noteBossDeath(key){ if(!key)return; const r=loadRecords(); r.bossDeaths=r.bossDeaths||{}; r.bossDeaths[key]=(r.bossDeaths[key]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 function showBossDeath(key){ if(!BOSS_DEATHCRY[key]||!BOSSES[key])return;
   showInfo({title:BOSSES[key].name+' — falls',body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_DEATHCRY[key]}</p>`}); }
 let G=null;
@@ -2438,9 +2459,81 @@ const PEEKS={
   echoPeek:'A figure slumps against the far wall. It does not breathe.',
 };
 function peek(kind){ return pick(PEEKS[kind]||['']); }
+/* ============================================================
+   RARITY CURVE + RARE DISCOVERIES
+   Strange moments that interrupt the normal rhythm only occasionally. Two rules keep them rare:
+   (1) each is gated by a player-STATE condition (organic — most rooms meet none); and
+   (2) at most ONE discovery is ENTERED per run (G._discoveryEntered, set on entry, not on offer).
+   The tier is only the roll AFTER the condition is met; the condition + the 1/run cap do the real
+   limiting, so even a "common"-tier discovery is uncommon in practice. Many runs produce zero.
+   Tiers (per-eligible-room chance): common ~1/2 · uncommon ~1/5 · rare ~1/10 · veryrare ~1/22 ·
+   mythic ~1/50 — and that is BEFORE the condition gate and the once-per-corridor / once-per-run caps.
+   ============================================================ */
+const RARITY_TIER={ common:0.50, uncommon:0.22, rare:0.10, veryrare:0.045, mythic:0.02 };
+function rarityRoll(tier){ return Math.random() < (RARITY_TIER[tier]||0); }
+// once-ever discoveries persist in crypt_disc so a true one-time moment never repeats across runs.
+function discSeen(id){ try{ return JSON.parse(localStorage.getItem('crypt_disc')||'[]').includes(id); }catch(e){ return false; } }
+function markDisc(id){ try{ const a=JSON.parse(localStorage.getItem('crypt_disc')||'[]'); if(!a.includes(id)){ a.push(id); localStorage.setItem('crypt_disc',JSON.stringify(a)); } }catch(e){} }
+const DISCOVERIES=[
+  // THE BLACK FOUNTAIN — your own corruption turns the water wrong. (uncommon · high Miasma)
+  { id:'blackfount', tier:'uncommon',
+    when:()=> miasmaActive() && G.miasma>=45,
+    build:()=>({ title:'THE BLACK FOUNTAIN', sprite:{src:'assets/monsters/ghost.png',tint:'tint-purple'},
+      art:"  .~~~.\n ((   ))\n  )~~~( \n  /| |\\",
+      _peek:'The smell of water &mdash; but the smell is wrong, and it is cold the way a held breath is cold.',
+      text:'A fountain stands in the dark. The water in it is black, and perfectly still, and it does not hold your reflection. The cold already inside you leans toward it the way a thing leans toward home.',
+      options:[
+        {label:'Drink',desc:'The black water &middot; cleanses the cold',run:p=>{ const c=Math.min(G.miasma,30+rnd(20)); cleanse(c); SFX.play('frost');
+          return `You drink. It is not cold going down &mdash; it is <i>quiet</i>, like a held note finally stopping. The miasma drains out of you (&minus;${c}). <span class="shout-purple">As the last of it leaves, something far beneath the fountain shifts, once, as if turning over to see who took a sip.</span>`; }},
+        {label:'Wash your wounds',desc:'Heal &middot; the cold thickens',run:p=>{ const h=Math.round(p.maxHp*0.22); heal(p,h); addMiasma(8); return `You cup the black water over the worst of it. The wounds close fast &mdash; too fast (+${h} HP). The water that runs off you is no longer black. It is the colour of you now. (the cold thickens)`; }},
+        {label:'Leave it',desc:'Do not drink',run:p=>'You step around it. For a long while after, you can hear it being still behind you. Stillness should not be a sound you can hear.'},
+      ]})
+  },
+  // THE FACELESS ECHO — after enough deaths, one of your ghosts comes back wrong. (rare)
+  { id:'faceless', tier:'rare',
+    when:()=>{ const r=loadRecords(); return ((r.runs||0)-(r.wins||0))>=4 && (G.abyss||zoneOf(G.depth)>=2); },
+    build:()=>({ title:'AN ECHO WITH NO FACE', sprite:{src:'assets/monsters/ghost.png',tint:'tint-shadow'},
+      art:"  .---.\n (     )\n  )   ( \n  /| |\\",
+      _peek:'Someone is standing in the next room. You cannot tell which way they are facing.',
+      text:'An echo waits, like the others &mdash; your gear, your stance, the same bad knee. But where its face should be there is nothing. Not darkness. Nothing. It is the part of an echo that does not get to come back. It came back anyway.',
+      options:[
+        {label:'"Which one were you?"',desc:'Ask',run:p=>'It opens a mouth it does not have. <span class="shout-purple">"I went one room further than the rest of you."</span> A pause. <span class="shout-red">"I cannot remember the room. I cannot remember having a face to lose in it."</span>'},
+        {label:'Lay it to rest',desc:'+essence &middot; a small mercy',run:p=>{ p.essence+=18; SFX.play('kill'); return 'You do for it what no one has done for you yet. It does not resist. As it goes, the blank where a face should be turns toward you &mdash; gratefully, you think. (+18 essence)'; }},
+        {label:'Take its weapon',desc:'It is still holding one',run:p=>{ const w=makeItem('weapon',p.cls,G.depth+2); equipItem(p,w); addMiasma(6); return `You pry the ${w.name} (Lv${w.ilvl}) from hands that do not let go so much as forget they were holding anything. (the cold thickens)`; }},
+      ]})
+  },
+  // THE TALLY WALL — a once-ever discovery deep in the cold that counts YOUR runs. (very rare · once-ever)
+  { id:'tallywall', tier:'veryrare', once:true,
+    when:()=> G.abyss || zoneOf(G.depth)>=3,
+    build:()=>{ const r=loadRecords(); const n=r.runs||1;
+      return ({ title:'THE TALLY WALL', sprite:{src:'assets/monsters/ghost.png',tint:'tint-grey'},
+      art:"  |||||\n ||||||\n |||| |\n  |||||",
+      _peek:'The wall ahead is covered in scratches. Too even to be claw marks.',
+      text:`One wall of this chamber is covered, floor to ceiling, in tally marks. You count them without meaning to. There are exactly ${n}. The last one is fresh. There is chalk on the floor, and it is warm, and there is no one else here.`,
+      options:[
+        {label:'Add a mark',desc:'Pick up the chalk',run:p=>{ discoverLore('l16'); return `You add the ${ordinal(n+1)} mark before you understand that you are doing it. Your hand knew the height. Your hand has done this before.`; }},
+        {label:'Count the struck-out ones',desc:'Look closer',run:p=>'A handful of the marks have been struck clean through. You count those too. <span class="shout-red">Those are not the times you died. Those are the times there was no longer anyone left to have died.</span>'},
+        {label:'Leave the wall alone',desc:'Back away',run:p=>'You leave the chalk where it lies and do not look at the wall again. You are fairly sure the count is right.'},
+      ]}); }
+  },
+];
+function discoveryRoom(depth){
+  if(G._discRolled) return null;     // at most ONE discovery attempt per corridor (first door only)
+  G._discRolled=1;
+  if(G._discoveryEntered || BOSS_CHAMBERS[depth]!==undefined) return null;
+  for(const d of DISCOVERIES){
+    if(d.once && discSeen(d.id)) continue;
+    if(!d.when()) continue;
+    if(!rarityRoll(d.tier)) continue;
+    const ev=d.build();
+    return {type:'event', ev, peek:ev._peek||'Something here is not like the other rooms.', _discovery:1, _discId:d.id, _discOnce:!!d.once};
+  }
+  return null;
+}
 function makeRoom(depth){
   if(BOSS_CHAMBERS[depth]!==undefined){ const key=pick(BOSS_POOL[BOSS_CHAMBERS[depth]]);
     return {type:'enemy',boss:key,peek:peek(depth===RUN_LENGTH?'bossFinal':'boss')}; }
+  const disc=discoveryRoom(depth); if(disc) return disc;
   if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(4)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:peek('echo')}; }
   const greedy=G.mods.greedy;
   const r=rnd(100);
@@ -2619,6 +2712,7 @@ function groupPeek(g){
 // Door hint is just the room's sensory peek — players should suspect, not know.
 function doorHint(room){ return room.peek||'A door. Closed.'; }
 function nextCorridor(){ G.depth++;
+  G._discRolled=0;   // one rare-discovery attempt per corridor
   if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
   if(G._forceCollector){ G._forceCollector=0; G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
   if(G.abyss){ const floor=G.depth-RUN_LENGTH;
@@ -2716,6 +2810,8 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
 function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
+  // A rare discovery only "counts" against the one-per-run cap once the player actually enters it.
+  if(G.room._discovery && !G._discoveryEntered){ G._discoveryEntered=1; if(G.room._discOnce)markDisc(G.room._discId); }
   // crossing a threshold stokes the Furnace / lets the cold seep deeper / debt compounds
   addHeat(2); addMiasma(1); tickDebt();
   if(worldOnEnter()){ return; }   // environmental hazards can be lethal
@@ -3070,6 +3166,7 @@ function startBattle(intro){
   G.log=[];
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
+  const bk=enemies.find(e=>e.boss); G._curBossKey=(bk&&bk._key)||null;   // for "you again" death recognition
   const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE){ blog(bossE.cry,'crit'); if(bossE._key)showBossIntro(bossE._key); }
   const heatFed=enemies.find(e=>e._heatFed); if(heatFed){ blog(`&#128293; The Furnace howls &mdash; its keeper feeds on the heat you carried in. (+${Math.round((heatFed-2)*20)}% HP & ATK)`,'crit'); }
   G.battle.intro=true;
@@ -3707,7 +3804,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   if(p._burningArmor>0){ p._burningArmor--; if(p._burningArmor===0){ p.def=Math.max(0,(p.def||0)-8); blog('Your burning armor cools.','info'); } }
   p.mana=clamp(p.mana+p.regen,0,p.maxMana);
   flash('playerHit');
-  if(p.hp<=0){ b.over=true; SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
+  if(p.hp<=0){ b.over=true; if(b.hadBoss&&G._curBossKey)noteBossDeath(G._curBossKey); SFX.play('death'); render(); setTimeout(()=>{G.screen='gameover';render();},800); return; }
   if(allDead()){ winBattle(); return; }
   // Plan the next round of intents so the player can see what is coming on their turn.
   b.enemies.forEach(e=>{ if(e.hp>0) planIntent(e,b); else e.intent=null; });
@@ -3717,6 +3814,7 @@ function flash(kind){ const scene=$('scene');
   else { G.battle.anim='shake flash'; if(scene){scene.classList.remove('shake','flash');void scene.offsetWidth;scene.classList.add('shake','flash');} }
   setTimeout(()=>{ if(G.battle){G.battle.anim='';G.battle.animIdx=-1;} },300); }
 function winBattle(){ const b=G.battle,p=G.player; b.over=true;
+  G._curBossKey=null;   // survived — a later mob death must not attribute to this boss
   // carry ultimate charge to the next fight
   p._charge=clamp(b.charge||0,0,100);
   // Eternal Cyclone stacks per-fight ATK that must be unwound at battle end.
