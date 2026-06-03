@@ -236,6 +236,7 @@
     .log{height:104px;font-size:8px;padding:8px;line-height:1.6}
     .floortag{font-size:8px;margin-bottom:6px}
     .omentag{font-size:7px}
+    .wmeter{font-size:10px}
     .stats{font-size:8px;line-height:1.9}
     .chip{font-size:7px;padding:2px 5px;margin:2px 2px 2px 0}
     .bar .lbl{font-size:8px}
@@ -400,7 +401,11 @@
   }
   /* ===================== VISUAL REFRESH ===================== */
   body{background:radial-gradient(circle at 50% 16%, #181534 0%, #0d0c1d 58%, #070611 100%);transition:background 1.4s ease}
-  .wmeter{cursor:help;text-shadow:0 0 6px currentColor}
+  /* World meters (Heat / Miasma / Debt) are the dungeon's pressure on you — they must be loud,
+     not 8px afterthoughts. Bigger, bolder, with a glow that intensifies as the threat rises. */
+  .wmeter{cursor:help;text-shadow:0 0 6px currentColor;font-size:11px;font-weight:bold;letter-spacing:.5px;display:inline-block;padding:1px 3px}
+  .wmeter.pulse-heat{animation:pulseHeat 1.3s ease-in-out infinite}
+  @keyframes pulseHeat{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4) drop-shadow(0 0 8px rgba(255,90,30,.9))}}
   .omentag.worldpulse{animation:worldPulse .7s ease-out}
   @keyframes worldPulse{0%{transform:scale(1);filter:brightness(1)}30%{transform:scale(1.18);filter:brightness(2)}100%{transform:scale(1);filter:brightness(1)}}
   /* subtle CRT scanlines + edge darkening over everything */
@@ -2239,10 +2244,11 @@ function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 function worldBar(){ const parts=[];
   if(heatActive()&&G.heat>0){ const t=heatTier(); const lbl=['',' WARM',' ASHEN',' MOLTEN',' BLAZING',' OVERHEAT'][t]; const c=['#ffcf4d','#ffcf4d','#ff9a3c','#ff5c6a','#ff2a2a','#ff0028'][t];
-    parts.push(`<span class="wmeter clickable" data-info-concept="heat" style="color:${c}">&#128293; HEAT ${G.heat}/${HEAT_MAX}${lbl?' — '+lbl.trim():''}</span>`); }
+    const hp=t>=3?' pulse-heat':'';   // the Furnace turns hostile — the meter throbs from MOLTEN up
+    parts.push(`<span class="wmeter clickable${hp}" data-info-concept="heat" style="color:${c}">&#128293; HEAT ${G.heat}/${HEAT_MAX}${lbl?' — '+lbl.trim():''}</span>`); }
   if(miasmaActive()&&G.miasma>0){ const t=miasmaTier(); const lbl=['','WATCHED','WOUNDS RESIST','HUNGERING','SOUL ROT','BLEEDING','DECAYING'][Math.min(6,t)];
     const c=['#b394d9','#c47bff','#b454f0','#a23add','#8a1ec6','#7800b8','#6a009a'][Math.min(6,t)];
-    const pulse=t>=4?' pulse-mia':'';
+    const pulse=t>=2?' pulse-mia':'';   // the corruption is in your blood — it throbs from tier 2 up
     parts.push(`<span class="wmeter clickable purple${pulse}" data-info-concept="miasma" style="color:${c}">&#9763; MIASMA ${G.miasma}/99${lbl?' &mdash; '+lbl:''}</span>`); }
   if(G.debt>0){ parts.push(`<span class="wmeter clickable amber" data-info-concept="timedebt">&#8987; DEBT ${G.debt}${G.collectorEta>0?' — Collector ETA '+G.collectorEta:''}</span>`); }
   if(!parts.length)return '';
@@ -3452,6 +3458,16 @@ function tickDoT(entity,st,name){ // returns false if entity died
   if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
   return entity.hp>0;
 }
+// Heat ambient lines fire at high Heat — the dungeon itself turning hostile. Flavor only.
+const HEAT_AMBIENT=[
+  'The stone underfoot ticks as it expands. The crypt is getting hotter around you.',
+  'A seam in the wall splits with a sound like a held breath finally let go.',
+  'Your own sweat hisses where it falls. The floor is hungry for it.',
+  'The air bends. For a moment the far wall is somewhere it should not be.',
+  'Something behind the stone shifts toward the heat. Toward you.',
+  'The Furnace exhales. The whole chamber leans in a degree warmer.',
+  'Rust runs off the iron fittings like the walls are starting to bleed light.',
+];
 // Hallucination lines fire at high Miasma — flavor only, no mechanical effect.
 const HALLUCINATIONS=[
   'A face you do not recognise mouths your name from the edge of your eye.',
@@ -3469,6 +3485,7 @@ function afterPlayer(){ const b=G.battle;
   b.enemies.forEach(e=>{ if(e.hp>0){ tickDoT(e,e.st,e.name); if(e.hp<=0)onEnemyDeath(e); } });
   if(allDead()){ winBattle(); return; }
   if(miasmaActive() && miasmaTier()>=3 && chance(11)) blog(pick(HALLUCINATIONS),'info');
+  else if(heatActive() && heatTier()>=3 && chance(11)) blog(pick(HEAT_AMBIENT),'info');
   render(); setTimeout(enemyTurn,560); }
 // One-shot physical hit pipeline. Used by attack/heavy/unleash intents.
 function applyEnemyHit(e,p,b,baseDmg,label,kind){
