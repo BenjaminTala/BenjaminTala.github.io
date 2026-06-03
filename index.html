@@ -951,17 +951,17 @@ const CLASSES={
     ]},
   warrior:{name:'WARRIOR',color:'red',affinity:'FURY',
     affinityText:'Brutal attacks. Build TANK (defense + Shield Wall) or LIFESTEAL (vampiric gear).',
-    hp:130,mana:30,atk:13,def:5,dodge:0,crit:8,lifesteal:0,regen:5,
-    weapon:{name:'Rusty Sword',dmg:8,type:'melee'},
+    hp:145,mana:30,atk:14,def:6,dodge:0,crit:8,lifesteal:0,regen:8,
+    weapon:{name:'Rusty Sword',dmg:9,type:'melee'},
     sprite:"  _____\n [_+_]\n  (oo)\n /|##|\\\n  d  b",
     skills:[
-      {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.85).'},
-      {id:'shield',name:'Shield Wall',cost:6,desc:'Take 48% less for 2 turns.'},
+      {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.95).'},
+      {id:'shield',name:'Shield Wall',cost:6,desc:'Take 55% less for 2 turns.'},
       {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'Hit ALL hard, drop guard.'},
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
-    hp:124,mana:36,atk:13,def:4,dodge:30,crit:23,lifesteal:0,regen:6,
+    hp:130,mana:38,atk:14,def:4,dodge:32,crit:24,lifesteal:0,regen:8,
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
@@ -1582,8 +1582,9 @@ const HEAT_MAX=50;
 // 6 tiers: 0/1/2/3/4/5 at 0/10/20/30/40/50
 function heatTier(){ const h=G.heat; return h>=50?5:h>=40?4:h>=30?3:h>=20?2:h>=10?1:0; }
 function miasmaTier(){ const m=G.miasma; return m>=60?6:m>=50?5:m>=40?4:m>=30?3:m>=20?2:m>=10?1:0; }
-// damage = heat - 5 when heat >= 10. Steps of 5: 10→5, 15→10, 20→15... 50→45 per chamber.
-function heatChamberDamage(){ return Math.max(0, (G.heat||0) - 5); }
+// damage = heat - 3 when heat >= 10. Tightened from -5 — sim showed heat killed almost nobody
+// (2 deaths out of 962). Now 10 Heat = 7 HP, 30 Heat = 27 HP, 50 Heat = 47 HP per chamber.
+function heatChamberDamage(){ return Math.max(0, (G.heat||0) - 3); }
 function healFactor(){ const t=miasmaTier(); return t>=2?0.5:t>=1?0.78:1; }              // wounds stop closing in the cold
 const HEAT_MSG=['','Metal begins to soften. The locals catch fire.','Your breath leaves sparks — the merchants gouge, but the loot runs hot.','The walls pulse. The Furnace begins to burn YOU.','FIRE INSTABILITY — the Furnace is trying to kill you!'];
 const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds no longer close on their own.','The crypt tastes your soul.','SOUL ROT — the cold is eating your very substance.','The cold draws blood with every step.','You are coming undone.'];
@@ -1835,7 +1836,7 @@ const DEVOUR_EVOLUTIONS={
 function devourComboKey(a,b){ return [a,b].sort().join('|'); }
 function makeDevourBase(){
   return {
-    id:'devour', name:'Harvest Essence', cost:10, aoe:false, mem:1, devour:true,
+    id:'devour', name:'Harvest Essence', cost:8, aoe:false, mem:1, devour:true,
     desc:'Strike a weakened enemy and harvest its essence.',
     path:[], dmgMult:1.5, effects:[], stage:0,
     source:'You start with this. You never thought to ask why it works.',
@@ -1901,9 +1902,9 @@ function devourMutate(p, fam, choice){
     d.name=`${fdef.label} Strike`;
     d.desc=`Reborn from ${fdef.label}. Heavy single strike + ${fdef.desc.toLowerCase()}.`;
   }
-  // Cost now scales cleanly with stage so spamming a high-stage Devour is mana-expensive.
-  // No upper cap — at stage 8+ this exceeds 40 mana and becomes a genuine investment.
-  d.cost = 10 + (d.stage||0)*4 + (d.aoe?4:0);
+  // Cost scales cleanly with stage so spamming a high-stage Devour is mana-expensive.
+  // Base 8 (matches makeDevourBase), +4 per stage, +4 for AOE.
+  d.cost = 8 + (d.stage||0)*4 + (d.aoe?4:0);
   // DEVOUR -> AFFINITY merge: consuming a fragment deepens the family's path. The centerpiece
   // skill now builds your Wrath / Guile / Veil identity instead of sitting outside it.
   const path=DEVOUR_FAM_PATH[fam];
@@ -2601,9 +2602,12 @@ function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,ms
     if(d>0){ SFX.play('hurt'); popups.push({title:'THE FURNACE BURNS YOU',body:`<p class="shout-red" style="font-size:12px;line-height:1.7">The Furnace ${verb} you for <b>${d} HP</b>.</p><p class="muted" style="font-size:10px;line-height:1.7;margin-top:6px">Heat ${G.heat} &mdash; chamber crossings cost <b>${d}</b> HP. Cool down or you die in your boots.</p>`}); }
   }
   if(!dead && miasmaActive()){ const t=miasmaTier();
+    // Miasma damage tightened — sim showed 0 deaths from it. Tier 4 was 4-9 HP, now 7-13.
+    // Tier 5 was 8-15, now 12-20. Tier 6 (60+) now also bites.
     if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg=`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`; SFX.play('hurt'); popups.push({title:'SOUL ROT',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold gnaws on you. You lose <b>${rot}</b> max HP &mdash; permanently, until you cleanse it.</p>`}); }
-    if(t>=4){ const d=4+rnd(5); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; SFX.play('hurt'); popups.push({title:'THE COLD DRINKS FROM YOU',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The miasma reaches in and takes <b>${d} HP</b>.</p>`}); }
-    if(t>=5){ const d=8+rnd(7); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; SFX.play('hurt'); popups.push({title:'YOU COME UNDONE',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold takes <b>${d} HP</b>. You can feel the seams.</p>`}); }
+    if(t>=4){ const d=7+rnd(7); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; SFX.play('hurt'); popups.push({title:'THE COLD DRINKS FROM YOU',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The miasma reaches in and takes <b>${d} HP</b>.</p>`}); }
+    if(t>=5){ const d=12+rnd(9); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; SFX.play('hurt'); popups.push({title:'YOU COME UNDONE',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold takes <b>${d} HP</b>. You can feel the seams.</p>`}); }
+    if(t>=6){ const d=18+rnd(10); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold has nothing left of you (-${d} HP).`; SFX.play('hurt'); popups.push({title:'DECAY',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">There is more cold inside you than there is you. <b>${d} HP</b>.</p>`}); }
   }
   if(msg){ G._worldMsg=msg; }
   if(popups.length){
@@ -2973,12 +2977,18 @@ function planIntent(e,b){
     e.intent={kind:'unleash', label:`UNLEASH ${e.intent.value}`, value:e.intent.value};
     return;
   }
-  // Bosses can begin a cataclysm — once per fight, telegraphed 2 turns.
-  if(e.boss && !e._chargedOnce && e._alive>=2 && chance(28)){
-    e._chargedOnce=true;
-    const dmg=Math.round(e.atk*2.6);
-    e.intent={kind:'charge', label:`CATACLYSM ${dmg} &mdash; 2 turns`, value:dmg, turns:2};
-    return;
+  // Bosses can begin a cataclysm — telegraphed 2 turns.
+  // Sim showed bosses folded to a single ult window (99% kill rate). Cataclysm now RE-ARMS
+  // at <40% HP for a phase-2 spike, so bosses can't be safely whittled down.
+  if(e.boss && e._alive>=2){
+    const wantPhase2 = e._chargedOnce && !e._chargedTwice && e.hp <= e.maxHp*0.40 && chance(50);
+    const wantPhase1 = !e._chargedOnce && chance(28);
+    if(wantPhase2 || wantPhase1){
+      if(wantPhase2) e._chargedTwice=true; else e._chargedOnce=true;
+      const dmg=Math.round(e.atk*(wantPhase2?3.0:2.6));
+      e.intent={kind:'charge', label:`CATACLYSM ${dmg} &mdash; 2 turns`, value:dmg, turns:2};
+      return;
+    }
   }
   // Caster healing a wounded ally (PRIEST role).
   if(e.caster){
@@ -3139,6 +3149,23 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   // SLAYER: every kill stacks permanent power vs that family
   const fam=familyOf(e), before=p.slayer[fam]||0; p.slayer[fam]=before+1;
   const t1=slayerTier(before+1); if(t1>slayerTier(before)) blog(`SLAYER ${['','I','II','III'][t1]} — +${Math.round(SLAYER_BONUS[t1]*100)}% dmg vs ${fam}!`,'lvl');
+  // Devour engagement helper: even if the player KOs an enemy with a basic attack (didn't cast
+  // Devour), occasionally still queue a fragment for the kill. Sim showed many runs ended on
+  // unevolved "Harvest Essence" because the bot rarely cast Devour. Gates: not already in path,
+  // not Saturated, recognized family, the kill wasn't from Devour itself (which has its own
+  // pipeline via devourKillFragment), and a 35% roll. Bosses always trigger this too.
+  if(p.memory && p.memory.devour && DEVOUR_FAMILIES[fam] && !p._saturated){
+    const b=G.battle;
+    const fromDevour = b && b._castKills && b._castKills.some(k=>k.name===e.name);
+    if(!fromDevour){
+      const path=p.memory.path||[];
+      const newFamily = !path.includes(fam);
+      if(e.boss || (newFamily && chance(35))){
+        queueFragmentChoice(p, fam);
+        if(!e.boss) p._saturated=2;   // shorter saturated cooldown for the bonus-engagement path
+      }
+    }
+  }
   // SOUL ESSENCE: kill currency for the Forge
   let ess=2+Math.round((e.xp||6)/4); if(e.elite)ess+=5; if(e.boss)ess+=34; ess=Math.round(ess*(G.mods.essMul||1));
   p.essence+=ess; blog(`+${ess} ${ESS} essence.`,'info');
@@ -3236,8 +3263,8 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     // Frost Nova was a strictly worse Fireball. Match Fireball's mana scaling but with a lower base —
     // the role becomes "slightly less damage for a strong AOE Weaken", not "cheaper but useless".
     case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');const cm=Math.min(180,mm);aoeHit(i=>{let d=6+Math.round(cm*0.16)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
-    case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.85+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
-    case 'shield':{SFX.play('skill');b.pdef=0.48;b.pdefTurns=2;blog('You raise your guard! (48% block, 2 turns)','info');break;}
+    case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.95+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
+    case 'shield':{SFX.play('skill');b.pdef=0.55;b.pdefTurns=2;blog('You raise your guard! (55% block, 2 turns)','info');break;}
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
       // Whirlwind base 1.45 / keystone 1.55. Eternal Cyclone now also stacks +1 ATK per cast this fight
       // (capped at +5) so it becomes a real ramp instead of just "AOE + a small heal".
@@ -3249,7 +3276,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
     case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.50;let c=chance(effCrit(p)+22);if(c)d*=2.0;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,5,3);}); }
       else { let d=(p.atk+p.weapon.dmg)*1.70;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,6,3); } break;}
-    case 'evade':{SFX.play('skill');b.evade=38;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
+    case 'evade':{SFX.play('skill');b.evade=45;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
     case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+Math.round(p.level*0.5)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
     // === MEMORY SKILLS ===
     case 'glass':{SFX.play('skill');const c=Math.max(1,Math.round(p.hp*0.15));selfHurt(p,c,'self');b.glassNext=1;blog(`Glass Sigil etched in your own blood (-${c} HP). Your next skill will SHATTER.`,'crit');break;}
