@@ -1298,8 +1298,12 @@ const EVENTS=[
        return `Your ${ordinal(o)} offering. The altar is warm where the coin lands. <span class="shout">"She is starting to recognise you. I am not certain that is a kindness."</span> (+12 max HP)`;}},
      {label:'Step around him',desc:'No questions',run:p=>'He does not move. He does not turn. You walk past. The hairs on your neck do not settle for some time.'},
    ]},
-  {id:'wsmith',title:'THE WEEPING SMITH',zone:2,sprite:{src:'assets/monsters/golem.png',tint:'tint-amber'},art:"  ,---,\n  |( )|\n  )===( \n /|fire|\\\n  d   b",
-   text:'A blacksmith sits at a cold anvil. He is not making anything. He is taking blade after blade from a stack at his feet and snapping each one with his bare hands. He is crying.',
+  {id:'wsmith',title:'THE WEEPING SMITH',zone:2,npc:'wsmith',sprite:{src:'assets/monsters/golem.png',tint:'tint-amber'},art:"  ,---,\n  |( )|\n  )===( \n /|fire|\\\n  d   b",
+   text:p=>{ const n=npcState('wsmith');
+     if(n.met<=1) return 'A blacksmith sits at a cold anvil. He is not making anything. He is taking blade after blade from a stack at his feet and snapping each one with his bare hands. He is crying.';
+     if(n.met===2) return 'The weeping smith again. The stack of broken blades at his feet is taller than it was. He does not look up, but he slides a fresh sword off the pile as if he had been keeping it for you.';
+     return 'The smith has stopped crying. That is somehow worse. He breaks the blades now with the steady patience of a man doing a chore, and when he sees you he simply nods at the stack: there is always more.';
+   },
    options:[
      {label:'"Why are you breaking them?"',desc:'Ask',run:p=>{discoverLore('l19');
        if(paleRumor()) return '<span class="shout">"They always bring them back."</span> He snaps another blade. <span class="shout">"Fire takes everything down here. Rust. Bone. The cold itself, if you get the bellows screaming."</span> A pause. <span class="shout-red">"There is one thing at the bottom the fire slides off of. Does not resist it. Ignores it. Like the fire is the part that was never real."</span>';
@@ -1413,9 +1417,12 @@ const EVENTS=[
      {label:'Step away from the edge',desc:'Take their relic if you can',run:p=>{const r=grantRandomRelic(p);return r?`You pull them back from the lip. They press a relic into your hands and sit. (relic: ${r})`:'You pull them back. They thank you with a relic you already carry — and refuse to take it back.';}},
    ]},
   // === DEVOUR-GATED — only surface once you have actually started eating things ===
-  {id:'watcher',title:'THE WATCHFUL PRISONER',zone:2,available:p=>p.memory && p.memory.path && p.memory.path.length>=2,
+  {id:'watcher',title:'THE WATCHFUL PRISONER',zone:2,npc:'watcher',available:p=>p.memory && p.memory.path && p.memory.path.length>=2,
    sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  ,---,\n  |[ ]|\n  ( - )\n  )===( \n  /| |\\",
-   text:'A man sits chained to a pillar of black iron. The chains are old. So is he. He watches you walk in, and his face goes very still — not afraid, exactly. Recognising something.',
+   text:p=>{ const n=npcState('watcher');
+     if(n.met<=1) return 'A man sits chained to a pillar of black iron. The chains are old. So is he. He watches you walk in, and his face goes very still — not afraid, exactly. Recognising something.';
+     return 'The chained man is still there. Of course he is. He watches you come in and something that is almost a smile crosses him. "Back," he says. "More of him in you than last time. I can count it now, nearly."';
+   },
    options:[
      {label:'"You know what I have been doing."',desc:'Acknowledge',run:p=>{discoverLore('l19');const fams=(p.memory.path||[]).slice(-2).join(', ');return `<span class="shout-purple">"I can taste it on you."</span> He does not flinch. <span class="shout-purple">"That is how He started. Small things. Then the ${fams}. Then everything else."</span> A long pause. "You should stop. You will not stop."`;}},
      {label:'"Who is HE?"',desc:'Press',run:p=>{discoverLore('l18');
@@ -1656,6 +1663,7 @@ const ABYSS_WHISPERS=[
   'The cold has started to feel less like weather and more like an opinion the dark holds about you.',
   'You hear the surface, very faintly &mdash; the way you hear a place you only invented.',
   'You meet yourself going the other way. Neither of you is surprised. Neither of you stops.',
+  'Someone is waiting at the very bottom of this. They have been you for far longer than you have, and they are patient about it.',
 ];
 function whisperFor(d){
   if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)) return pick(PALE_INSCRIPTIONS);
@@ -2528,6 +2536,35 @@ const DISCOVERIES=[
         {label:'Lay it to rest',desc:'+essence &middot; a small mercy',run:p=>{ p.essence+=18; SFX.play('kill'); return 'You do for it what no one has done for you yet. It does not resist. As it goes, the blank where a face should be turns toward you &mdash; gratefully, you think. (+18 essence)'; }},
         {label:'Take its weapon',desc:'It is still holding one',run:p=>{ const w=makeItem('weapon',p.cls,G.depth+2); equipItem(p,w); addMiasma(6); return `You pry the ${w.name} (Lv${w.ilvl}) from hands that do not let go so much as forget they were holding anything. (the cold thickens)`; }},
       ]})
+  },
+  // THE STILL MIRROR — alternate-self, reachable through IDENTITY: you only meet the one who went
+  // further once you are deep in the cold AND deep in Devour. (uncommon · high Miasma + Devour path)
+  { id:'still_mirror', tier:'uncommon',
+    when:()=>{ const p=G.player; return miasmaActive() && G.miasma>=35 && p&&p.memory&&p.memory.path&&p.memory.path.length>=2; },
+    build:()=>({ title:'THE STILL MIRROR', sprite:{src:'assets/players/mage.png',tint:'tint-purple'},
+      art:"  +----+\n  | () |\n  |/||\\|\n  +----+",
+      _peek:'A flat black surface ahead, and your reflection in it is already moving without you.',
+      text:'A tall mirror, iron-framed, fogged with cold. Your reflection is in it &mdash; but it is not copying you. It is doing something with its hands; it has been busy. It looks up when you do, and it has eaten the same things you have. You can see them in its face the way you can no longer see them in your own.',
+      options:[
+        {label:'Step through',desc:'Fight the one who went further',run:p=>{ const hp=Math.round(p.maxHp*1.15); const ene=freshEnemy({name:'The Other You',sprite:p.sprite||"  (??)\n /||\\\n  d b",hp,maxHp:hp,atk:Math.max(10,p.atk+4),def:Math.max(3,(p.def||0)+2),xp:60,_mirrorBoon:true}); G.room={type:'enemy',_enemies:[ene]}; startBattle('The mirror does not break. It opens. The other you steps out.'); return false; }},
+        {label:'Ask what it found',desc:'Listen',run:p=>'It mouths something. The glass is too thick for sound, but you can read your own lips well enough. <span class="shout-red">"Do not finish. If you finish, I am what is left."</span>'},
+        {label:'Cover the mirror',desc:'Walk away',run:p=>'You drag your cloak across the glass. The shape behind it keeps moving for a moment, then stops &mdash; politely, like a guest agreeing to wait.'},
+      ]})
+  },
+  // THE GORGE — a Devour reaction: a heavy consumption build wakes a fellow appetite in the wall.
+  // (rare · Devour path length >= 4)
+  { id:'gorge', tier:'rare',
+    when:()=>{ const p=G.player; return p&&p.memory&&p.memory.path&&p.memory.path.length>=4; },
+    build:()=>{ const p=G.player; const fams=[...new Set(p.memory.path)];
+      return ({ title:'THE GORGE', sprite:{src:'assets/monsters/demon.png',tint:'tint-purple'},
+      art:"  vvvvv\n >(   )<\n  )___( \n  VVVVV",
+      _peek:'The wall here is not stone. It is open, and it is breathing, and it has matched the rhythm of yours.',
+      text:`A mouth in the wall &mdash; not carved, grown. It has been eating, the way you have been eating, and it knows a fellow appetite when one walks in. As you near it, it speaks the names of everything you have devoured, in order, in your own voice: ${fams.join(', ')} &mdash; and then it keeps going, into a name you have not reached yet.`,
+      options:[
+        {label:'"Say the last name again."',desc:'It knew one you do not',run:p=>{ addMiasma(8); return 'It will not. <span class="shout-red">It has decided you are not ready to be hungry for that one yet.</span> The mouth closes slowly, the way a thing closes when it fully intends to open again. (the cold thickens)'; }},
+        {label:'Feed it essence',desc:'-30 essence &middot; it gives back, changed',run:p=>{ if(p.essence<30) return 'It waits. You have nothing it wants yet.'; p.essence-=30; const h=Math.round(p.maxHp*0.22); heal(p,h); if(p.memory){p.memory.dmgMult=(p.memory.dmgMult||1.5)+0.20;} SFX.play('upgrade'); return `You pour essence into the mouth. It swallows, considers, and gives something back through your own hands &mdash; your Devour sharpens (+0.20 scaling) and old wounds close over. (+${h} HP)`; }},
+        {label:'Refuse to feed it',desc:'Back away',run:p=>'You do not feed it. It does not insist. <span class="shout">"You will,"</span> it says, in your own voice, comfortably. "You always do."'},
+      ]}); }
   },
   // A DISTORTED ECHO — Abyss-only. Echoes do not come back as people this far down. Also a Devour
   // reaction: it tastes what you have been eating. (rare · Abyss only)
@@ -3900,6 +3937,10 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   if(b.enemies.some(e=>e.name===BOSSES.remembered.name)){ blog(BOSS_DEATHCRY.remembered,'crit'); discoverLore('l15'); discoverLore('l16'); G._rememberedSlain=1; if(!dvb[BOSSES.remembered.name] && (!p.memory||p.memory.id!=='curse')) grantMemory(p,'curse'); G._pendingBossDeath='remembered'; }
   if(b.enemies.some(e=>e.name===BOSSES.paledevourer.name)){ blog(BOSS_DEATHCRY.paledevourer,'crit'); discoverLore('l19'); discoverLore('l20'); G._paleSlain=1; G._pendingBossDeath='paledevourer'; }
   if(b.enemies.some(e=>e.name===BOSSES.warden.name) && !dvb[BOSSES.warden.name] && (!p.memory||p.memory.id!=='ember')){ grantMemory(p,'ember'); }
+  // SECRET BEAT — devouring a boss is not the same as killing one. The world keeps a different count.
+  if(Object.keys(dvb).length && b.enemies.some(e=>e.boss && dvb[e.name])){
+    blog('You did not defeat it. You took it INTO you. Somewhere far below, something that keeps count adjusts the number down by one, and settles back to wait.','crit');
+  }
   G._devouredBosses=null;
   // Whoever the final-chamber boss was — king, dragon, or otherwise — the lie cracks. But we delay the
   // discoverLore('l15') by one chamber so the boss's own intimate death-cry doesn't get crushed
