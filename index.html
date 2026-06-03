@@ -2832,23 +2832,37 @@ function pairAdj(a,b){ // a is influenced by neighbour b
   if(a.type==='chest'&&(b.type==='shrine'||b.type==='relic')){ a.blessed=1; a.peek='It glows faintly, blessed by the nearby light.'; }
   if(a.type==='merchant'&&b.type==='fountain'){ a.discount=1; }
   if(a.type==='enemy'&&!a.boss&&heatActive()&&b.type==='enemy'){ a.ignited=1; } }
+/* NARRATIVE PRIORITY — many text channels can become pending on the same chamber (zone intro,
+   lore, flashback, memory, heat/miasma tutorial, world warning). Rather than stack 8 panels and
+   bury the doors, collect them, sort by importance, and show only the top `max`. Every channel is
+   cleared whether shown or not, so nothing carries over to noise the next room. Higher priority =
+   more important: zone transitions and lore beats win; generic warnings yield. This is the
+   lightweight event-priority hierarchy — important moments are never diluted by ambient text. */
+function drainBanners(max){
+  max=max||2;
+  const it=[];
+  const push=(p,cls,style,html)=>it.push({p,cls,style,html});
+  if(G._zoneMsg){ push(100,'panel tight fade','font-size:9px;line-height:1.9','<span class="muted">&#9670; </span>'+G._zoneMsg); G._zoneMsg=null; }
+  if(G._loreMsg){ push(90,'panel tight center amber fade','font-size:9px',G._loreMsg); G._loreMsg=null; }
+  if(G._affMsg){ push(85,'panel tight center teal fade','font-size:9px','&#10022; '+G._affMsg); G._affMsg=null; }
+  if(G._memoryMsg){ push(82,'panel tight center purple fade','font-size:9px;letter-spacing:.6px;border-color:#6c3cbf','&#9763; '+G._memoryMsg); G._memoryMsg=null; }
+  if(G._flashbackMsg){ push(80,'panel tight center purple fade','font-size:9px;letter-spacing:.6px','&#9763; '+G._flashbackMsg); G._flashbackMsg=null; }
+  if(G._worldMsg){ push(70,'panel tight center red fade','font-size:9px',G._worldMsg); G._worldMsg=null; }
+  if(G._heatTickMsg){ push(60,'panel tight center fade','font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))',G._heatTickMsg); G._heatTickMsg=null; }
+  if(G._miasmaTickMsg){ push(58,'panel tight center fade','font-size:9px;line-height:1.7;color:#d9b8ff;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(180,100,255,.10),rgba(140,70,220,.04))',G._miasmaTickMsg); G._miasmaTickMsg=null; }
+  it.sort((a,b)=>b.p-a.p);
+  return it.slice(0,max).map(x=>`<div class="${x.cls}" style="${x.style}">${x.html}</div>`).join('');
+}
 function renderCorridor(){
   const isBoss=G.doors.length===1&&G.doors[0].boss;
   const doors=G.doors.map((d,i)=>`<button class="btn" onclick="openDoor(${i})">
     <span class="k">${isBoss?'&#9760;':'['+(i+1)+']'}</span>${isBoss?'THE BOSS DOOR':'Door '+(i+1)}<small>${doorHint(d)}</small></button>`).join('');
-  const banner=G._affMsg?`<div class="panel tight center teal fade" style="font-size:9px">&#10022; ${G._affMsg}</div>`:'';
-  G._affMsg=null;
-  const zone=G._zoneMsg?`<div class="panel tight fade" style="font-size:9px;line-height:1.9"><span class="muted">&#9670; </span>${G._zoneMsg}</div>`:'';
-  G._zoneMsg=null;
-  const lore=G._loreMsg?`<div class="panel tight center amber fade" style="font-size:9px">${G._loreMsg}</div>`:''; G._loreMsg=null;
-  const flash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
-  const mem=G._memoryMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px;border-color:#6c3cbf">&#9763; ${G._memoryMsg}</div>`:''; G._memoryMsg=null;
-  const heatTick=G._heatTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))">${G._heatTickMsg}</div>`:''; G._heatTickMsg=null;
-  const miasmaTick=G._miasmaTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#d9b8ff;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(180,100,255,.10),rgba(140,70,220,.04))">${G._miasmaTickMsg}</div>`:''; G._miasmaTickMsg=null;
-  const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${zone}${lore}${flash}${mem}${heatTick}${miasmaTick}${wmsg}${banner}${playerBar(G.player,true)}
+  // At most 2 prioritized banners; the generic whisper is suppressed when anything more important
+  // is already showing, so a major beat never arrives wrapped in ambient flavor.
+  const banners=drainBanners(2);
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
-      ${G._whisper?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
+      ${(G._whisper && !banners)?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
 }
 let _invReturn='corridor';
@@ -3062,11 +3076,8 @@ function renderRoom(){
       <p class="muted center" style="font-size:9px">${r.peek} You catch your breath. (+6 HP, +4 MP)</p>
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
-  const wmsg=G._worldMsg?`<div class="panel tight center red fade" style="font-size:9px">${G._worldMsg}</div>`:''; G._worldMsg=null;
-  const rflash=G._flashbackMsg?`<div class="panel tight center purple fade" style="font-size:9px;letter-spacing:.6px">&#9763; ${G._flashbackMsg}</div>`:''; G._flashbackMsg=null;
-  const rheatTick=G._heatTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))">${G._heatTickMsg}</div>`:''; G._heatTickMsg=null;
-  const rmiasmaTick=G._miasmaTickMsg?`<div class="panel tight center fade" style="font-size:9px;line-height:1.7;color:#d9b8ff;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(180,100,255,.10),rgba(140,70,220,.04))">${G._miasmaTickMsg}</div>`:''; G._miasmaTickMsg=null;
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${rflash}${rheatTick}${rmiasmaTick}${wmsg}${playerBar(p,true)}<div class="panel fade room-in">${body}<button class="btn muted center" onclick="openInventory()" style="margin-top:6px"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
+  const banners=drainBanners(2);
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(p,true)}<div class="panel fade room-in">${body}<button class="btn muted center" onclick="openInventory()" style="margin-top:6px"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
