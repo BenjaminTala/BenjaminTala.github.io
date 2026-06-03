@@ -62,10 +62,10 @@
   .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
   .r-com{color:#cfcbef}.r-unc{color:var(--green)}.r-rare{color:var(--blue)}.r-epic{color:var(--purple)}.r-leg{color:var(--amber)}
   .slot{border:2px solid var(--line);background:#00000055;padding:8px 10px;margin:6px 0;font-size:10px;text-align:left;line-height:1.7}
-  .invtabs{display:flex;gap:6px;margin:4px 0 12px}
-  .invtabs button{flex:1;font-family:inherit;font-size:9px;padding:9px 4px;background:var(--panel2);color:var(--dim);border:2px solid var(--line);cursor:pointer;touch-action:manipulation;letter-spacing:1px}
-  .invtabs button.on{color:var(--amber);border-color:var(--amber);background:#2a1c1a40}
-  .invtabs button:hover{border-color:var(--amber)}
+  .invtabs{display:flex;gap:5px;margin:4px 0 12px;flex-wrap:wrap}
+  .invtabs button{flex:1 1 0;min-width:88px;font-family:inherit;font-size:8.5px;padding:9px 3px;background:var(--panel2);color:var(--muted);border:2px solid var(--line);cursor:pointer;touch-action:manipulation;letter-spacing:.5px;line-height:1.4}
+  .invtabs button.on{color:var(--amber);border-color:var(--amber);background:#2a1c1a40;box-shadow:0 0 12px rgba(255,207,77,.25)}
+  .invtabs button:hover{border-color:var(--amber);color:#fff}
   .cur-row{text-align:center;font-size:10px;margin:2px 0 10px;letter-spacing:1px}
   .ivh{font-size:11px;margin:12px 0 4px}
   .best-row{display:flex;justify-content:space-between;align-items:center;border:2px solid var(--line);background:#00000055;padding:7px 9px;margin:5px 0;font-size:9px;gap:8px}
@@ -107,6 +107,18 @@
   .build-pop.set   {border-left:3px solid #ffd54a; padding-left:8px;background:linear-gradient(90deg,rgba(255,213,74,.10),transparent 60%)}
   .build-pop.relic {border-left:3px solid var(--purple);padding-left:8px;background:linear-gradient(90deg,rgba(192,108,255,.08),transparent 60%)}
   .build-pop.memory{border-left:3px solid #b070ff; padding-left:8px;background:linear-gradient(90deg,rgba(176,112,255,.12),transparent 60%)}
+  /* BUILD FLASH — in-combat celebratory banner. Instant dopamine without a blocking modal;
+     the full modal still queues for the battle-end recap. */
+  .build-flash-wrap{position:absolute;top:6px;left:0;right:0;z-index:30;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+  .build-flash{font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:1px;padding:7px 14px;border-radius:3px;color:#fff;background:linear-gradient(180deg,#2a1c40,#140c22);border:2px solid #c06cff;box-shadow:0 0 0 1px #000,0 0 22px rgba(192,108,255,.6);animation:buildFlashIn .5s cubic-bezier(.2,1.4,.4,1) both;text-align:center;max-width:92%}
+  .build-flash .bf-sub{display:block;font-size:7px;color:#cbb6e6;margin-top:4px;letter-spacing:.5px}
+  .build-flash.k-aff    {border-color:var(--teal);box-shadow:0 0 0 1px #000,0 0 22px rgba(0,200,200,.55)}
+  .build-flash.k-set    {border-color:#ffd54a;box-shadow:0 0 0 1px #000,0 0 22px rgba(255,213,74,.6)}
+  .build-flash.k-synergy{border-color:#c06cff}
+  .build-flash.k-relic  {border-color:var(--purple)}
+  .build-flash.k-devour {border-color:#ff7cce;box-shadow:0 0 0 1px #000,0 0 22px rgba(255,124,206,.6)}
+  .build-flash.k-level  {border-color:#7cff6b;box-shadow:0 0 0 1px #000,0 0 22px rgba(124,255,107,.6)}
+  @keyframes buildFlashIn{0%{transform:translateY(-16px) scale(.82);opacity:0}60%{opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
   /* ENEMY INTENT BADGE — telegraphs the next action so the player can think. */
   .intent{display:inline-block;font-size:8px;letter-spacing:1px;padding:2px 6px;margin:2px auto 4px;border:1px solid #4a3260;background:#1a1424;color:#cbb6e6;border-radius:2px;line-height:1.4;text-align:center;max-width:200px}
   .intent .i-ico{margin-right:3px}
@@ -1706,10 +1718,13 @@ function recomputeSynergies(p){ p.synergies=[];
         `<p class="shout" style="font-size:11px;line-height:1.7">&#10022; ${s.desc}</p>`,
       'synergy'); } } }); }
 function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.apply(p); p.relics.push(rl.name); addAffinity(p,rl.aff); recomputeSynergies(p); SFX.play('relic');
-  popupBuild('RELIC FOUND &mdash; '+rl.name,
+  // Keystones rewrite a class skill — celebrate them louder than an ordinary relic.
+  const isKey=rl.keystone;
+  popupBuild((isKey?'&#10022; KEYSTONE UNLOCKED &mdash; ':'RELIC FOUND &mdash; ')+rl.name,
     `<p class="shout" style="font-size:11px;line-height:1.7">&#9670; ${rl.note}</p>`+
+    (isKey?`<p class="muted" style="font-size:9px;margin-top:6px">A keystone transforms one of your class skills — your build now plays differently.</p>`:'')+
     (rl.aff?`<p class="muted" style="font-size:9px;margin-top:8px">${affTagText(rl.aff)}</p>`:''),
-  'relic');
+  isKey?'synergy':'relic', isKey?'your class skill is transformed':'');
   return true; }
 function gainUpgrade(p,up){ up.apply(p); addAffinity(p,up.aff); }
 function affCritBonus(p){ let c=0; if(p.affTier.g>=1)c+=12; if(p.affTier.g>=2)c+=8; if(p.affTier.w>=2)c+=8; return c; }
@@ -1722,7 +1737,19 @@ function xpNeeded(lvl){ return 18+lvl*14; }
 function gainXp(p,n){ if(p.flags.scholar) n=Math.round(n*1.5); p.xp+=n; let ups=0;
   while(p.xp>=xpNeeded(p.level)){ p.xp-=xpNeeded(p.level); levelUp(p); ups++; } return ups; }
 function levelUp(p,silent){ p.level++; p.maxHp+=11; p.atk+=2; p.maxMana+=5; p.mana+=5; heal(p,14);
-  if(!silent){ SFX.play('levelup'); if(G.screen==='battle') blog(`LEVEL UP! You are now level ${p.level}.`,'lvl'); } }
+  if(!silent){ SFX.play('levelup');
+    if(G.battle && !G.battle.over){
+      blog(`LEVEL UP! You are now level ${p.level}.`,'lvl');
+      // Level-ups are frequent — flash only (no queued modal) so the battle-end recap isn't spammed.
+      flashBuild('LEVEL UP &mdash; Lv '+p.level, '+11 HP &middot; +2 ATK &middot; +5 MP', 'level');
+    } else {
+      // Out of combat, a full modal is fine (rare path: XP from events).
+      popupBuild('LEVEL UP &mdash; Lv '+p.level,
+        `<p class="shout" style="font-size:11px;line-height:1.7">You grow stronger.</p>`+
+        `<p class="muted" style="font-size:10px;margin-top:6px">maxHP +11 &middot; ATK +2 &middot; maxMP +5 &middot; +14 HP healed</p>`,
+        'level');
+    }
+  } }
 function relicPool(p){ return RELICS.filter(r=>(!r.cls||r.cls===p.cls)&&!p.relics.includes(r.name)); }
 function grantRandomRelic(p){ const avail=relicPool(p); if(!avail.length)return null; const r=pick(avail); gainRelic(p,r); return r.name; }
 /* ---- equipment engine ---- */
@@ -2126,7 +2153,9 @@ function render(){
     event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,triumph:renderTriumph,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
   const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
-  const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display='none'; } // inline INVENTORY button in the door list is the canonical entry — FAB hidden.
+  // Inventory FAB — visible on every screen where checking your build matters. Players were
+  // missing armor sets / passives / tabs entirely because the only entry was a muted inline button.
+  const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display=(['corridor','room','event','reward','triumph','merchant'].includes(G.screen)&&G.player)?'block':'none'; }
   setZoneBg();
 }
 const ZONE_BG=['radial-gradient(circle at 50% 15%, #2a1e10 0%, #0d0b16 58%, #070510 100%)',
@@ -2545,7 +2574,9 @@ function closeInventory(){ G.screen=_invReturn; render(); }
 function setInvTab(t){ G._invTab=t; SFX.play('click'); render(); }
 function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
   const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
-  const tabs=`<div class="invtabs">${tb('gear','GEAR')}${tb('powers','POWERS')}${tb('best','BESTIARY')}${tb('lore','LORE')}</div>`;
+  // Tab labels name their contents — players were missing skills / sets / relics because "POWERS"
+  // didn't say what was inside. GEAR holds armor sets; SKILLS holds skills, paths, relics, synergies.
+  const tabs=`<div class="invtabs">${tb('gear','&#9876; GEAR &amp; SETS')}${tb('powers','&#10022; SKILLS &amp; BUILD')}${tb('best','&#128050; BEASTS')}${tb('lore','&#128220; LORE')}</div>`;
   const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
   let body='';
   if(tab==='gear'){
@@ -3060,6 +3091,10 @@ function renderBattle(){
   }).join('');
   const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
   const pFxHtml=(b.fx||[]).filter(f=>f.idx===-1).map(f=>fxHtml(f.kind)).join('');
+  // In-combat build-flash banners — celebrate progression the moment it happens.
+  const flashHtml=(b._buildFlash&&b._buildFlash.length)
+    ? `<div class="build-flash-wrap">${b._buildFlash.map(f=>`<div class="build-flash k-${f.kind||'synergy'}">${f.label}${f.sub?`<span class="bf-sub">${f.sub}</span>`:''}</div>`).join('')}</div>`
+    : '';
   b.floats=[]; b.fx=[]; b.intro=false;
   const logHtml=G.log.slice(-8).map(l=>`<div class="${l.cls}">${l.text}</div>`).join('');
   const pStatus=(b.barrier>0?`<span class="chip c-guard">BARRIER ${b.barrier}</span>`:'')
@@ -3079,7 +3114,7 @@ function renderBattle(){
   const um=ultMeta(p.cls);
   app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>${worldBar()}
     <div class="panel ff ${b.anim}" id="scene">
-      <div class="ff-stage ${b.intro?'enter-foe':''}">${cells}</div>
+      <div class="ff-stage ${b.intro?'enter-foe':''}">${flashHtml}${cells}</div>
       <div class="ff-narrator"><div class="log">${logHtml||'<div class="muted">&#8230;</div>'}</div></div>
       <div class="ff-bottom">
         <div class="ff-portrait">
@@ -3231,7 +3266,7 @@ function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math
 function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foes for massive magic + heavy BURN'},
   warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
   ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
-function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<100)return; b.charge=0;
+function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<100)return; clearBuildFlash(); b.charge=0;
   SFX.play('win'); flash('playerHit'); const mm=Math.min(180,p.maxMana); ensureTarget();
   _fxKind=p.cls==='mage'?'fire':p.cls==='ranger'?'arrow':'crit';
   if(p.cls==='mage'){ blog('&#10022; ARCANE SUPERNOVA! &#10022;','crit');
@@ -3244,12 +3279,12 @@ function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<10
   else { blog('&#10022; RAIN OF DEATH! &#10022;','crit'); for(let k=0;k<5;k++){ const liv=living(); if(!liv.length)break;
     const idx=b.enemies.indexOf(pick(liv)); let d=(p.atk*0.8+p.weapon.dmg); let c=chance(effCrit(p)+40); if(c)d*=2; dealToEnemy(idx,d,'Death rains down',c); } }
   afterPlayer(); }
-function playerAttack(){ const p=G.player,b=G.battle; if(b.over)return; _fxKind='hit'; ensureTarget(); basicHit(b.target);
+function playerAttack(){ const p=G.player,b=G.battle; if(b.over)return; clearBuildFlash(); _fxKind='hit'; ensureTarget(); basicHit(b.target);
   if(p.flags.doubleStrike&&chance(35)&&living().length){ ensureTarget(); blog('Twin Fang — a second strike!','info'); basicHit(b.target,true); }
   gainCharge(20); afterPlayer(); }
 function aoeHit(fn){ G.battle.enemies.forEach((e,i)=>{ if(e.hp>0) fn(i); }); }
 function spendMana(cost){ const p=G.player; p.mana-=cost; let frac=0; if(p.flags.soulSiphon)frac=0.5; if(p.flags.synOver)frac=1.0; if(frac){ heal(p,Math.max(1,Math.round(cost*frac))); } }
-function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find(x=>x.id===id); if(!s||b.over)return;
+function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find(x=>x.id===id); if(!s||b.over)return; clearBuildFlash();
   const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; spendMana(cost); ensureTarget();
   _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow',glass:'arcane',ember:'fire',decree:'crit',hoard:'fire',recall:'arcane',tithe:'heal',devour:'crit',hollow:'frost',curse:'arcane'}[id]||'hit';
   const mm=p.maxMana;
@@ -3368,7 +3403,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     }
   }
   gainCharge(24); afterPlayer(); }
-function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; p.potions--;
+function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; clearBuildFlash(); p.potions--;
   // Miasma rots healing — at high tiers, potions return less of their promise.
   const rot=miasmaActive()?Math.min(0.45,miasmaTier()*0.07):0;
   const base=Math.max(0.10,(0.40+(p.potionBonus||0)));
@@ -3782,13 +3817,27 @@ function closeInfo(e){
 /* BUILD PROGRESSION POPUPS — every meaningful upgrade interrupts the player so they see what
    their character just earned. Queued during battle, drained at battle end so combat is not
    constantly broken by modals. */
-function popupBuild(title, body, kind){
+function popupBuild(title, body, kind, flashSub){
   G._buildQueue=G._buildQueue||[];
   const styled=`<div class="build-pop ${kind||''}">${body}</div>`;
   G._buildQueue.push({title, body:styled});
+  // In-combat: fire a transient celebratory banner so the moment is FELT immediately.
+  // The full modal still waits for battle end (no blocking modal mid-fight).
+  if(G.battle && !G.battle.over){
+    const fk={aff:'aff',synergy:'synergy',set:'set',relic:'relic',memory:'devour',level:'level'}[kind]||'synergy';
+    (G.battle._buildFlash=G.battle._buildFlash||[]).push({label:title, sub:flashSub||'', kind:fk});
+    SFX.play('levelup');
+  }
   const m=document.getElementById('info-modal');
   const modalOpen=m && !m.classList.contains('hidden');
   if(!modalOpen && (!G.battle || G.battle.over)) drainBuildQueue();
+}
+// Clear the in-combat build-flash banners — called at the start of each player action so a
+// celebration persists from when it was earned, through the enemy turn, until the player acts.
+function clearBuildFlash(){ if(G.battle) G.battle._buildFlash=null; }
+// Flash-only build celebration (no queued end-of-battle modal). For frequent events like level-up.
+function flashBuild(label, sub, kind){
+  if(G.battle && !G.battle.over){ (G.battle._buildFlash=G.battle._buildFlash||[]).push({label, sub:sub||'', kind:kind||'level'}); }
 }
 function drainBuildQueue(){
   if(!G._buildQueue || !G._buildQueue.length) return;
