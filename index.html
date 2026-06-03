@@ -1304,9 +1304,13 @@ const EVENTS=[
    },
    options:[
      {label:'"Which god do you serve?"',desc:'Ask',run:p=>{discoverLore('l19'); const n=npcState('cardinal');
-       // Path-aware tail: he names YOUR god, reflected back. Fires only when you've committed enough
-       // to a single path to be unmistakable (T2+). Cheap to add, multiplies how "seen" the world feels.
-       const top = (p.affTier.w>=2)?'w' : (p.affTier.v>=2)?'v' : (p.affTier.g>=2)?'g' : null;
+       // Path-aware tail: he names YOUR god, reflected back. Fires on a clear COMMITMENT (a dominant
+       // path at T1 that leads the others) rather than strict T2 — most builds multi-path and would
+       // otherwise never trigger this on a first Cardinal meeting. Cheap to add, multiplies how
+       // "seen" the world feels.
+       const dom=dominantAff(p);
+       const lead=dom?['w','g','v'].filter(k=>k!==dom).reduce((mx,k)=>Math.max(mx,p.aff[k]),0):0;
+       const top=(dom && p.aff[dom]>=3 && p.aff[dom]>lead)?dom:null;
        const yourGod = top==='w' ? '<span class="shout-red">"Yours is HUNGER. He approves of you. He approves of you a great deal."</span>'
                     : top==='v' ? '<span class="shout">"Yours is PATIENCE. He has watched you bleed and not stop. He is the one I would pray to, if I could."</span>'
                     : top==='g' ? '<span class="shout-purple">"Yours is THE TURN — the one between intention and proof. He laughs at me. He laughs at me kindly."</span>'
@@ -1931,6 +1935,10 @@ function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.ap
   return true; }
 function gainUpgrade(p,up){ up.apply(p); addAffinity(p,up.aff); }
 function affCritBonus(p){ let c=0; if(p.affTier.g>=1)c+=12; if(p.affTier.g>=2)c+=8; if(p.affTier.w>=2)c+=8; return c; }
+// The DOMINANT affinity path — the single path whose T1 RHYTHM hook is live. Only one fires at a
+// time, so a build has ONE identity instead of three half-identities stacking. Requires T1 (aff>=3);
+// ties broken w > v > g. Returns null when no path has reached T1.
+function dominantAff(p){ let best=null,bv=0; ['w','v','g'].forEach(k=>{ if(p.affTier[k]>=1 && p.aff[k]>bv){ bv=p.aff[k]; best=k; } }); return best; }
 function affDodgeBonus(p){ return p.affTier.g>=1?10:0; }
 function effCrit(p){ return p.crit+affCritBonus(p); }
 function effDodge(p){ return p.dodge+affDodgeBonus(p); }
@@ -2392,7 +2400,7 @@ function renderTitle(){
         <span class="red">the Devourer</span>, eater of worlds. Its hoarded power calls to<br>
         the desperate and the proud. You answer. You descend.</p>
       <p class="muted" style="font-size:8px;line-height:2">
-        20 chambers &middot; 4 zones &middot; slay, forge, and grow OP<br>
+        ${RUN_LENGTH} chambers &middot; 4 zones &middot; slay, forge, and grow OP<br>
         &middot; then dare the endless Abyss beneath.</p>
       <p class="muted center" style="font-size:7px;letter-spacing:1px;opacity:.7;margin-top:6px">&middot; the crypt does not ask your name &middot;</p>
       <button class="btn center" onclick="go('class')"><span class="blink">&#9654;</span> PRESS START</button>
@@ -2443,7 +2451,7 @@ function renderTutorial(){ const p=G.player;
       <div class="stats center" style="font-size:10px;margin:6px 0"><b class="red">GOBLIN HP</b> ${t.hp}/${t.maxHp}<br><b class="amber">INTENT</b> &mdash; ${intentLabel}</div>
       <div class="stats center" style="font-size:10px"><b class="red">YOU HP</b> ${p.hp}/${p.maxHp}</div>
       ${t.msg?`<p class="evtext center" style="font-size:10px;margin:8px 0">${t.msg}</p>`:''}
-      <button class="btn red" onclick="tutorialAct('attack')"><span class="k">&#9876;</span>ATTACK<small>deal damage equal to your power</small></button>
+      <button class="btn red" onclick="tutorialAct('attack')"><span class="k">&#9876;</span>ATTACK<small>strike the goblin (about 3 will fell it)</small></button>
       <button class="btn" onclick="tutorialAct('defend')"><span class="k">&#9747;</span>DEFEND<small>halve the next incoming hit</small></button>
       <button class="btn" onclick="tutorialAct('dodge')"><span class="k">&#10548;</span>DODGE<small>50% chance to take ZERO damage</small></button>
       <button class="btn muted" onclick="tutorialSkip()"><span class="k">&#9654;</span>SKIP TUTORIAL<small>go straight to the crypt</small></button>
@@ -2452,7 +2460,7 @@ function renderTutorial(){ const p=G.player;
 }
 function tutorialAct(action){ const p=G.player; const t=G._tutB; if(t.over) return; t.round++;
   // Player turn first
-  if(action==='attack'){ const d=Math.max(3,Math.round(p.atk*0.6)); t.hp=Math.max(0,t.hp-d); SFX.play('hit'); t.msg=`You strike the goblin for <b>${d}</b>.`; }
+  if(action==='attack'){ const d=8+rnd(2); t.hp=Math.max(0,t.hp-d); SFX.play('hit'); t.msg=`You strike the goblin for <b>${d}</b>.`; }   // fixed teaching damage — the lesson must be the same for every class (goblin dies in ~3 attacks)
   else if(action==='defend'){ t._pdef=1; SFX.play('block'); t.msg='You raise your guard. The next hit will land softer.'; }
   else if(action==='dodge'){ t._dodge=1; SFX.play('dodge'); t.msg='You shift your weight. There is a chance the next hit misses entirely.'; }
   if(t.hp<=0){ tutorialWin(); return; }
@@ -2480,6 +2488,13 @@ function tutorialSkip(){ G._tutB=null; G._firstRelicQueued=1; G._firstEventQueue
   nextCorridor(); G.screen='corridor'; render(); }
 /* ---------- OMEN ---------- */
 function renderOmen(){
+  // One-time intro: the first run skipped Omen selection, so the FIRST time a player sees this
+  // screen (run 2+) explain what they're committing to. Deferred showInfo so it pops on this screen,
+  // not after the next fight. Gated by localStorage so it shows once ever.
+  try{ if(!localStorage.getItem('crypt_seen_omenintro')){ localStorage.setItem('crypt_seen_omenintro','1');
+    setTimeout(()=>showInfo({title:'OMENS &mdash; A RUN-LONG PACT',
+      body:`<p style="font-size:11px;line-height:1.7">Your first descent had none. From now on, each run begins by reading an <b class="teal">OMEN</b> &mdash; a single fate that bends the <i>whole</i> run: richer loot, faster ultimates, harder enemies, stranger luck.</p><p class="muted" style="font-size:10px;line-height:1.7;margin-top:8px">You commit before you descend. Choose the run you want to have.</p>`}), 140);
+  } }catch(e){}
   const cards=G.omenChoices.map((o,i)=>`<button class="btn" onclick="chooseOmen(${i})">
     <span class="k teal">&#10022;</span>${o.name}<small>${o.note}</small></button>`).join('');
   app.innerHTML=`<h1 class="title" style="font-size:15px">READ THE OMENS</h1>
@@ -3539,6 +3554,9 @@ function renderForge(){ const p=G.player; discoverLore('l11');
    ============================================================ */
 function startBattle(intro){
   const r=G.room; const enemies=r._enemies?r._enemies:buildEnemies(r);
+  // Reset per-combat affinity rhythm counters so a build's beat starts fresh each fight (a Rending
+  // Edge shouldn't carry over from a fight three chambers ago).
+  if(G.player){ G.player._wrathStrikes=0; G.player._feintPrimed=0; G.player._veilHits=0; }
   // Ultimate charge persists across fights — saving up matters.
   const carriedCharge=(G.player&&G.player._charge!=null)?G.player._charge:0;
   G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:carriedCharge,
@@ -3770,9 +3788,9 @@ function fxHtml(kind){ const cols=FX_COLOR[kind]||FX_COLOR.hit; const n=kind==='
 function pushFx(idx,kind){ const b=G.battle; if(b)(b.fx=b.fx||[]).push({idx,kind}); }
 function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   SFX.play('kill');
-  // PHASE 4 JUICE — boss kills feel BIG. Adds a one-shot screen flash so the moment lands.
-  if(e.boss){ const sc=$('scene'); if(sc){ sc.classList.remove('bosskill-fx'); void sc.offsetWidth; sc.classList.add('bosskill-fx'); }
-    SFX.play('win'); }
+  // PHASE 4 JUICE — boss kills feel BIG. One-shot screen flash. (The 'win' SFX is played by
+  // winBattle a beat later; don't double it here.)
+  if(e.boss){ const sc=$('scene'); if(sc){ sc.classList.remove('bosskill-fx'); void sc.offsetWidth; sc.classList.add('bosskill-fx'); } }
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
   // First-kill Devour explainer — gated by localStorage so it shows once across all runs.
@@ -3844,12 +3862,14 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   // === AFFINITY T1 RHYTHM HOOKS — small per-path mechanics that change HOW you fight, not just
   //     the numbers attached to attacks. Each is one counter/flag, no new resource. The goal is
   //     that WRATH-warrior plays differently from VEIL-warrior, not just hits for more.
+  // Only the DOMINANT path's rhythm hook fires, so the build has one identity (not three stacked).
+  const domA=dominantAff(p);
   // WRATH I — RENDING EDGE: every 3rd basic strike sinks deeper. Rewards aggression cadence.
-  if(p.affTier.w>=1 && !isExtra){ p._wrathStrikes=(p._wrathStrikes||0)+1;
+  if(domA==='w' && !isExtra){ p._wrathStrikes=(p._wrathStrikes||0)+1;
     if(p._wrathStrikes>=3){ p._wrathStrikes=0; d=Math.round(d*1.6); blog('&#9876; RENDING EDGE — your blow sinks deeper!','crit'); SFX.play('crit'); } }
   // GUILE I — FEINT: the strike immediately after a DEFEND is guaranteed crit. Rewards a
   //   defend-then-strike rhythm.
-  if(p.affTier.g>=1 && p._feintPrimed && !isExtra){ p._feintPrimed=0;
+  if(domA==='g' && p._feintPrimed && !isExtra){ p._feintPrimed=0;
     if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); blog('&#10022; FEINT — the opening you waited for!','crit'); SFX.play('crit'); } }
   // Mob Rule consumes a one-shot +50% buff on next basic strike
   if(p._mobBuffNextHit){ d*=1.5; p._mobBuffNextHit=0; blog('Mob Rule strikes through you!','crit'); }
@@ -3921,8 +3941,8 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'frost':{SFX.play('frost');blog('Frost Nova chills the room!','info');const cm=Math.min(180,mm);aoeHit(i=>{let d=6+Math.round(cm*0.16)+Math.round(p.level*0.5);dealToEnemy(i,d,'Frost bites');const e=b.enemies[i];if(e.hp>0)addWeak(e.st,2);});blog('Enemies are WEAKENED!','info');break;}
     case 'power':{SFX.play('crit');let d=(p.atk+p.weapon.dmg)*1.95+rnd(4);let c=rollCrit();if(c)d*=1.6;dealToEnemy(b.target,d,'Power Strike crushes',c);break;}
     case 'shield':{SFX.play('skill');b.pdef=0.55;b.pdefTurns=2;blog('You raise your guard! (55% block, 2 turns)','info');
-      // GUILE I — FEINT primer: defending opens the door to the next strike.
-      if(p.affTier.g>=1){ p._feintPrimed=1; blog('&#10022; You read the gap. Your next strike is a FEINT.','info'); } break;}
+      // GUILE I — FEINT primer: defending opens the door to the next strike (dominant-path only).
+      if(dominantAff(p)==='g'){ p._feintPrimed=1; blog('&#10022; You read the gap. Your next strike is a FEINT.','info'); } break;}
     case 'reck':{ const k=p.flags.kWhirl; SFX.play('fire'); blog(k?'An ETERNAL CYCLONE engulfs the room!':'You spin into a whirlwind!','info');
       // Whirlwind base 1.45 / keystone 1.55. Eternal Cyclone now also stacks +1 ATK per cast this fight
       // (capped at +5) so it becomes a real ramp instead of just "AOE + a small heal".
@@ -4136,8 +4156,8 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
     SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
   else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');}
     if(p.hp<=0){ G._killingBlow='enemy'; G._killingBlowName=e.name; }
-    // VEIL I — STEADY HEART: every 3rd hit you absorb folds back into you. Rewards the trade.
-    if(dmg>0 && p.hp>0 && p.affTier.v>=1){ p._veilHits=(p._veilHits||0)+1;
+    // VEIL I — STEADY HEART: every 3rd hit you absorb folds back into you (dominant-path only).
+    if(dmg>0 && p.hp>0 && dominantAff(p)==='v'){ p._veilHits=(p._veilHits||0)+1;
       if(p._veilHits>=3){ p._veilHits=0; const h=Math.max(2,Math.round(p.maxHp*0.06)); heal(p,h); blog(`&#9774; STEADY HEART — the wound seals (+${h} HP).`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); } } }   // enemy/boss landed the final blow — remember WHO
   if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
   if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
