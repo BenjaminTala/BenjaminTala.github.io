@@ -36,6 +36,44 @@
   .shrine-panel{border-color:#5a3a8a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(160,90,220,.10)}
   .pstrip .track.xpline{height:5px;margin-top:3px;border-width:1px}
   .pstrip .stats.pstats{font-size:8.5px;line-height:1.7;margin-top:4px;color:var(--dim)}
+  /* EPITAPH — the death-screen hook to the next run. Deliberately not a "slot" or a "card" — a
+     hand-written breath in the dark, framed in pale violet. The crypt speaking, not the UI. */
+  .epitaph{margin:12px 6px;padding:11px 14px 13px;border-left:3px solid var(--purple);
+    background:linear-gradient(90deg,rgba(192,108,255,.10),transparent 70%)}
+  .epitaph .ep-tag{font-size:8px;letter-spacing:2px;color:#c9b6ff;opacity:.7;margin-bottom:6px}
+  .epitaph p{margin:0;font-size:10px;line-height:1.85;color:#e8e0ff;font-style:italic}
+  /* TEMPTATION — the BORROW block on the reward screen. Visually OFF the menu skeleton: amber band,
+     bigger type, a flavor whisper that worsens with debt. Reads as a pact, not a checkbox. */
+  .tempt{margin:10px 0 6px;padding:11px 14px;border:3px solid var(--amber);
+    background:linear-gradient(180deg,rgba(255,200,80,.10),rgba(255,140,40,.04));
+    cursor:pointer;display:block;width:100%;text-align:left;color:#fff;font-family:inherit;
+    box-shadow:0 0 0 1px #000, 0 0 16px rgba(255,180,60,.18);
+    transition:transform .05s, box-shadow .2s, border-color .2s}
+  .tempt:hover{box-shadow:0 0 0 1px #000, 0 0 28px rgba(255,180,60,.38);border-color:#fff}
+  .tempt:active{transform:translate(2px,2px)}
+  .tempt .tempt-h{font-size:12px;letter-spacing:1px;color:var(--amber);margin-bottom:4px}
+  .tempt .tempt-w{font-size:9px;line-height:1.6;color:#e6d8b0;font-style:italic;margin:4px 0}
+  .tempt .tempt-cost{font-size:9px;color:var(--red);margin-top:3px}
+  .tempt.danger{border-color:var(--red);box-shadow:0 0 0 1px #000, 0 0 26px rgba(255,90,90,.35);
+    background:linear-gradient(180deg,rgba(255,90,90,.14),rgba(160,40,40,.06))}
+  .tempt.danger .tempt-h{color:var(--red)}
+  /* ABYSS INVITATION — the throne-falls moment. Replaces the native confirm() with a real screen. */
+  .abyss-offer{padding:22px 18px 18px;border:3px solid #6c3cbf;
+    background:linear-gradient(180deg,#120a22 0%,#0a0614 100%);
+    box-shadow:0 0 0 3px #000, 0 0 60px rgba(120,60,200,.35), inset 0 0 80px rgba(80,30,140,.25)}
+  .abyss-offer h2{text-align:center;color:#d6b8ff;font-size:14px;letter-spacing:2px;margin:0 0 8px;text-shadow:0 0 18px rgba(192,108,255,.7)}
+  .abyss-offer .ao-line{text-align:center;font-size:10px;line-height:2;color:#cbb6e6;margin:8px 0}
+  .abyss-offer .ao-warn{text-align:center;font-size:9px;line-height:1.9;color:#ff8a9a;margin:10px 0 14px;font-style:italic}
+  .abyss-offer .ao-fall{display:block;width:100%;margin:6px 0;padding:14px;border:3px solid #c06cff;
+    background:linear-gradient(180deg,#1a0a30,#0a0414);color:#fff;font-family:inherit;font-size:12px;
+    letter-spacing:3px;text-align:center;cursor:pointer;
+    box-shadow:0 0 0 1px #000, 0 0 28px rgba(192,108,255,.45); transition:box-shadow .25s, transform .05s}
+  .abyss-offer .ao-fall:hover{box-shadow:0 0 0 1px #000, 0 0 44px rgba(192,108,255,.75);color:#fff}
+  .abyss-offer .ao-fall:active{transform:translate(2px,2px)}
+  .abyss-offer .ao-back{display:block;width:100%;margin:6px 0 0;padding:9px;background:transparent;
+    border:2px solid #4a4070;color:var(--dim);font-family:inherit;font-size:9px;
+    text-align:center;cursor:pointer;letter-spacing:1px}
+  .abyss-offer .ao-back:hover{color:var(--amber);border-color:var(--amber)}
   .center{text-align:center}.muted{color:var(--dim)}
   .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
   pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
@@ -1641,18 +1679,22 @@ function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loa
   if(id==='l15' && G.player) try{ revealDevour(); }catch(e){}
   return true; }
 function loadRecords(){ try{ return Object.assign({deepest:0,runs:0,wins:0},JSON.parse(localStorage.getItem('crypt_records')||'{}')); }catch(e){ return {deepest:0,runs:0,wins:0}; } }
-function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(r.deepest||0,G.depth); try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+function recordRun(win){ const r=loadRecords(); const prevDeepest=r.deepest||0; r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(prevDeepest,G.depth); if(G.depth>prevDeepest)memoir().wentDeeper=true; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 // Cross-run Time Debt ledger — feeds the Collector's "you again" recognition.
 function noteBorrow(amt){ const r=loadRecords(); r.borrowedTotal=(r.borrowedTotal||0)+amt; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
-function noteCollector(){ const r=loadRecords(); r.collectorMet=(r.collectorMet||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+function noteCollector(){ memoir().collectorMet=true; const r=loadRecords(); r.collectorMet=(r.collectorMet||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 // Boss kills (mirror of bossDeaths) — feeds the Saga tab's THE FALLEN section so the player sees
 // their lifetime hunt count next to each boss's death count. Bumped once per boss-kill via winBattle.
-function noteBossKill(key){ if(!key)return; const r=loadRecords(); r.bossKills=r.bossKills||{}; r.bossKills[key]=(r.bossKills[key]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+function noteBossKill(key){ if(!key)return; const m=memoir(); if(m.bosses.indexOf(key)<0)m.bosses.push(key); const r=loadRecords(); r.bossKills=r.bossKills||{}; r.bossKills[key]=(r.bossKills[key]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 // Rumor fragments collected — the Saga tab surfaces "you've heard 5 things about the Pale Devourer"
 // without revealing what those things are. Bumped at the existing fragment-emission sites.
-function noteRumor(topic){ if(!topic)return; const r=loadRecords(); r.rumors=r.rumors||{}; r.rumors[topic]=(r.rumors[topic]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+function noteRumor(topic){ if(!topic)return; memoir().rumors++; const r=loadRecords(); r.rumors=r.rumors||{}; r.rumors[topic]=(r.rumors[topic]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 // Collector resolution counters — bumped from collectorPay so the Saga can show items vs tribute vs fought.
 function noteCollectorPaid(kind){ const r=loadRecords(); r.collectorPaid=r.collectorPaid||{}; r.collectorPaid[kind]=(r.collectorPaid[kind]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+// PER-RUN MEMOIR — what happened THIS run, used by the death-screen "epitaph hook" so failure feels
+// like investment (a new beat the crypt remembers) instead of a stat reset. Initialized at run start.
+// Bumped from the existing recording sites so nothing new fires; just one extra field write each.
+function memoir(){ return G._memoir = G._memoir || {met:[],rumors:0,bosses:[],collectorMarked:false,collectorMet:false,devourRevealed:false,wentDeeper:false,depthStart:G.depth||0,deepestAtStart:(loadRecords().deepest||0)}; }
 // ============================================================
 // FIRST-RUN ONBOARDING — true the first time anyone opens the game (before any run has recorded).
 // Used to: skip the Omen screen, gate a guaranteed early relic + event, soften enemies ~12%, and
@@ -1673,7 +1715,8 @@ function npcState(id){ const s=loadNpc(); return Object.assign({met:0,stage:0},s
 function npcSet(id, patch){ const s=loadNpc(); s[id]=Object.assign({met:0,stage:0},s[id]||{},patch); saveNpc(s); return s[id]; }
 // Called the first time the player opens an anchor NPC's screen this run — bumps the
 // truthful lifetime meeting counter and stamps which run-number this meeting happened on.
-function npcMeet(id){ const r=loadRecords(); const s=loadNpc(); const cur=Object.assign({met:0,stage:0},s[id]||{});
+function npcMeet(id){ const m=memoir(); if(m.met.indexOf(id)<0)m.met.push(id);
+  const r=loadRecords(); const s=loadNpc(); const cur=Object.assign({met:0,stage:0},s[id]||{});
   cur.met=(cur.met||0)+1; cur.lastRun=r.runs||0; s[id]=cur; saveNpc(s); return cur; }
 // Human-readable ordinal for run/meeting counters: 1st, 2nd, 3rd, 4th...
 function ordinal(n){ n=n|0; const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
@@ -1886,7 +1929,7 @@ function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150);
   // Debt/Collector now applies in the Abyss too — borrowing deep is a real choice with a real
   // creditor. (Was !G.abyss-guarded, which left the deep game with no debt pressure at all.)
   if(before<25 && G.debt>=25 && !G.collectorEta){ G._worldMsg='Your debt has grown heavy enough to be noticed. Somewhere far below, an account opens in your name.'; flashWorld(); }
-  if(G.debt>=50&&!G.collectorEta){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
+  if(G.debt>=50&&!G.collectorEta){ G.collectorEta=4; memoir().collectorMarked=true; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
 function tickDebt(){ if(!G.debt)return; const interest=Math.floor(G.debt/30); if(interest>0)G.debt=clamp(G.debt+interest,0,150);
   addMiasma(Math.floor(G.debt/25));               // borrowed time rots the soul
@@ -2282,7 +2325,7 @@ function pickFragment(fam, choice){
 // the one misreading the word. This is one of the biggest moments in the game.
 function revealDevour(){
   const p=G.player; if(!p||!p.memory||!p.memory.devour||p.memory.revealed) return;
-  p.memory.revealed=true;
+  p.memory.revealed=true; memoir().devourRevealed=true;
   // Only rename the base name. Evolutions (Caustic Flame, etc.) keep their evolution names.
   if(p.memory.name==='Harvest Essence') p.memory.name='Devour';
   if(p.memory.desc==='Strike a weakened enemy and harvest its essence.')
@@ -2440,7 +2483,7 @@ function renderClassSelect(){
     <div class="subtitle">All wield mana &amp; health — each in their own way</div>
     <div class="grid3 fade">${card('mage')}${card('warrior')}${card('ranger')}</div>`;
 }
-function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes();
+function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes(); G._memoir=null; memoir();   // fresh per-run page for the death-screen epitaph
   // Every champion begins with DEVOUR in the 4th slot. The skill mutates by killing.
   G.player.memory=makeDevourBase();
   // FIRST-RUN PATH: skip Omen selection (one fewer screen of choice-with-no-context) and route into
@@ -4462,10 +4505,22 @@ function renderReward(){ const p=G.player,pd=G.pending;
     <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:4px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px;margin-bottom:4px">Choose one reward:</p>${cards}
       ${(pd.options&&pd.options.length>1&&!G.abyss)?(()=>{
-        // Borrowing's full price lives on hover; the visible line stays short. The bet is still
-        // informed (the debt cost is shown) without a three-clause sentence eating a card's height.
-        const bd=10+pd.options.length*6; const tough=Math.round((clamp((G.debt||0)+bd,0,150))*0.35);
-        return `<button class="btn center" style="border-left-color:var(--amber)" onclick="takeAllRewards()" title="Take every reward at once. Time Debt +${bd}; enemies +${tough}% tougher while in debt. The Collector comes at 50 debt."><span class="k">&#8987;</span>BORROW — take everything<small><span class="red">+${bd} Time Debt</span></small></button>`;})():''}
+        // BORROW is the most psychologically loaded button in the game. Off the menu skeleton, on
+        // its own pact block — bigger, hotter, with a whisper that GETS WORSE as the debt grows.
+        // The number stays honest; the framing makes it a temptation, not a checkbox.
+        const bd=10+pd.options.length*6; const cur=G.debt||0; const after=cur+bd;
+        const danger = after>=50 || cur>=25;
+        const whisper =
+          cur>=50 ? 'He is on his way. Taking more, now, is academic.'
+        : after>=50 ? 'This will summon him. He will be patient. He always is.'
+        : cur>=25 ? 'Somewhere far below, a page turns. A mark is made beside your name.'
+        : cur>0 ? 'The crypt remembers what you already owe. It would not mind remembering more.'
+        : 'The Collector has not been told your name. It would be a shame to let him.';
+        return `<button class="tempt ${danger?'danger':''}" onclick="takeAllRewards()" title="Take every reward at once. Time Debt becomes ${after}. The Collector comes at 50.">
+          <div class="tempt-h">&#8987; BORROW &mdash; take everything</div>
+          <div class="tempt-w">"${whisper}"</div>
+          <div class="tempt-cost">debt ${cur} &rarr; <b>${after}</b>${after>=50&&cur<50?' &middot; the Collector will come':''}</div>
+        </button>`;})():''}
       <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button></div>`;
 }
 function takeReward(i){ const p=G.player,pd=G.pending; if(navBusy()||!pd)return; navLock();
@@ -4492,23 +4547,35 @@ function proceed(msg){
   if(msg){ const f=document.querySelector('.footer'); if(f)f.innerHTML=`<span class="amber">${msg}</span>`; }
 }
 function renderTriumph(){
+  // Two-stage screen. Default: the victory panel + the two choices. After the player presses
+  // DESCEND, we re-render the SAME route with G._abyssOffer=1 so the screen morphs into the
+  // invitation — the most thematically loaded moment in the game finally gets to be a moment.
+  if(G._abyssOffer){
+    app.innerHTML=`<div class="panel fade abyss-offer">
+      <h2>THE STAIR WAS NOT HERE A MOMENT AGO</h2>
+      <p class="ao-line">Below the throne, a step in the stone that no one carved.<br>It descends past where the crypt has names for things.</p>
+      <p class="ao-line"><span class="muted">There is no final boss down there. No victory.<br>Only how deep you dare to fall.</span></p>
+      <p class="ao-warn">You will lose everything you have built tonight, when the dark takes you.<br>And the dark always takes you.</p>
+      <button class="ao-fall" onclick="startAbyss()">&darr; &nbsp; F A L L</button>
+      <button class="ao-back" onclick="cancelAbyss()">step back from the edge</button>
+    </div>`;
+    return;
+  }
   app.innerHTML=`<h1 class="title" style="color:var(--amber)">THE THRONE FALLS</h1>
     <div class="subtitle">YOU WON &middot; Chamber ${G.depth}/${RUN_LENGTH}</div>
     <div class="panel center fade">
       <pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>
-      <p class="evtext center"><b class="amber">The crypt's last guardian lies broken at your feet.</b> Your run is over — you can retire as a legend, with everything you carry.<br><br>
+      <p class="evtext center"><b class="amber">The crypt's last guardian lies broken at your feet.</b> Your run is over &mdash; you can retire as a legend, with everything you carry.<br><br>
         Below the throne, a stair that should not exist spirals down into the dark. The Abyss. Bottomless. Optional. <b class="red">Choose only if you want to gamble what you just earned.</b></p>
       <p class="center purple fade" style="font-size:9px;letter-spacing:.6px;margin:10px 4px 4px;opacity:.85"><i>&#9763; You have done this many times. You will do it again.</i></p>
       <button class="btn center amber" onclick="claimVictory()"><span class="k">&#9819;</span>&#9654; RETIRE A LEGEND <span class="muted">(end the run, keep your glory)</span><small>RECOMMENDED &middot; the proper ending</small></button>
-      <button class="btn center" onclick="confirmAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>OPTIONAL ENDLESS MODE &middot; no exit, no win, only how deep you fall</small></button>
+      <button class="btn center" onclick="confirmAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>see what lies beneath the throne</small></button>
     </div>`;
 }
-function confirmAbyss(){
-  if(!confirm('THE ABYSS IS ENDLESS. There is no final boss, no victory screen — only escalating bosses until you die. You will lose everything you have built when it kills you. Are you sure?')) return;
-  startAbyss();
-}
+function confirmAbyss(){ G._abyssOffer=1; SFX.play('door'); render(); }
+function cancelAbyss(){ G._abyssOffer=0; render(); }
 function claimVictory(){ SFX.play('win'); discoverLore('l12'); G.screen='victory'; render(); }
-function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
+function startAbyss(){ const p=G.player; G.abyss=1; p.won=true; G._abyssOffer=0;
   G.mods.essMul=(G.mods.essMul||1)*1.6; G.mods.luck=1; G.mods.goldMul*=1.3;
   discoverLore('l14');
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
@@ -4539,6 +4606,30 @@ function causeOfDeathHtml(){
   const kbBlock = kb ? `<div style="margin-top:9px;font-size:9px;line-height:1.5">
       <span class="muted" style="font-size:8px;letter-spacing:.5px">KILLING BLOW</span><br><b style="color:${kbColor}">${kbLabel}</b>${press?`<br><span class="muted" style="font-size:8px;letter-spacing:.5px">CONTRIBUTING PRESSURE</span><br><span style="color:${colors[press[0]]}">${labels[press[0]]||press[0]}</span>`:''}</div>` : '';
   return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}${kbBlock}</div>`; }
+// EPITAPH HOOK — at the end of every run, the crypt remembers ONE new thing about you. The data
+// already exists (loadRecords + crypt_npc + per-run memoir flags); this just surfaces it as the last
+// breath before the player decides whether to start again. Push, not closure.
+function deathEpitaphHtml(p, win){
+  const m = G._memoir || memoir(); const r = loadRecords();
+  const lines = []; const npcNames = {lantern:'The Lantern Keeper', cartog:'The Cartographer', cardinal:'The Cardinal', scholar:'The Frozen Scholar', wsmith:'The Weeping Smith', watcher:'The Watchful Prisoner'};
+  // Priority pool — strongest beat first; we pick ONE so it lands.
+  if(win) lines.push('The crypt has a new legend tonight. It does not forget legends.');
+  if(m.devourRevealed) lines.push('The skill in your fourth slot finally said its real name today. The crypt heard it.');
+  if(m.bosses.indexOf('paledevourer')>=0) lines.push('You set eyes on the thing the dragon refused to look at. The world tilts a little, where you walked.');
+  if(m.bosses.indexOf('remembered')>=0) lines.push('You met the one who came before, and you outlasted them. That is no small thing down here.');
+  if(m.wentDeeper) lines.push(`You went further than any version of you has gone — chamber ${G.depth}. The crypt has a new high-water mark with your name on it.`);
+  if(m.collectorMet){ const cm = (r.collectorMet||0); lines.push(cm>=3 ? 'The Collector has stopped expecting the arrangement to end. So have you.' : 'The Collector knows your debt now. It will not forget the shape of you.'); }
+  else if(m.collectorMarked) lines.push('Your debt grew heavy enough to be noticed. Somewhere far below, an account opens in your name.');
+  if(m.rumors>=3) lines.push('You heard the Pale named in pieces, in three places today. None of them said it the same way.');
+  else if(m.rumors>=1) lines.push('You heard a fragment of a name no one above ground would speak.');
+  if(m.met.length>=2) lines.push(`${npcNames[m.met[0]]||'A familiar face'} and ${npcNames[m.met[1]]||'another'} both have a little more of you in their ledgers tonight.`);
+  else if(m.met.length===1){ const id=m.met[0]; const st=npcState(id); const name=npcNames[id]||'Someone';
+    lines.push(st.met>=3 ? `${name} has stopped pretending you might not come back.` : st.met===2 ? `${name} recognised you this time. They will recognise you faster, next.` : `${name} learned your face today.`); }
+  // Fallback — every run leaves SOMETHING.
+  if(!lines.length){ const r2=loadRecords(); lines.push(r2.runs>=3 ? 'The crypt has gotten used to you. That should worry you.' : 'The crypt closes its door behind you, gently, the way you close a book on a familiar page.'); }
+  const pick = lines[0];
+  return `<div class="epitaph"><div class="ep-tag">THE CRYPT REMEMBERS</div><p>${pick}</p></div>`;
+}
 function renderEnd(win){ const p=G.player;
   if(!win&&!G._echoSaved){ G._echoSaved=1; try{saveEcho();}catch(e){} }
   if(!G._recSaved){ G._recSaved=1; try{recordRun(win||(p&&p.won));}catch(e){} }
@@ -4558,6 +4649,7 @@ function renderEnd(win){ const p=G.player;
         <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level} &middot; <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
         <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills} &middot; <span class="muted">Gold:</span> ${p.gold}</p>
       ${win?'':causeOfDeathHtml()}
+      ${deathEpitaphHtml(p, win)}
       <h3 class="amber center" style="font-size:11px;margin:6px 0">YOUR BUILD</h3>
       ${gear}
       <p style="font-size:9px;line-height:2"><span class="muted">Paths:</span> ${paths}<br>
