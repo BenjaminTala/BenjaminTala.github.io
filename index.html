@@ -2820,6 +2820,11 @@ function nextCorridor(){ G.depth++;
       else peek='A horror of the deep stirs. It has been waiting.';
       G.doors=[{type:'enemy',boss:key,peek}]; }
     else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
+    // BUGFIX: this branch returns before the normal whisper line below, so whisperFor() was NEVER
+    // called in the Abyss — meaning ABYSS_WHISPERS, Pale inscriptions, and Pale rumors (all the
+    // deep-game strangeness) never appeared past the throne. Surface them here. Slightly higher
+    // rate than the main run (24% vs 18%) because "the deeper you go, the less normal the world."
+    G._whisper = chance(24) ? whisperFor(G.depth) : null;
     return; }
   if(G.depth===1||G.depth===11||G.depth===21||G.depth===31){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]&&discoverLore(({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]); if(G.depth>1)stagePopup(G.depth); }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
