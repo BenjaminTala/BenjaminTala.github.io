@@ -2756,7 +2756,7 @@ const DISCOVERIES=[
       text:`A mouth in the wall &mdash; not carved, grown. It has been eating, the way you have been eating, and it knows a fellow appetite when one walks in. As you near it, it speaks the names of everything you have devoured, in order, in your own voice: ${fams.join(', ')} &mdash; and then it keeps going, into a name you have not reached yet.`,
       options:[
         {label:'"Say the last name again."',desc:'It knew one you do not',run:p=>{ addMiasma(8); return 'It will not. <span class="shout-red">It has decided you are not ready to be hungry for that one yet.</span> The mouth closes slowly, the way a thing closes when it fully intends to open again. (the cold thickens)'; }},
-        {label:'Feed it essence',desc:'-30 essence &middot; it gives back, changed',run:p=>{ if(p.essence<30) return 'It waits. You have nothing it wants yet.'; p.essence-=30; const h=Math.round(p.maxHp*0.22); heal(p,h); if(p.memory){p.memory.dmgMult=(p.memory.dmgMult||1.5)+0.20;} SFX.play('upgrade'); return `You pour essence into the mouth. It swallows, considers, and gives something back through your own hands &mdash; your Devour sharpens (+0.20 scaling) and old wounds close over. (+${h} HP)`; }},
+        {label:'Feed it essence',desc:'-30 essence &middot; it gives back, changed',run:p=>{ if(p.essence<30) return 'It waits. You have nothing it wants yet.'; p.essence-=30; const h=Math.round(p.maxHp*0.22); heal(p,h); if(p.memory){p.memory.dmgMult=(p.memory.dmgMult||1.5)+0.20;} SFX.play('upgrade'); return `You pour essence into the mouth. It swallows, considers, and gives something back through your own hands &mdash; the hunger you carry sharpens its teeth, and the worst of your wounds close over. (+${h} HP)`; }},
         {label:'Refuse to feed it',desc:'Back away',run:p=>'You do not feed it. It does not insist. <span class="shout">"You will,"</span> it says, in your own voice, comfortably. "You always do."'},
       ]}); }
   },
@@ -2791,7 +2791,7 @@ function distortedEchoEvent(){ const p=G.player; const path=(p&&p.memory&&p.memo
     text:'It is one of you &mdash; you can tell by the walk, even folded wrong like this: too many joints, the face running a half-second behind the head. This far down, the echoes do not come back as people. They come back as the idea of having been one.',
     options:[
       {label:'"How far did you get?"',desc:'Ask',run:p=>'It answers in your own voice, a half-second before its mouth moves. <span class="shout-purple">"Further than this. Not far enough. There is no far enough &mdash; that is the joke."</span>'+knows},
-      {label:'Devour it',desc:'It is a piece of you &middot; risk',run:p=>{ addMiasma(10); p.essence+=24; SFX.play('kill'); return 'You consume it. It does not scream &mdash; it agrees. For a moment you remember a chamber you have never walked, in detail, and then you do not. (+24 essence, the cold thickens)'; }},
+      {label:'Consume it',desc:'It is a piece of you &middot; risk',run:p=>{ addMiasma(10); p.essence+=24; SFX.play('kill'); return 'You consume it. It does not scream &mdash; it agrees. For a moment you remember a chamber you have never walked, in detail, and then you do not. (+24 essence, the cold thickens)'; }},
       {label:'Walk through it',desc:'It is not really there',run:p=>'You step through the place it is standing. It does not move aside. You simply end up on the far side of it, and so does it, and neither of you remarks on the matter.'},
     ]}); }
 function discoveryRoom(depth){
