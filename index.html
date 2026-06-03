@@ -26,17 +26,18 @@
   .title{text-align:center;color:var(--amber);font-size:22px;line-height:1.5;text-shadow:3px 3px 0 #000,0 0 14px rgba(255,207,77,.35);margin:14px 0 6px;}
   .subtitle{text-align:center;color:var(--dim);font-size:9px;margin-bottom:22px}
   .blink{animation:blink 1s steps(2,start) infinite}@keyframes blink{to{visibility:hidden}}
-  .panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5);padding:16px;margin-bottom:14px;}
+  .panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5);padding:12px;margin-bottom:10px;}
+  .panel.tight{padding:9px 12px;margin-bottom:8px}
   .panel.tight{padding:12px}
   .center{text-align:center}.muted{color:var(--dim)}
   .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
   pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
-  .btn{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-size:11px;color:var(--ink);background:var(--panel2);border:3px solid var(--line);padding:12px 14px;margin:8px 0;line-height:1.5;transition:transform .05s,background .1s,border-color .1s;}
+  .btn{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-size:11px;color:var(--ink);background:var(--panel2);border:3px solid var(--line);padding:9px 13px;margin:6px 0;line-height:1.45;transition:transform .05s,background .1s,border-color .1s;}
   .btn:hover{background:#2a265080;border-color:var(--amber);color:#fff}
   .btn:active{transform:translate(2px,2px)}
   .btn:disabled{opacity:.4;cursor:not-allowed}
   .btn .k{color:var(--amber);margin-right:8px}
-  .btn small{display:block;color:var(--dim);font-size:9px;margin-top:6px;line-height:1.6}
+  .btn small{display:block;color:var(--dim);font-size:9px;margin-top:3px;line-height:1.5}
   .btn:hover small{color:#b9b4e6}
   .row{display:flex;gap:10px;flex-wrap:wrap}.row .btn{flex:1;min-width:120px}
   .grid3{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
@@ -974,7 +975,7 @@ const BOSS_DEATHCRY={
    ============================================================ */
 const CLASSES={
   mage:{name:'MAGE',color:'purple',affinity:'ARCANE',
-    affinityText:'Spell power scales with MAX MANA. Mana also soaks incoming damage (Mana Shield) and refills fast.',
+    affinityText:'Power gathers where others would bleed. Mana is both blade and shield.',
     hp:100,mana:128,atk:6,def:1,dodge:0,crit:9,lifesteal:0,regen:18,
     weapon:{name:'Apprentice Wand',dmg:5,type:'magic'},
     sprite:"   /\\\n  (oo)\n <(  )>\n   ||\n  _||_",
@@ -984,7 +985,7 @@ const CLASSES={
       {id:'frost',name:'Frost Nova',cost:18,aoe:true,desc:'Dmg ALL + WEAKEN them.'},
     ]},
   warrior:{name:'WARRIOR',color:'red',affinity:'FURY',
-    affinityText:'Brutal attacks. Build TANK (defense + Shield Wall) or LIFESTEAL (vampiric gear).',
+    affinityText:'Heavy armor. Heavier hands. Wins by enduring what should have killed him.',
     hp:145,mana:30,atk:14,def:6,dodge:0,crit:8,lifesteal:0,regen:8,
     weapon:{name:'Rusty Sword',dmg:9,type:'melee'},
     sprite:"  _____\n [_+_]\n  (oo)\n /|##|\\\n  d  b",
@@ -994,7 +995,7 @@ const CLASSES={
       {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'Hit ALL hard, drop guard.'},
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
-    affinityText:'High DODGE — chance to fully avoid hits. Evade stacks it even higher.',
+    affinityText:'Never where the blow lands. Every miss becomes an opening.',
     hp:130,mana:38,atk:14,def:4,dodge:32,crit:24,lifesteal:0,regen:8,
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
@@ -2842,8 +2843,7 @@ function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoo
     app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
       <div class="panel fade room-in"><h3 class="center purple" style="margin-bottom:8px">A FALLEN CHAMPION</h3>${sprite}
         <p class="evtext center">${G.room.outcome}</p>
-        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button>
-        <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
+        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
     return; }
   let opts;
   if(ec.monster){
@@ -2861,7 +2861,7 @@ function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoo
     <div class="panel fade room-in"><h3 class="center purple" style="margin-bottom:8px">A FALLEN CHAMPION</h3>${sprite}
       <p class="evtext center">A dead ${cls.toLowerCase()}, Lv ${ec.level}, slumped in the dark. It died at chamber ${ec.depth}${ec.item?` clutching ${gearTxt}`:''}.</p>
       ${opts}
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
+      </div>`;
 }
 function echoEnemy(ec){ const f=depthFactor(); const lv=ec.level||5;
   const hp=Math.round((70+lv*14)*f*0.5), atk=Math.round((9+lv*1.2)*f*0.5);
@@ -2922,8 +2922,7 @@ function renderCollector(){ const p=G.player; discoverLore('l8'); const bs=bestI
       ${it?`<button class="btn" onclick="collectorPay('item')"><span class="k amber">&#9876;</span>Surrender ${bs.toUpperCase()}: ${itemLabel(it)}<small>hand over your finest piece — debt cleared</small></button>`:''}
       <button class="btn" onclick="collectorPay('tribute')"><span class="k amber">&#128176;</span>Pay tribute<small>all ${gold}g, ${Math.floor(ess/2)} ${ESS}, and 15% HP — debt cleared</small></button>
       <button class="btn red" onclick="collectorPay('refuse')"><span class="k">&#9876;</span>REFUSE — face the Collector<small>win and the debt dies with it; lose and you pay everything</small></button>
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button>
-    </div>${statusFooter()}`;
+          </div>${statusFooter()}`;
 }
 function collectorPay(kind){ const p=G.player;
   if(kind==='item'){ const bs=bestItem(p); if(bs){ const it=unequip(p,bs); G.debt=0; G.collectorEta=0; noteCollectorPaid('item'); SFX.play('door'); return proceed(`You surrender the ${it.name}. The Collector fades. Your debt is paid.`); } }
@@ -2944,10 +2943,30 @@ function takeAllRewards(){ const p=G.player,pd=G.pending; if(!pd||!pd.options)re
   let seen=false; try{seen=localStorage.getItem('crypt_seen_debt')==='1';}catch(e){}
   if(!seen){ try{localStorage.setItem('crypt_seen_debt','1');}catch(e){} showInfo('timedebt'); }
   G.pending=null; proceed(`You seize it all. The crypt records the debt (+${d} time debt).`); }
+// Ambiguous enemy-room hints — mood/sound/smell only. They NEVER confirm count ("more than one"),
+// elites ("heavier than the rest"), or even that it is a fight at all. The player should suspect,
+// guess, and sometimes be wrong. A separate, slightly-more-ominous pool is drawn when the room is
+// crowded or holds an elite — but the LANGUAGE never names what's inside.
+const PEEK_GROUP=[
+  'Something wet drags across stone, then stops.',
+  'A sour smell clings to the door handle.',
+  'The hinges are warm to the touch.',
+  'There is a rhythm beyond the door. Not quite footsteps.',
+  'The wood is scratched from the inside.',
+  'Something inside goes still the moment you listen.',
+  'A draught carries a smell of iron and old breath.',
+  'The dark past the frame does not hold quite still.',
+];
+const PEEK_GROUP_HEAVY=[
+  'The floor trembles, faintly, in no particular rhythm.',
+  'A low sound you feel in your teeth more than hear.',
+  'The air past the door is thick, and close, and waiting.',
+  'Something shifts its weight, and the dust comes down from the lintel.',
+  'A smell of blood that is not yours. Not yet.',
+];
 function groupPeek(g){
-  // Sensory only — the player should hear it before they see it.
-  if(g.length===1){ const u=g[0]; return peek('enemy')+(u.affix?' Something about it is wrong.':''); }
-  return 'More than one thing moves in there, and they move together.'+(g.some(u=>u.affix)?' One of them feels heavier than the rest.':'');
+  const heavy = g.length>=3 || g.some(u=>u.affix);
+  return pick(heavy ? PEEK_GROUP_HEAVY : PEEK_GROUP);
 }
 // Door hint is just the room's sensory peek — players should suspect, not know.
 function doorHint(room){ return room.peek||'A door. Closed.'; }
@@ -3031,8 +3050,7 @@ function renderCorridor(){
   const banners=drainBanners(2);
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(G.player,true)}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
-      ${(G._whisper && !banners)?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
+      ${(G._whisper && !banners)?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}</div>${statusFooter()}`;
 }
 let _invReturn='corridor';
 function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
@@ -3378,7 +3396,7 @@ function renderRoom(){
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
   const banners=drainBanners(2);
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(p,true)}<div class="panel fade room-in">${body}<button class="btn muted center" onclick="openInventory()" style="margin-top:6px"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -3420,8 +3438,7 @@ function renderEvent(){
       <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
         ${art}
         <p class="evtext center">${r.outcome}</p>
-        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button>
-        <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
+        <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
     return;
   }
   const opts=ev.options.map((o,i)=>`<button class="btn" onclick="chooseEvent(${i})"><span class="k teal">[${i+1}]</span>${o.label}<small>${o.desc}</small></button>`).join('');
@@ -3429,7 +3446,7 @@ function renderEvent(){
     <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
       ${art}
       <p class="evtext center">${evText}</p>${opts}
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
+      </div>`;
 }
 function chooseEvent(i){ const r=G.room,res=r.ev.options[i].run(G.player);
   if(res===false) return;            // a battle was started
@@ -3473,8 +3490,7 @@ function renderMerchant(){
       ${item('Mana Tonic',mc(14),'fully restore mana now',"buy('mana')",p.gold>=mc(14))}
       ${item('Mystery Upgrade',mc(40),'a random permanent upgrade',"buy('upgrade')",p.gold>=mc(40))}
       ${gearBtn}${relicBtn}
-      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button>
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
+      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>${statusFooter()}`;
 }
 function buy(kind){ const p=G.player,st=G.room.stock; let bought=false; const mc=b=>Math.round(b*(st.pm||1));
   if(kind==='potion'&&p.gold>=mc(25)){p.gold-=mc(25);p.potions++;SFX.play('potion');bought=true;}
@@ -3545,8 +3561,7 @@ function renderForge(){ const p=G.player; discoverLore('l11');
       <h3 class="center amber" style="margin:8px 0">THE SOUL FORGE</h3>
       <p class="muted center" style="font-size:9px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS} essence</span> to grow stronger.</p>
       ${up}${im}${re}${at}
-      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button>
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>${statusFooter()}`;
+      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>${statusFooter()}`;
 }
 
 /* ============================================================
@@ -4351,19 +4366,22 @@ function renderReward(){ const p=G.player,pd=G.pending;
   const icon={weapon:'&#9876;',head:'&#9651;',chest:'&#128737;',legs:'&#9646;',boots:'&#128094;',ring:'&#9883;'};
   const cards=pd.options.map((o,i)=>{
     if(o.kind==='gear'){ const it=o.data; const cur=p.equip[it.slot];
-      const curTxt=cur?`<br><span class="muted">replaces ${cur.name} Lv${cur.ilvl}</span>`:'<br><span class="green">empty slot</span>';
-      return `<button class="btn" onclick="takeReward(${i})">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)}${curTxt}</small></button>`; }
+      // Essential line stays visible (stats + affinity); the "replaces X" detail moves to hover so
+      // the card is one line shorter. The whole point is fitting the choices on screen at once.
+      const slotTxt=cur?`<span class="muted">swap</span>`:'<span class="green">empty slot</span>';
+      const hover=escAttr(cur?`Replaces ${cur.name} Lv${cur.ilvl}`:'Fills an empty slot');
+      return `<button class="btn" onclick="takeReward(${i})" title="${hover}">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)} &middot; ${slotTxt}</small></button>`; }
     if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small></button>`;
     return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small></button>`;}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
-    <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
-      <p class="muted center" style="font-size:9px">Choose one reward:</p>${cards}
+    <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:4px">${src}</h3>${gold}
+      <p class="muted center" style="font-size:9px;margin-bottom:4px">Choose one reward:</p>${cards}
       ${(pd.options&&pd.options.length>1&&!G.abyss)?(()=>{
-        // Show the real price of borrowing — the bet should be informed, not a blind trap.
+        // Borrowing's full price lives on hover; the visible line stays short. The bet is still
+        // informed (the debt cost is shown) without a three-clause sentence eating a card's height.
         const bd=10+pd.options.length*6; const tough=Math.round((clamp((G.debt||0)+bd,0,150))*0.35);
-        return `<button class="btn center" style="border-left-color:var(--amber)" onclick="takeAllRewards()"><span class="k">&#8987;</span>BORROW — TAKE EVERYTHING<small>claim all of it now &middot; <span class="red">+${bd} Time Debt &rarr; foes +${tough}% tougher</span> &middot; the Collector comes at 50</small></button>`;})():''}
-      <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button>
-      <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
+        return `<button class="btn center" style="border-left-color:var(--amber)" onclick="takeAllRewards()" title="Take every reward at once. Time Debt +${bd}; enemies +${tough}% tougher while in debt. The Collector comes at 50 debt."><span class="k">&#8987;</span>BORROW — take everything<small><span class="red">+${bd} Time Debt</span></small></button>`;})():''}
+      <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button></div>`;
 }
 function takeReward(i){ const p=G.player,pd=G.pending;
   if(i>=0){ const o=pd.options[i];
