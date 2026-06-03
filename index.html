@@ -3500,6 +3500,11 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
   // 55 keeps Evade meaningful without making physical hits no-ops.
   const dodgeChance=Math.max(0,Math.min(55,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
   if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; return; }
+  // RANGER SURVIVAL FLOOR — Wind Step (Evade) also grazes the blows that DO land. The fairness
+  // review found ranger's only mitigation was the dodge coin-flip, so a defensively-played ranger
+  // still rotted out to variance. A small guaranteed reduction while Evade is up gives skilled,
+  // careful ranger play a real floor without raising the dodge cap (which would make it un-hittable).
+  if(p.cls==='ranger' && b.evadeTurns>0){ dmg=Math.max(1, dmg-(4+Math.floor(p.level/2))); }
   let red=(b.pdefTurns>0?b.pdef:0);
   // Shield Wall is the deliberate answer to a telegraphed HEAVY/UNLEASH — guard blocks far more of
   // a big, announced blow than of a basic swing. Now seeing "UNLEASH" is a reason to raise guard.
@@ -3699,7 +3704,10 @@ function renderReward(){ const p=G.player,pd=G.pending;
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:6px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px">Choose one reward:</p>${cards}
-      ${(pd.options&&pd.options.length>1&&!G.abyss)?`<button class="btn center" style="border-left-color:var(--amber)" onclick="takeAllRewards()"><span class="k">&#8987;</span>BORROW — TAKE EVERYTHING<small>claim all of it now &middot; +Time Debt (the Collector will come for it)</small></button>`:''}
+      ${(pd.options&&pd.options.length>1&&!G.abyss)?(()=>{
+        // Show the real price of borrowing — the bet should be informed, not a blind trap.
+        const bd=10+pd.options.length*6; const tough=Math.round((clamp((G.debt||0)+bd,0,150))*0.35);
+        return `<button class="btn center" style="border-left-color:var(--amber)" onclick="takeAllRewards()"><span class="k">&#8987;</span>BORROW — TAKE EVERYTHING<small>claim all of it now &middot; <span class="red">+${bd} Time Debt &rarr; foes +${tough}% tougher</span> &middot; the Collector comes at 50</small></button>`;})():''}
       <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button>
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
 }
