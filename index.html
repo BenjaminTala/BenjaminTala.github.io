@@ -452,6 +452,10 @@
   .spr-flash{animation:sprFlash .26s steps(2)!important}
   @keyframes sprFlash{0%,100%{filter:none}50%{filter:brightness(3.4) saturate(.3) drop-shadow(0 0 7px #fff)}}
   .dmgfloat.pdmg{color:#ff8a3c;font-size:15px;text-shadow:1px 1px 0 #3a1500,2px 2px 0 #000}
+  .dmgfloat.cold{color:#bcd4ff;font-size:14px;text-shadow:0 0 6px rgba(120,170,255,.8),1px 1px 0 #001}
+  .log .cold{color:#bcd4ff;text-shadow:0 0 4px rgba(120,170,255,.5)}
+  .scene.deepcold-fx{animation:dcShudder .5s ease}
+  @keyframes dcShudder{0%,100%{filter:none}50%{filter:brightness(.82) hue-rotate(-18deg) saturate(1.2)}}
   .dmgfloat.heal{color:var(--green)}
   /* ===================== ROOM-ENTER TRANSITIONS ===================== */
   #transition{position:fixed;inset:0;z-index:158;pointer-events:none;opacity:0}
@@ -1743,6 +1747,7 @@ function heatChamberDamage(){ return Math.max(0, (G.heat||0) - 3); }
 // fall"). Gentle until ~floor 8 so it diversifies how deep runs END without rebuilding the wall the
 // scaling change just lowered. Around the Pale's depth (floor 22) it bites ~18/chamber.
 function deepColdDamage(){ if(!G.abyss) return 0; const floor=G.depth-RUN_LENGTH; return floor<=8?0:Math.round((floor-8)*1.3); }
+function dcTier(){ const dc=deepColdDamage(); return dc<=0?0:dc>=30?4:dc>=18?3:dc>=8?2:1; }   // 0 settling .. 4 absolute
 function healFactor(){ const t=miasmaTier(); return t>=2?0.5:t>=1?0.78:1; }              // wounds stop closing in the cold
 const HEAT_MSG=['','Metal begins to soften. The locals catch fire.','Your breath leaves sparks — the merchants gouge, but the loot runs hot.','The walls pulse. The Furnace begins to burn YOU.','FIRE INSTABILITY — the Furnace is trying to kill you!'];
 const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds no longer close on their own.','The crypt tastes your soul.','SOUL ROT — the cold is eating your very substance.','The cold draws blood with every step.','You are coming undone.'];
@@ -1799,7 +1804,10 @@ function addMiasma(n){ if(!miasmaActive())return;
 }
 function coolHeat(n){ G.heat=clamp(G.heat-n,0,HEAT_MAX); }
 function cleanse(n){ G.miasma=clamp(G.miasma-n,0,99); }
-function attrib(src,amt){ if(amt>0)G.dmgBy[src]=(G.dmgBy[src]||0)+amt; }
+function attrib(src,amt){ if(amt>0){ G.dmgBy[src]=(G.dmgBy[src]||0)+amt;
+  // Recency-weighted ledger: decayed each chamber (see openDoor) so the death recap reflects what
+  // actually brought the run down — the last fight / last few chambers — not the whole run's history.
+  G.dmgRecent=G.dmgRecent||{}; G.dmgRecent[src]=(G.dmgRecent[src]||0)+amt; } }
 /* One-shot heartbeat the first time the player is BELOW 25% in a battle, regardless of
    which damage source got them there. Uses a distinct 'heartbeat' SFX (not 'hurt' which
    is indistinguishable from a normal incoming hit) and also logs a visible warning. */
@@ -1809,6 +1817,7 @@ function checkLowHpHeartbeat(p){ const b=G.battle; if(!b)return;
 function hurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return false; const before=p.hp;
   const b=G.battle; if(b&&b.lastStand>0) amt=Math.min(amt,Math.max(0,before-1));
   p.hp=clamp(p.hp-amt,0,p.maxHp); attrib(src,before-p.hp);
+  if(p.hp<=0 && before>0){ G._killingBlow=src; G._killingBlowName=null; }   // environmental killing blow
   checkLowHpHeartbeat(p);
   return p.hp<=0; }
 /* event/self-cost damage that NEVER kills (floor 1 HP). Still attributes real HP lost
@@ -2413,6 +2422,11 @@ function worldBar(){ const parts=[];
     const pulse=t>=2?' pulse-mia':'';   // the corruption is in your blood — it throbs from tier 2 up
     parts.push(`<span class="wmeter clickable purple${pulse}" data-info-concept="miasma" style="color:${c}">&#9763; MIASMA ${G.miasma}/99${lbl?' &mdash; '+lbl:''}</span>`); }
   if(G.debt>0){ parts.push(`<span class="wmeter clickable amber" data-info-concept="timedebt">&#8987; DEBT ${G.debt}${G.collectorEta>0?' — Collector ETA '+G.collectorEta:''}</span>`); }
+  if(G.abyss){ const dc=deepColdDamage(); const t=dcTier();
+    const lbl=['SETTLING','CREEPING','DEEPENING','CRUSHING','ABSOLUTE'][t];
+    const c=['#9fb8e0','#9fb8e0','#86acea','#5f90f0','#bcd4ff'][t];
+    const pulse=t>=3?' pulse-mia':'';   // throbs once the deep itself is trying to put you out
+    parts.push(`<span class="wmeter clickable${pulse}" data-info-concept="deepcold" style="color:${c}">&#10052; DEEP COLD ${dc>0?'&minus;'+dc+'/chamber':'stirring'} &mdash; ${lbl}</span>`); }
   if(!parts.length)return '';
   const pulse=G._worldPulse?' worldpulse':''; G._worldPulse=0;
   return `<div class="omentag${pulse}">${parts.join(' &nbsp;&middot;&nbsp; ')}</div>`; }
@@ -2637,7 +2651,7 @@ function makeRoom(depth){
     return {type:'enemy',boss:key,peek:peek(depth===RUN_LENGTH?'bossFinal':'boss')}; }
   // The Abyss has its own signature room — a distorted echo turns up now and then in the deep, so the
   // endless game has a recurring face the main run never shows. Rare enough to stay unsettling (~8%).
-  if(G.abyss && chance(6)){ const ev=distortedEchoEvent(); return {type:'event', ev, peek:ev._peek}; }
+  if(G.abyss && chance(4)){ const ev=distortedEchoEvent(); return {type:'event', ev, peek:ev._peek}; }
   const disc=discoveryRoom(depth); if(disc) return disc;
   if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(4)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:peek('echo')}; }
   const greedy=G.mods.greedy;
@@ -2837,8 +2851,8 @@ function nextCorridor(){ G.depth++;
       // EXCEPTIONAL builds reach the Pale — never common, never literally unreachable. (Boss floors
       // are every 4th: 8/12/16/20/24...) Pale forced at floor 22 = depth 62; reachable earlier only
       // on a rare roll. Remembered forced at floor 12 = depth 52.
-      if(floor>=22 && !G._paleSlain) key='paledevourer';
-      else if(floor>=16 && chance(12) && !G._paleSlain) key='paledevourer';
+      if(floor>=24 && !G._paleSlain) key='paledevourer';
+      else if(floor>=18 && chance(10) && !G._paleSlain) key='paledevourer';
       else if(floor>=10 && !G._rememberedSlain) key='remembered';
       else if(floor>=6 && chance(35) && !G._rememberedSlain) key='remembered';
       // Devourer no longer double-counts (it was both the 35% pick AND in the random pool, which made
@@ -2849,6 +2863,11 @@ function nextCorridor(){ G.depth++;
       else peek='A horror of the deep stirs. It has been waiting.';
       G.doors=[{type:'enemy',boss:key,peek}]; }
     else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
+    // Deep Cold threshold announcement — fired ONCE per tier escalation so the player feels the deep
+    // closing in (priority banner, so it isn't lost under ambient whispers).
+    const dct=dcTier(); if(dct>(G._dcTier||0)){ G._dcTier=dct;
+      G._worldMsg=['','&#10052; A cold with no source begins to press on you. There is no fire here to fight, and it cannot be cleansed.','&#10052; THE DEEP COLD deepens &mdash; every chamber now takes a little more of you.','&#10052; THE DEEP COLD is crushing. The dark itself is trying to put you out.','&#10052; The cold is ABSOLUTE. You are falling into the thing the crypt was built to keep down.'][dct];
+      flashWorld(); }
     // BUGFIX: this branch returns before the normal whisper line below, so whisperFor() was NEVER
     // called in the Abyss — meaning ABYSS_WHISPERS, Pale inscriptions, and Pale rumors (all the
     // deep-game strangeness) never appeared past the throne. Surface them here. Slightly higher
@@ -2951,6 +2970,9 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
 function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
+  // Fade the recency-weighted damage ledger each chamber so the death recap weighs the last few
+  // chambers, not the whole run. ~0.45/chamber => effectively a 3-4 chamber window.
+  if(G.dmgRecent){ for(const k in G.dmgRecent){ G.dmgRecent[k]*=0.45; if(G.dmgRecent[k]<0.5)delete G.dmgRecent[k]; } }
   // A rare discovery only "counts" against the one-per-run cap once the player actually enters it.
   if(G.room._discovery && !G._discoveryEntered){ G._discoveryEntered=1; if(G.room._discOnce)markDisc(G.room._discId); }
   // crossing a threshold stokes the Furnace / lets the cold seep deeper / debt compounds
@@ -3866,7 +3888,8 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
     attrib('enemy', Math.max(0, p.hp));
     p.hp=Math.max(1,Math.round(p.maxHp*0.25));
     SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
-  else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');} }
+  else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');}
+    if(p.hp<=0){ G._killingBlow='enemy'; G._killingBlowName=e.name; } }   // enemy/boss landed the final blow — remember WHO
   if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
   if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
   if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
@@ -3944,8 +3967,14 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   // Pale, become a RACE against the deep draining you rather than a pure damage check. This is where
   // the abyss's environmental clock actually lands kills (the death-screen will read "The Deep Cold").
   // Caught by the p.hp<=0 check below, which also records the boss death.
-  if(G.abyss && b.hadBoss){ const fl=G.depth-RUN_LENGTH; const cold=fl>=12?Math.round((fl-10)*0.7):0;
-    if(cold>0 && p.hp>0){ hurt(p,cold,'deepcold'); blog(`&#10052; The Deep Cold drains ${cold} from you.`,'crit'); } }
+  // Per-round Deep Cold during boss fights, escalating sharply past floor 20 so the Pale's chamber
+  // (floor 24+) is a genuine race against the dark while the Remembered (floor 12) stays survivable.
+  if(G.abyss && b.hadBoss){ const fl=G.depth-RUN_LENGTH; const cold=fl>=12?Math.round((fl-10)*0.85 + Math.max(0,fl-20)*1.3):0;
+    if(cold>0 && p.hp>0){ hurt(p,cold,'deepcold'); blog(`&#10052; The Deep Cold draws ${cold} from you &mdash; the dark wants this fight too.`,'cold');
+      (b.floats=b.floats||[]).push({idx:-1,text:'-'+cold+'❄',cls:'cold'});
+      // Stronger visual the deeper the fight: the scene shudders cold so the player SEES the abyss
+      // itself fighting them, not just the boss.
+      const sc=$('scene'); if(sc){ sc.classList.remove('deepcold-fx'); void sc.offsetWidth; sc.classList.add('deepcold-fx'); } } }
   b.enemies.forEach(e=>{ if(e.st.weakT>0)e.st.weakT--; if(e.st.vulnT>0)e.st.vulnT--; });
   if(b.pst.vulnT>0)b.pst.vulnT--;
   if(b.pdefTurns>0)b.pdefTurns--; if(b.evadeTurns>0)b.evadeTurns--; if(b.guardDown>0)b.guardDown--;
@@ -4110,11 +4139,32 @@ function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
   discoverLore('l14');
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
   nextCorridor(); G.screen='corridor'; render(); }
-function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',deepcold:'The Deep Cold',hazard:'Hazards',debt:'Time Debt',self:'Self-Inflicted'};
-  const entries=Object.keys(d).filter(k=>d[k]>0).map(k=>[k,d[k]]).sort((a,b)=>b[1]-a[1]);
-  const tot=entries.reduce((s,e)=>s+e[1],0); if(!tot)return '';
-  const rows=entries.map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">${labels[k]||k}</span><span class="red">${Math.round(v/tot*100)}%</span></div>`).join('');
-  return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}</div>`; }
+function causeOfDeathHtml(){
+  const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',deepcold:'The Deep Cold',hazard:'Hazards',debt:'Debt Pressure',self:'Self-Inflicted'};
+  const colors={enemy:'#ff6b6b',miasma:'#d9b8ff',burn:'#ff9b4d',poison:'#9be86b',heat:'#ffcf4d',deepcold:'#bcd4ff',hazard:'#cfcfe0',debt:'#ffd27a',self:'#cfcfe0'};
+  // Weigh the RECENT ledger (what brought the run down) over lifetime totals — so a run that fights
+  // 40 clean chambers then collapses to the Deep Cold in a Pale fight reads as a cold death, not as
+  // "100% enemy" from all that earlier combat. Fall back to lifetime only if recent is empty.
+  let src=G.dmgRecent||{}, tot=0; for(const k in src)tot+=src[k];
+  if(tot<=0){ src=G.dmgBy||{}; tot=0; for(const k in src)tot+=src[k]; }
+  if(tot<=0) return '';
+  const entries=Object.keys(src).filter(k=>src[k]>0).map(k=>[k,src[k]]).sort((a,b)=>b[1]-a[1]);
+  const rows=entries.filter(([k,v])=>v/tot>=0.04).map(([k,v])=>{ const pct=Math.round(v/tot*100); const c=colors[k]||'#ccc';
+    return `<div style="display:flex;align-items:center;gap:6px;font-size:9px;line-height:1.6;margin:2px 0">
+      <span style="flex:0 0 96px;text-align:left;color:${c}">${labels[k]||k}</span>
+      <span style="flex:1;height:7px;background:#15151f;border-radius:3px;overflow:hidden"><span style="display:block;height:100%;width:${pct}%;background:${c}"></span></span>
+      <span style="flex:0 0 30px;text-align:right;color:${c}">${pct}%</span></div>`; }).join('');
+  // Killing blow: the source of the FINAL lethal hit. Enemy/boss blows name WHO; environmental blows
+  // name the system (The Deep Cold / Miasma / Debt Pressure). Don't auto-blame the boss for a tick.
+  const kb=G._killingBlow;
+  const kbLabel = kb==='enemy' ? (G._killingBlowName||'Enemy Damage') : (kb ? (labels[kb]||kb) : null);
+  const kbColor = colors[kb]||'#fff';
+  // Contributing pressure: the biggest NON-killing-blow, non-plain-enemy source (>=12%) — surfaces the
+  // environmental clock that set up the kill ("the boss landed it, but the Deep Cold wore you down").
+  const press=entries.find(([k,v])=>k!==kb && k!=='enemy' && v/tot>=0.12);
+  const kbBlock = kb ? `<div style="margin-top:9px;font-size:9px;line-height:1.5">
+      <span class="muted" style="font-size:8px;letter-spacing:.5px">KILLING BLOW</span><br><b style="color:${kbColor}">${kbLabel}</b>${press?`<br><span class="muted" style="font-size:8px;letter-spacing:.5px">CONTRIBUTING PRESSURE</span><br><span style="color:${colors[press[0]]}">${labels[press[0]]||press[0]}</span>`:''}</div>` : '';
+  return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}${kbBlock}</div>`; }
 function renderEnd(win){ const p=G.player;
   if(!win&&!G._echoSaved){ G._echoSaved=1; try{saveEcho();}catch(e){} }
   if(!G._recSaved){ G._recSaved=1; try{recordRun(win||(p&&p.won));}catch(e){} }
@@ -4158,6 +4208,12 @@ const INFO_TEXT={
      &bull; it <b>compounds</b> — debt grows a little each chamber (interest),<br>
      &bull; it feeds <b>Miasma</b> in the cold.<br><br>
      At 50 debt the <b>COLLECTOR</b> is summoned (you'll see its ETA counting down). When it arrives you must <b>surrender your best item</b>, <b>pay tribute</b> (all gold, half essence, 15% HP), or <b>fight it</b> — winning burns the whole debt away. Borrow when a reward will win you the run now; the bill always comes due.`},
+  deepcold:{title:'THE DEEP COLD — THE ABYSS ITSELF',body:
+    `Past the throne there is a cold with no source. <b style="color:#bcd4ff">THE DEEP COLD</b> answers one question: <b>how deep dare you fall?</b><br><br>
+     Unlike the Furnace's Heat or the cleanseable Miasma, the Deep Cold <b>cannot be removed</b> — no fountain, no prayer, no relic. It only grows heavier the further you descend.<br><br>
+     &bull; Every chamber past abyss-floor 8 it takes a slice of your HP, and the slice grows each floor.<br>
+     &bull; During <b>deep boss fights</b> it bites <b>every single round</b> — the Remembered and especially the <b class="purple">Pale Devourer</b> become a race against the dark draining you, not just a damage check.<br><br>
+     This is the Abyss's true wall. It is not the monsters that end an endless run — it is the deep itself, eventually, always. <b>"Only how deep you fall."</b>`},
   synergies:{title:'SYNERGIES',body:
     `<b>Named combos that fire automatically</b> when you collect both required relics. Each grants an extra bonus on top of the relics themselves.<br><br>
      <span class="muted">Examples:</span><br>
