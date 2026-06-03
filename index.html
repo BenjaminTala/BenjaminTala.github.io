@@ -28,6 +28,12 @@
   .blink{animation:blink 1s steps(2,start) infinite}@keyframes blink{to{visibility:hidden}}
   .panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5);padding:12px;margin-bottom:10px;}
   .panel.tight{padding:9px 12px;margin-bottom:8px}
+  /* Merchant "shop shelf" — consumables in a 2-col grid so the stall feels transactional and fits. */
+  .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+  .shop-grid .btn{margin:0;height:100%}
+  .shop-panel{border-color:#7a5a1a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 30px rgba(255,180,60,.06)}
+  .forge-panel{border-color:#8a3a18;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(255,90,30,.10)}
+  .shrine-panel{border-color:#5a3a8a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(160,90,220,.10)}
   .pstrip .track.xpline{height:5px;margin-top:3px;border-width:1px}
   .pstrip .stats.pstats{font-size:8.5px;line-height:1.7;margin-top:4px;color:var(--dim)}
   .center{text-align:center}.muted{color:var(--dim)}
@@ -340,8 +346,8 @@
     .info-card h3{font-size:11px}.info-card .body{font-size:11.5px}
   }
   /* event illustration (sprite-based, with CSS recolors for variety) */
-  .ev-sprite{display:block;margin:8px auto;image-rendering:pixelated;
-    width:auto;height:auto;max-width:120px;max-height:120px;
+  .ev-sprite{display:block;margin:6px auto;image-rendering:pixelated;
+    width:auto;height:auto;max-width:92px;max-height:92px;
     animation:idleBob 2.6s ease-in-out infinite}
   .ev-sprite.tint-grey  {filter:grayscale(.7) brightness(.75) drop-shadow(0 0 6px rgba(180,180,200,.5))}
   .ev-sprite.tint-gold  {filter:hue-rotate(40deg) saturate(1.3) drop-shadow(0 0 10px rgba(255,207,77,.7))}
@@ -489,11 +495,11 @@
   .enter-pop{animation:enterPop .5s cubic-bezier(.2,.7,.3,1.5)}
   @keyframes enterPop{0%{opacity:0;transform:scale(.2) rotate(-8deg)}60%{opacity:1;transform:scale(1.12) rotate(2deg)}100%{transform:none}}
   /* ===================== FF-STYLE BATTLE LAYOUT ===================== */
-  #scene.ff{display:grid;grid-template-rows:minmax(170px,1fr) auto auto;gap:6px;padding:8px;
+  #scene.ff{display:grid;grid-template-rows:minmax(138px,1fr) auto auto;gap:6px;padding:8px;
     background:linear-gradient(180deg,#0a0814 0%,#0d0a18 55%,#1a1226 100%);
     border:2px solid #322856;box-shadow:0 0 0 1px #000,inset 0 0 28px rgba(120,80,200,.18)}
-  .ff-stage{display:flex;align-items:flex-end;justify-content:center;gap:14px;min-height:170px;
-    padding:18px 6px 6px;position:relative;
+  .ff-stage{display:flex;align-items:flex-end;justify-content:center;gap:14px;min-height:138px;
+    padding:10px 6px 6px;position:relative;
     background:radial-gradient(ellipse at 50% 95%,rgba(120,80,200,.16) 0%,transparent 65%);
     border-bottom:1px dashed #2a2046}
   .ff-stage .enemy-cell{display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -511,7 +517,7 @@
   .ff-stage .enemy-cell .tgt.on{border-color:var(--amber);color:var(--amber);background:#1a1428}
   .ff-narrator{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
     border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20,0 0 0 1px #000;
-    padding:8px 10px;min-height:62px;max-height:120px;overflow:hidden;
+    padding:7px 10px;min-height:44px;max-height:104px;overflow:hidden;
     display:flex;flex-direction:column;justify-content:flex-end;position:relative}
   .ff-narrator::before{content:'';position:absolute;top:4px;left:4px;right:4px;bottom:4px;
     border:1px solid #1a2244;pointer-events:none}
@@ -3191,11 +3197,15 @@ function renderSagaBody(){ const p=G.player; const r=loadRecords();
   // ----- 1) THE RECORD -----
   const wins=r.wins||0, runs=r.runs||0, winPct = runs?Math.round(wins/runs*100):0;
   const deepest=r.deepest||0;
+  // Collector folded into THE RECORD (it's bookkeeping, not its own chapter).
+  const cm=r.collectorMet||0, cp=r.collectorPaid||{}; const cPaid=(cp.item||0)+(cp.tribute||0);
+  const rrow=(l,v)=>`<div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">${l}</span>${v}</div>`;
   const recordRow=`<div class="slot" style="border-left-color:var(--amber)">
-    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Runs</span><span>${runs}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Triumphs</span><span class="green">${wins}${runs?` &middot; ${winPct}%`:''}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Deepest</span><span class="purple">${deepest?(deepest>RUN_LENGTH?'Abyss floor '+(deepest-RUN_LENGTH):'chamber '+deepest):'—'}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Borrowed lifetime</span><span class="amber">${r.borrowedTotal||0}</span></div></div>`;
+    ${rrow('Runs',`<span>${runs}</span>`)}
+    ${rrow('Triumphs',`<span class="green">${wins}${runs?` &middot; ${winPct}%`:''}</span>`)}
+    ${rrow('Deepest',`<span class="purple">${deepest?(deepest>RUN_LENGTH?'Abyss floor '+(deepest-RUN_LENGTH):'chamber '+deepest):'—'}</span>`)}
+    ${rrow('Borrowed lifetime',`<span class="amber">${r.borrowedTotal||0}</span>`)}
+    ${(cm||cPaid||cp.fought)?rrow('The Collector',`<span class="amber">met ${cm}${cp.fought?` &middot; fought ${cp.fought}`:''}${cPaid?` &middot; paid ${cPaid}`:''}</span>`):''}</div>`;
   // ----- 2) THE FALLEN -----
   // Show ALL bosses, sorted by kills desc then deaths desc; silhouette names for never-met ones.
   const bossOrder=['gobking','ogre','spider','warden','demon','lich','flameknight','dragon','king','devourer','remembered','paledevourer'];
@@ -3211,9 +3221,13 @@ function renderSagaBody(){ const p=G.player; const r=loadRecords();
   const hiddenRow = hiddenCount>0 ? `<div class="slot muted" style="display:flex;justify-content:space-between;align-items:center"><span>▣▣▣ ▣▣▣▣ ▣▣▣▣▣ <span class="muted" style="font-size:8px;opacity:.7">(${hiddenCount} more never met)</span></span><span class="muted">?</span></div>` : '';
   // ----- 3) ANCHOR NPCS -----
   const npcs=[{id:'lantern',name:'THE LANTERN KEEPER'},{id:'cartog',name:'THE LAST CARTOGRAPHER'},{id:'cardinal',name:'THE CARDINAL WITHOUT A FACE'},{id:'scholar',name:'THE FROZEN SCHOLAR'},{id:'wsmith',name:'THE WEEPING SMITH'},{id:'watcher',name:'THE WATCHFUL PRISONER'}];
-  const npcRows=npcs.map(n=>{ const st=npcState(n.id); const sub=sagaNpcLine(n.id);
-    if(!st.met) return `<div class="slot muted" style="opacity:.65"><span>${silhouette(n.name)}</span><br><span class="muted" style="font-size:8px">never met</span></div>`;
-    return `<div class="slot" style="border-left-color:var(--teal)"><span class="teal">${n.name}</span> <span class="muted" style="font-size:8px">met ${st.met}</span><br><span class="muted" style="font-size:8px;line-height:1.8">"${sub}"</span></div>`;}).join('');
+  // Only MET anchors get a row; the unmet collapse to one teasing line (no column of "never met").
+  const metNpcs=npcs.filter(n=>npcState(n.id).met);
+  const unmet=npcs.length-metNpcs.length;
+  const npcRows=(metNpcs.length?metNpcs.map(n=>{ const st=npcState(n.id); const sub=sagaNpcLine(n.id);
+    return `<div class="slot" style="border-left-color:var(--teal)"><span class="teal">${n.name}</span> <span class="muted" style="font-size:8px">met ${st.met}</span><br><span class="muted" style="font-size:8px;line-height:1.8">"${sub}"</span></div>`;}).join('')
+    :'<div class="slot muted" style="font-size:9px">You have met none of the crypt&rsquo;s recurring souls. Yet.</div>')
+    + (unmet>0?`<div class="slot muted" style="font-size:8px;opacity:.7">&#9670; ${unmet} more wait in the dark, unmet.</div>`:'');
   // ----- 4) DISCOVERIES -----
   const set=loadDiscSet();
   const discRows=SAGA_DISCOVERY_CATALOG.map(d=>{ const seen=discoverySeen(d);
@@ -3227,23 +3241,13 @@ function renderSagaBody(){ const p=G.player; const r=loadRecords();
     ? `<div class="slot" style="border-left-color:var(--purple);font-size:10px;display:flex;justify-content:space-between"><span class="purple">◆ ${name}</span><span class="muted">${'·'.repeat(Math.min(8,n))} (${n})</span></div>`
     : `<div class="slot muted" style="opacity:.55;font-size:10px"><span class="muted">◆ ${silhouette(name)}</span></div>`).join('')
     + `<div class="slot muted" style="opacity:.5;font-size:10px"><span class="muted">◆ ▣▣▣ ▣▣▣ ▣▣▣▣ ▣▣▣</span></div>`;
-  // ----- 6) COLLECTOR -----
-  const cm=r.collectorMet||0, cp=r.collectorPaid||{}, paidItem=cp.item||0, paidTribute=cp.tribute||0, fought=cp.fought||0;
-  const collRow = (cm||paidItem||paidTribute||fought)
-    ? `<div class="slot" style="border-left-color:var(--amber)">
-        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Met</span><span>${cm}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Paid in items</span><span>${paidItem}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Paid in blood</span><span>${paidTribute}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Fought</span><span class="red">${fought}</span></div></div>`
-    : `<div class="slot muted" style="opacity:.65;font-size:10px">never met — but the debt remembers</div>`;
   return `
     <p class="muted" style="font-size:8px;line-height:1.7;margin-bottom:6px">Every run leaves a mark. This is what the crypt remembers about you.</p>
     <h3 class="amber ivh">THE RECORD</h3>${recordRow}
     <h3 class="red ivh">THE FALLEN</h3>${fallenRows}${hiddenRow}
     <h3 class="teal ivh">ANCHOR NPCS</h3>${npcRows}
     <h3 class="green ivh">DISCOVERIES</h3>${discRows}
-    <h3 class="purple ivh">RUMORS YOU HAVE HEARD</h3>${rumorRows}
-    <h3 class="amber ivh">THE COLLECTOR</h3>${collRow}`;
+    <h3 class="purple ivh">RUMORS YOU HAVE HEARD</h3>${rumorRows}`;
 }
 function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
   const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
@@ -3465,7 +3469,8 @@ function renderRoom(){
       <button class="btn center" onclick="restEmpty()"><span class="k">&#9654;</span>MOVE ON</button>`;
   }
   const banners=drainBanners(2);
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(p,true)}<div class="panel fade room-in">${body}</div>`;
+  const accent = r.type==='shrine'?' shrine-panel' : r.type==='fountain'?' shrine-panel' : '';
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(p,true)}<div class="panel fade room-in${accent}">${body}</div>`;
 }
 function avoidRoom(){ const p=G.player,extra=(G.room.group?G.room.group.length-1:0);
   const base=p.cls==='ranger'?70:42;
@@ -3548,18 +3553,18 @@ function renderMerchant(){
   const gcost=st.gear?mc(40+st.gear.rarity*22):0;
   const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,itemStatsText(st.gear),"buy('gear')",p.gold>=gcost):'';
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p,true)}
-    <div class="panel fade room-in">
-      <img class="ev-sprite tint-amber" src="assets/players/ranger.png" alt="The Merchant" draggable="false">
-      <h3 class="center amber" style="margin:8px 0">THE MERCHANT</h3>
-      <p class="muted center" style="font-size:9px">"Coin for comfort, traveler."</p>
-      <p class="muted center" style="font-size:7px;opacity:.7">He does not ask your name. He never does.</p>
+    <div class="panel fade room-in shop-panel">
+      <h3 class="center amber" style="margin:2px 0 2px">&#128176; THE MERCHANT</h3>
+      <p class="muted center" style="font-size:8px">"Coin for comfort, traveler. I do not ask your name."</p>
       <div class="coinbar"><span class="amber">&#128176; ${p.gold} GOLD</span><span class="teal">&#9670; ${p.essence}</span></div>${heatNote}
-      ${item('Health Potion',mc(25),'+1 potion (heals 40% in battle)',"buy('potion')",p.gold>=mc(25))}
+      <div class="shop-grid">
+      ${item('Health Potion',mc(25),'+1 potion (40% heal in battle)',"buy('potion')",p.gold>=mc(25))}
       ${item('Healing Draught',mc(18),'restore 50% HP now',"buy('heal')",p.gold>=mc(18))}
-      ${item('Mana Tonic',mc(14),'fully restore mana now',"buy('mana')",p.gold>=mc(14))}
+      ${item('Mana Tonic',mc(14),'fully restore mana',"buy('mana')",p.gold>=mc(14))}
       ${item('Mystery Upgrade',mc(40),'a random permanent upgrade',"buy('upgrade')",p.gold>=mc(40))}
+      </div>
       ${gearBtn}${relicBtn}
-      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>${statusFooter()}`;
+      <button class="btn muted center" onclick="leaveRoom()"><span class="k">&#10551;</span>LEAVE SHOP</button></div>`;
 }
 function buy(kind){ const p=G.player,st=G.room.stock; let bought=false; const mc=b=>Math.round(b*(st.pm||1));
   if(kind==='potion'&&p.gold>=mc(25)){p.gold-=mc(25);p.potions++;SFX.play('potion');bought=true;}
@@ -3625,12 +3630,11 @@ function renderForge(){ const p=G.player; discoverLore('l11');
   const at=['w','g','v'].map(k=>{const meta=AFF_META[k];
     return fb(`Attune to ${meta.name}`,40,`+2 ${meta.name} affinity (toward the tier capstones)`,`fAttune('${k}')`,p.essence>=40);}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
-    <div class="panel fade room-in">
-      <pre class="sprite amber">  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|</pre>
-      <h3 class="center amber" style="margin:8px 0">THE SOUL FORGE</h3>
-      <p class="muted center" style="font-size:9px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS} essence</span> to grow stronger.</p>
+    <div class="panel fade room-in forge-panel">
+      <h3 class="center amber" style="margin:2px 0 2px">&#128296; THE SOUL FORGE</h3>
+      <p class="muted center" style="font-size:8px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS}</span> to grow stronger.</p>
       ${up}${im}${re}${at}
-      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>${statusFooter()}`;
+      <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>`;
 }
 
 /* ============================================================
@@ -4538,7 +4542,12 @@ function causeOfDeathHtml(){
 function renderEnd(win){ const p=G.player;
   if(!win&&!G._echoSaved){ G._echoSaved=1; try{saveEcho();}catch(e){} }
   if(!G._recSaved){ G._recSaved=1; try{recordRun(win||(p&&p.won));}catch(e){} }
-  const gear=SLOTS.map(s=>{const it=p.equip[s];return it?`<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`:`<div class="slot muted">${s.toUpperCase()}: empty</div>`;}).join('');
+  // Equipped pieces get a full row; empty slots collapse into ONE muted line (recap shouldn't be a
+  // column of "empty" rows pushing the screen past the fold).
+  const equipped=SLOTS.filter(s=>p.equip[s]);
+  const emptySlots=SLOTS.filter(s=>!p.equip[s]);
+  const gear=equipped.map(s=>{const it=p.equip[s];return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`;}).join('')
+    + (emptySlots.length?`<div class="slot muted" style="font-size:8px">Empty: ${emptySlots.map(s=>s.toUpperCase()).join(' &middot; ')}</div>`:'');
   const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}`).join(', ')||'none';
   const wonAbyss=!win&&p.won; const head=win?'VICTORY!':(wonAbyss?'THE ABYSS TAKES YOU':'YOU DIED'); const col=win?'green':(wonAbyss?'purple':'red');
   const tellTale=win?'You conquered the Crypt of the Champion and retired a legend!':(wonAbyss?`You broke the crypt's throne, then plunged into the Abyss and reached <b class="purple">depth ${G.depth-RUN_LENGTH}</b> before the dark closed over you.`:'Your journey ends in the dark.');
