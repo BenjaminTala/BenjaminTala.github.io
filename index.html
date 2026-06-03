@@ -2633,6 +2633,54 @@ const PEEKS={
   echoPeek:'A figure slumps against the far wall. It does not breathe.',
 };
 function peek(kind){ return pick(PEEKS[kind]||['']); }
+// DOOR CLUES — what you sense from OUTSIDE a closed door. Deliberately decoupled from room type:
+// every clue could plausibly precede several different rooms (warmth = forge OR fire-enemy OR shrine
+// OR trap OR nothing; metal-smell = treasure OR blood OR armor OR merchant; silence = empty OR boss
+// OR ambush). The player builds intuition, never certainty, and is meant to guess wrong sometimes.
+// Drawn at random regardless of what's actually behind the door (see doorHint).
+const DOOR_CLUES=[
+  'The iron ring is cold enough to sting.',
+  'The wood is swollen, as if it has been breathing.',
+  'Something has scratched tally marks into the frame.',
+  'A seam of orange light trembles beneath the door.',
+  'The hinges have been freshly oiled.',
+  'The stone around the frame is wet.',
+  'A sour smell clings to the handle.',
+  'The door is silent. Too silent.',
+  'Something behind it exhales once, then stops.',
+  'The lock has been melted shut &mdash; from the inside.',
+  'Fine ash falls from the top of the frame.',
+  'The handle turns, slightly, before you touch it.',
+  'There is dried mud on the threshold.',
+  'The door has no scratches, no dust, no age.',
+  'The air near it tastes faintly of metal.',
+  'The bottom of the door has been chewed away.',
+  'A faint rhythm moves through the wood. Not quite footsteps.',
+  'The door is warmer near the floor.',
+  'The keyhole is packed with black wax.',
+  'There are fingerprints in the dust. Too many of them.',
+  'The handle is warm.',
+  'A long gouge runs down the wood at shoulder height.',
+  'Something wet drags across stone, then goes quiet.',
+  'Dust falls from the lintel, though nothing touched it.',
+  'A draught slips under the door, colder than the hall.',
+  'The frame is scorched along one edge.',
+  'Pale grit has gathered in the seam of the threshold.',
+  'The boards are stained dark, low down, and old.',
+  'You hear something settle inside, then nothing.',
+  'The door has been repaired, badly, more than once.',
+  'Behind it, a sound like cloth dragged slowly over stone.',
+  'Faint warmth pulses against your palm, then fades.',
+  'The wood hums, very low, when you rest a hand on it.',
+  'No smell, no sound, no draught. Just a door.',
+  'The threshold is worn smooth, as if crossed a thousand times.',
+  'A single handprint is pressed flat into the grime.',
+  'The cold here has a grain to it, like it is pointed somewhere.',
+  'Something inside goes still the moment you lean closer.',
+  'The wood is scratched, deeply, from the other side.',
+  'Water has pooled and dried at the base, more than once.',
+];
+function doorClue(){ return pick(DOOR_CLUES); }
 /* ============================================================
    RARITY CURVE + RARE DISCOVERIES
    Strange moments that interrupt the normal rhythm only occasionally. Two rules keep them rare:
@@ -2969,7 +3017,18 @@ function groupPeek(g){
   return pick(heavy ? PEEK_GROUP_HEAVY : PEEK_GROUP);
 }
 // Door hint is just the room's sensory peek — players should suspect, not know.
-function doorHint(room){ return room.peek||'A door. Closed.'; }
+function doorHint(room){
+  // Boss doors keep their dread line — the player already KNOWS it's the boss (the door is labelled
+  // "THE BOSS DOOR"), so this isn't a room-type leak, it's tension.
+  if(room.boss) return room.peek||'The door is older than the rest. It does not want to be opened.';
+  // Everything else: a sensory clue with NO correlation to what's behind it. Cached per door object
+  // so it stays stable across re-renders. Chambers 1-3 keep the slightly-clearer type hint that
+  // makeRoom set (the tutorial exception); after that the crypt stops telling you what it holds.
+  if(room._clue==null){
+    room._clue = (!G.abyss && G.depth<=3 && room.peek) ? room.peek : doorClue();
+  }
+  return room._clue;
+}
 function nextCorridor(){ G.depth++;
   G._discRolled=0;   // one rare-discovery attempt per corridor
   if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
@@ -3015,9 +3074,12 @@ function nextCorridor(){ G.depth++;
   G._whisper = chance(18) ? whisperFor(G.depth) : null; }
 /* ROOM ADJACENCY — neighbouring doors bleed into each other */
 function adjacency(doors){ for(let i=0;i<doors.length-1;i++){ const a=doors[i],b=doors[i+1]; pairAdj(a,b); pairAdj(b,a); } }
-function pairAdj(a,b){ // a is influenced by neighbour b
-  if(a.type==='enemy'&&!a.boss){ if(b.type==='forge'){ a.metal=1; a.peek='Hot iron clings to them — '+a.peek; } if(b.type==='fountain'||b.type==='shrine'){ a.ignited=0; } }
-  if(a.type==='chest'&&(b.type==='shrine'||b.type==='relic')){ a.blessed=1; a.peek='It glows faintly, blessed by the nearby light.'; }
+function pairAdj(a,b){ // a is influenced by neighbour b — MECHANICAL bleed only.
+  // (The peek/door-text is no longer rewritten here: door hints are ambiguous sensory clues now and
+  // must not betray a neighbour's room type. The gameplay flags below stay — they're felt in the
+  // room, not read on the door.)
+  if(a.type==='enemy'&&!a.boss){ if(b.type==='forge'){ a.metal=1; } if(b.type==='fountain'||b.type==='shrine'){ a.ignited=0; } }
+  if(a.type==='chest'&&(b.type==='shrine'||b.type==='relic')){ a.blessed=1; }
   if(a.type==='merchant'&&b.type==='fountain'){ a.discount=1; }
   if(a.type==='enemy'&&!a.boss&&heatActive()&&b.type==='enemy'){ a.ignited=1; } }
 /* NARRATIVE PRIORITY — many text channels can become pending on the same chamber (zone intro,
