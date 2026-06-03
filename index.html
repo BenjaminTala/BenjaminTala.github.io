@@ -451,6 +451,19 @@
     100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(20deg)}}
   .spr-flash{animation:sprFlash .26s steps(2)!important}
   @keyframes sprFlash{0%,100%{filter:none}50%{filter:brightness(3.4) saturate(.3) drop-shadow(0 0 7px #fff)}}
+  /* PHASE 4 JUICE — added weight on critical moments. None of these add gameplay; they make the
+     SAME hit / kill / crit feel more like impact. */
+  /* Hit-stop pulse: a tighter scale snap that reads as "this hit MATTERED". Layered on top of hitpop. */
+  .crit-hold{animation:critHold .42s cubic-bezier(.2,.9,.3,1)}
+  @keyframes critHold{0%{transform:scale(1)}10%{transform:scale(1.32)}22%{transform:scale(1.32)}55%{transform:scale(.95)}100%{transform:scale(1)}}
+  /* Kill burst: dying sprite explodes outward, brightens, then collapses to the existing greyed-out state. */
+  .sprite-enemy.dying{animation:killBurst .55s cubic-bezier(.2,.6,.4,1) forwards}
+  @keyframes killBurst{0%{transform:scale(1) rotate(0);filter:brightness(1) drop-shadow(0 0 0 #fff)}30%{transform:scale(1.35) rotate(-4deg);filter:brightness(3.2) saturate(0) drop-shadow(0 0 14px #fff)}65%{transform:scale(1.1) rotate(3deg);filter:brightness(2.2) saturate(.4)}100%{transform:scale(.78) rotate(0);filter:brightness(.4) grayscale(1)}}
+  /* Boss kill: a full-screen wash that fires once when a boss dies. */
+  .scene.bosskill-fx{animation:bossKillScreen .9s ease-out}
+  @keyframes bossKillScreen{0%{filter:none}25%{filter:brightness(1.6) saturate(1.5) hue-rotate(-12deg)}55%{filter:brightness(1.25) saturate(1.2)}100%{filter:none}}
+  /* Crit float — already exists; phase 4 ADDS a punchier kill-blow float distinct from regular dmg. */
+  .dmgfloat.kill{color:#ffd54a;font-size:20px;text-shadow:0 0 10px #ffd54a,2px 2px 0 #000;font-weight:bold}
   .dmgfloat.pdmg{color:#ff8a3c;font-size:15px;text-shadow:1px 1px 0 #3a1500,2px 2px 0 #000}
   .dmgfloat.cold{color:#bcd4ff;font-size:14px;text-shadow:0 0 6px rgba(120,170,255,.8),1px 1px 0 #001}
   .log .cold{color:#bcd4ff;text-shadow:0 0 4px rgba(120,170,255,.5)}
@@ -3654,7 +3667,13 @@ function renderBattle(){
   const multi=b.enemies.length>1;
   const cells=b.enemies.map((e,i)=>{ const dead=e.hp<=0;
     const sp=enemySpriteHtml(e,G.depth);
-    const hitCls=b.animIdx===i?'hitpop spr-flash':'';
+    // Tag the dying frame ONCE: e._dyingShown becomes true after the first paint of the death so
+    // the burst animation only fires for ~half a second, not on every subsequent re-render.
+    const justDied = dead && !e._dyingShown;
+    if(justDied){ e._dyingShown=true; setTimeout(()=>render(),580); }
+    // crit-hold only on actual crits (a heavier scale snap) — normal hits use hitpop only, so the
+    // hit/crit distinction is felt in the camera, not just in the float.
+    const hitCls=b.animIdx===i?('hitpop spr-flash'+(b.animWasCrit?' crit-hold':'')):(justDied?'dying':'');
     const spriteHtml=sp?sp.replace('class="sprite-enemy',`class="sprite-enemy ${hitCls}`)
       :`<pre class="sprite red ${hitCls}">${e.sprite}</pre>`;
     const flo=(b.floats||[]).filter(f=>f.idx===i).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
@@ -3751,6 +3770,9 @@ function fxHtml(kind){ const cols=FX_COLOR[kind]||FX_COLOR.hit; const n=kind==='
 function pushFx(idx,kind){ const b=G.battle; if(b)(b.fx=b.fx||[]).push({idx,kind}); }
 function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   SFX.play('kill');
+  // PHASE 4 JUICE — boss kills feel BIG. Adds a one-shot screen flash so the moment lands.
+  if(e.boss){ const sc=$('scene'); if(sc){ sc.classList.remove('bosskill-fx'); void sc.offsetWidth; sc.classList.add('bosskill-fx'); }
+    SFX.play('win'); }
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
   // First-kill Devour explainer — gated by localStorage so it shows once across all runs.
@@ -3799,7 +3821,7 @@ function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.
   let m=playerDamageMult(e); if(e.resist)m*=e.resist; if(crit&&e.noCrit)m*=0.6;   // counter-affixes
   const raw=dmg*m; const defCut=Math.min(e.def||0, raw*0.5);   // DEF can blunt at most half a hit — chip/AOE builds aren't gutted by flat armor
   dmg=Math.max(1,Math.round(raw-defCut));
-  e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx;
+  e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx; b.animWasCrit=!!crit;
   (b.floats=b.floats||[]).push({idx,text:''+dmg+(e.resist?' &#128737;':''),cls:crit?'crit':'dmg'});
   pushFx(idx, crit?'crit':(_fxKind||'hit'));
   blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${b.enemies.length>1?` [${e.name}]`:''}`,crit?'crit':'dmg');
