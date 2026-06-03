@@ -1736,6 +1736,13 @@ function miasmaTier(){ const m=G.miasma; return m>=60?6:m>=50?5:m>=40?4:m>=30?3:
 // damage = heat - 3 when heat >= 10. Tightened from -5 — sim showed heat killed almost nobody
 // (2 deaths out of 962). Now 10 Heat = 7 HP, 30 Heat = 27 HP, 50 Heat = 47 HP per chamber.
 function heatChamberDamage(){ return Math.max(0, (G.heat||0) - 3); }
+// THE DEEP COLD — the Abyss's own environmental clock and its answer to the Furnace's Heat. Unlike
+// Miasma it CANNOT be cleansed; it only gets heavier the further you fall. This is what makes the
+// deep a distinct phase rather than a longer dungeon: past a point the deep itself is killing you,
+// not the monsters — a soft ceiling that even a perfect build eventually meets ("only how deep you
+// fall"). Gentle until ~floor 8 so it diversifies how deep runs END without rebuilding the wall the
+// scaling change just lowered. Around the Pale's depth (floor 22) it bites ~18/chamber.
+function deepColdDamage(){ if(!G.abyss) return 0; const floor=G.depth-RUN_LENGTH; return floor<=8?0:Math.round((floor-8)*1.3); }
 function healFactor(){ const t=miasmaTier(); return t>=2?0.5:t>=1?0.78:1; }              // wounds stop closing in the cold
 const HEAT_MSG=['','Metal begins to soften. The locals catch fire.','Your breath leaves sparks — the merchants gouge, but the loot runs hot.','The walls pulse. The Furnace begins to burn YOU.','FIRE INSTABILITY — the Furnace is trying to kill you!'];
 const MIASMA_MSG=['','Your reflection blinks a half-second late.','Your wounds no longer close on their own.','The crypt tastes your soul.','SOUL ROT — the cold is eating your very substance.','The cold draws blood with every step.','You are coming undone.'];
@@ -1814,8 +1821,10 @@ function selfHurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return 0;
 function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150);
   // The Collector is part of the Time Debt IDENTITY — the player should feel it coming, never feel
   // ambushed. First the debt gets "noticed", then you are marked, then it announces each step in.
-  if(before<25 && G.debt>=25 && !G.collectorEta && !G.abyss){ G._worldMsg='Your debt has grown heavy enough to be noticed. Somewhere far below, an account opens in your name.'; flashWorld(); }
-  if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
+  // Debt/Collector now applies in the Abyss too — borrowing deep is a real choice with a real
+  // creditor. (Was !G.abyss-guarded, which left the deep game with no debt pressure at all.)
+  if(before<25 && G.debt>=25 && !G.collectorEta){ G._worldMsg='Your debt has grown heavy enough to be noticed. Somewhere far below, an account opens in your name.'; flashWorld(); }
+  if(G.debt>=50&&!G.collectorEta){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
 function tickDebt(){ if(!G.debt)return; const interest=Math.floor(G.debt/30); if(interest>0)G.debt=clamp(G.debt+interest,0,150);
   addMiasma(Math.floor(G.debt/25));               // borrowed time rots the soul
@@ -2383,7 +2392,15 @@ function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.pla
 /* ============================================================
    DUNGEON GENERATION
    ============================================================ */
-function depthFactor(){ const d=Math.max(0,G.depth-1); return 1+d*0.10+d*d*0.0065; }
+function depthFactor(){ const d=Math.max(0,G.depth-1);
+  // In the Abyss the quadratic term is FLATTENED past the throne (continuous at depth 40). Enemies
+  // still scale hard — ~20x+ base at depth 70 — but no longer so explosively that raw burst is the
+  // ONLY thing that can kill you. This is deliberate redistribution, not a blanket nerf: it makes
+  // room for the deep's environmental clocks (Miasma soul-rot, Debt/Collector) to share the
+  // lethality, and lets a near-perfect build descend far enough to actually reach the secret bosses.
+  if(G.abyss){ const dd=RUN_LENGTH-1, extra=d-dd;
+    return 1 + d*0.10 + dd*dd*0.0065 + extra*extra*0.0028 + extra*0.04; }
+  return 1+d*0.10+d*d*0.0065; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
@@ -2570,18 +2587,7 @@ const DISCOVERIES=[
   // reaction: it tastes what you have been eating. (rare · Abyss only)
   { id:'abyss_echo', tier:'rare',
     when:()=> G.abyss,
-    build:()=>{ const p=G.player; const path=(p&&p.memory&&p.memory.path)||[];
-      const knows = path.length>=2 ? ` <span class="shout-purple">"You taste of ${path.slice(-2).join(' and ')} now. We never got that far. We never thought to."</span>` : '';
-      return ({ title:'A DISTORTED ECHO', sprite:{src:'assets/monsters/ghost.png',tint:'tint-shadow'},
-      art:"  .-?-.\n ( >< )\n  )~~~( \n  /|x|\\",
-      _peek:'Something ahead is shaped like an echo, but it is the wrong number of dimensions.',
-      text:'It is one of you &mdash; you can tell by the walk, even folded wrong like this: too many joints, the face running a half-second behind the head. This far down, the echoes do not come back as people. They come back as the idea of having been one.',
-      options:[
-        {label:'"How far did you get?"',desc:'Ask',run:p=>'It answers in your own voice, a half-second before its mouth moves. <span class="shout-purple">"Further than this. Not far enough. There is no far enough &mdash; that is the joke."</span>'+knows},
-        {label:'Devour it',desc:'It is a piece of you &middot; risk',run:p=>{ addMiasma(10); p.essence+=24; SFX.play('kill'); return 'You consume it. It does not scream &mdash; it agrees. For a moment you remember a chamber you have never walked, in detail, and then you do not. (+24 essence, the cold thickens)'; }},
-        {label:'Walk through it',desc:'It is not really there',run:p=>'You step through the place it is standing. It does not move aside. You simply end up on the far side of it, and so does it, and neither of you remarks on the matter.'},
-      ]}); }
-  },
+    build:()=> distortedEchoEvent() },
   // THE TALLY WALL — a once-ever discovery deep in the cold that counts YOUR runs. (very rare · once-ever)
   { id:'tallywall', tier:'veryrare', once:true,
     when:()=> G.abyss || zoneOf(G.depth)>=3,
@@ -2597,6 +2603,20 @@ const DISCOVERIES=[
       ]}); }
   },
 ];
+// A DISTORTED ECHO — the Abyss's signature encounter. This far down the echoes do not come back as
+// people, only "the idea of having been one." Reused by both the rare-discovery hook and the
+// recurring abyss-room spawn in makeRoom, so the deep game has a face that is unmistakably its own.
+function distortedEchoEvent(){ const p=G.player; const path=(p&&p.memory&&p.memory.path)||[];
+  const knows = path.length>=2 ? ` <span class="shout-purple">"You taste of ${path.slice(-2).join(' and ')} now. We never got that far. We never thought to."</span>` : '';
+  return ({ title:'A DISTORTED ECHO', sprite:{src:'assets/monsters/ghost.png',tint:'tint-shadow'},
+    art:"  .-?-.\n ( >< )\n  )~~~( \n  /|x|\\",
+    _peek:'Something ahead is shaped like an echo, but it is the wrong number of dimensions.',
+    text:'It is one of you &mdash; you can tell by the walk, even folded wrong like this: too many joints, the face running a half-second behind the head. This far down, the echoes do not come back as people. They come back as the idea of having been one.',
+    options:[
+      {label:'"How far did you get?"',desc:'Ask',run:p=>'It answers in your own voice, a half-second before its mouth moves. <span class="shout-purple">"Further than this. Not far enough. There is no far enough &mdash; that is the joke."</span>'+knows},
+      {label:'Devour it',desc:'It is a piece of you &middot; risk',run:p=>{ addMiasma(10); p.essence+=24; SFX.play('kill'); return 'You consume it. It does not scream &mdash; it agrees. For a moment you remember a chamber you have never walked, in detail, and then you do not. (+24 essence, the cold thickens)'; }},
+      {label:'Walk through it',desc:'It is not really there',run:p=>'You step through the place it is standing. It does not move aside. You simply end up on the far side of it, and so does it, and neither of you remarks on the matter.'},
+    ]}); }
 function discoveryRoom(depth){
   if(G._discRolled) return null;     // at most ONE discovery attempt per corridor (first door only)
   G._discRolled=1;
@@ -2615,6 +2635,9 @@ function discoveryRoom(depth){
 function makeRoom(depth){
   if(BOSS_CHAMBERS[depth]!==undefined){ const key=pick(BOSS_POOL[BOSS_CHAMBERS[depth]]);
     return {type:'enemy',boss:key,peek:peek(depth===RUN_LENGTH?'bossFinal':'boss')}; }
+  // The Abyss has its own signature room — a distorted echo turns up now and then in the deep, so the
+  // endless game has a recurring face the main run never shows. Rare enough to stay unsettling (~8%).
+  if(G.abyss && chance(6)){ const ev=distortedEchoEvent(); return {type:'event', ev, peek:ev._peek}; }
   const disc=discoveryRoom(depth); if(disc) return disc;
   if(!G.abyss&&G._echoPool&&G._echoPool.length&&chance(4)){ const e=pickEcho(depth); if(e)return {type:'echo',echo:e,peek:peek('echo')}; }
   const greedy=G.mods.greedy;
@@ -2810,11 +2833,17 @@ function nextCorridor(){ G.depth++;
       let key, peek;
       // Past floor 30 of the Abyss, something colder than the Devourer waits.
       // Some champions hear of it before they meet it. Most never do.
-      if(floor>=30 && !G._paleSlain) key='paledevourer';
-      else if(floor>=18 && chance(10) && !G._paleSlain) key='paledevourer';
-      else if(floor>=24 && !G._rememberedSlain) key='remembered';
-      else if(floor>=12 && chance(28) && !G._rememberedSlain) key='remembered';
-      else key=chance(35)?'devourer':pick(Object.keys(BOSSES).filter(k=>k!=='remembered'&&k!=='paledevourer'));
+      // Secret-boss placement, tuned so STRONG abyss runs reliably meet the Remembered and only
+      // EXCEPTIONAL builds reach the Pale — never common, never literally unreachable. (Boss floors
+      // are every 4th: 8/12/16/20/24...) Pale forced at floor 22 = depth 62; reachable earlier only
+      // on a rare roll. Remembered forced at floor 12 = depth 52.
+      if(floor>=22 && !G._paleSlain) key='paledevourer';
+      else if(floor>=16 && chance(12) && !G._paleSlain) key='paledevourer';
+      else if(floor>=10 && !G._rememberedSlain) key='remembered';
+      else if(floor>=6 && chance(35) && !G._rememberedSlain) key='remembered';
+      // Devourer no longer double-counts (it was both the 35% pick AND in the random pool, which made
+      // it ~39% of all abyss bosses); the deep roster is now genuinely varied.
+      else key=chance(30)?'devourer':pick(Object.keys(BOSSES).filter(k=>!['remembered','paledevourer','devourer'].includes(k)));
       if(key==='paledevourer') peek='The cold hurts before the door opens.';
       else if(key==='remembered') peek='A silhouette at the end of the corridor. You know the shape of it, and you wish you didn\'t.';
       else peek='A horror of the deep stirs. It has been waiting.';
@@ -2947,6 +2976,11 @@ function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,ms
     if(t>=5){ const d=12+rnd(9); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; SFX.play('hurt'); popups.push({title:'YOU COME UNDONE',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold takes <b>${d} HP</b>. You can feel the seams.</p>`}); }
     if(t>=6){ const d=18+rnd(10); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold has nothing left of you (-${d} HP).`; SFX.play('hurt'); popups.push({title:'DECAY',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">There is more cold inside you than there is you. <b>${d} HP</b>.</p>`}); }
   }
+  if(!dead && G.abyss){ const dc=deepColdDamage();
+    if(dc>0){ dead=hurt(p,dc,'deepcold')||dead; const fl=G.depth-RUN_LENGTH;
+      const verb=fl>=28?'crushes the last warmth out of you':fl>=20?'presses the heat from your bones':'leans on you, patient and total';
+      msg=`&#10052; THE DEEP COLD ${verb} (-${dc} HP).`; SFX.play('hurt');
+      popups.push({title:'THE DEEP COLD',body:`<p class="shout" style="font-size:12px;line-height:1.7;color:#bcd4ff">There is no fire to cool and no rot to cleanse &mdash; only the deep, and it is heavier here. <b>${dc} HP</b>.</p><p class="muted" style="font-size:10px;line-height:1.7;margin-top:6px">The Deep Cold cannot be removed. It only grows as you fall. This is how the Abyss ends every run, eventually.</p>`}); } }
   if(msg){ G._worldMsg=msg; }
   if(popups.length){
     // Show the first popup immediately. If the tick was lethal, the LAST popup is the killer —
@@ -3906,6 +3940,12 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   }
   // player DoT + regen tick
   tickDoT(p,b.pst,'you');
+  // THE DEEP COLD bites every round during deep Abyss boss fights — the Remembered, and above all the
+  // Pale, become a RACE against the deep draining you rather than a pure damage check. This is where
+  // the abyss's environmental clock actually lands kills (the death-screen will read "The Deep Cold").
+  // Caught by the p.hp<=0 check below, which also records the boss death.
+  if(G.abyss && b.hadBoss){ const fl=G.depth-RUN_LENGTH; const cold=fl>=12?Math.round((fl-10)*0.7):0;
+    if(cold>0 && p.hp>0){ hurt(p,cold,'deepcold'); blog(`&#10052; The Deep Cold drains ${cold} from you.`,'crit'); } }
   b.enemies.forEach(e=>{ if(e.st.weakT>0)e.st.weakT--; if(e.st.vulnT>0)e.st.vulnT--; });
   if(b.pst.vulnT>0)b.pst.vulnT--;
   if(b.pdefTurns>0)b.pdefTurns--; if(b.evadeTurns>0)b.evadeTurns--; if(b.guardDown>0)b.guardDown--;
@@ -4070,7 +4110,7 @@ function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
   discoverLore('l14');
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
   nextCorridor(); G.screen='corridor'; render(); }
-function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',hazard:'Hazards',debt:'Time Debt',self:'Self-Inflicted'};
+function causeOfDeathHtml(){ const d=G.dmgBy||{}; const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',deepcold:'The Deep Cold',hazard:'Hazards',debt:'Time Debt',self:'Self-Inflicted'};
   const entries=Object.keys(d).filter(k=>d[k]>0).map(k=>[k,d[k]]).sort((a,b)=>b[1]-a[1]);
   const tot=entries.reduce((s,e)=>s+e[1],0); if(!tot)return '';
   const rows=entries.map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">${labels[k]||k}</span><span class="red">${Math.round(v/tot*100)}%</span></div>`).join('');
