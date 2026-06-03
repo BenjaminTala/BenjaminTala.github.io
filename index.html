@@ -176,6 +176,10 @@
   .shake{animation:shake .3s}@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(4px,-1px)}}
   .flash{animation:flash .3s}@keyframes flash{0%,100%{filter:none}50%{filter:brightness(2.2) sepia(1) hue-rotate(-50deg) saturate(6)}}
   .hitpop{animation:hitpop .25s}@keyframes hitpop{0%{transform:scale(1)}50%{transform:scale(1.14)}100%{transform:scale(1)}}
+  /* Combat input lock — buttons dim & ignore input while a turn resolves (rhythm, not spam). */
+  .ff-cmd.locked{opacity:.4;pointer-events:none;filter:saturate(.45)}
+  .enemy-turn-banner{text-align:center;font-size:9px;letter-spacing:1px;color:#ff9b9b;padding:4px 0;opacity:.9;animation:etbPulse .9s ease-in-out infinite}
+  @keyframes etbPulse{0%,100%{opacity:.55}50%{opacity:1}}
   .fade{animation:fade .4s}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .floortag{text-align:center;font-size:9px;letter-spacing:1px;margin-bottom:10px}
   .omentag{text-align:center;font-size:8px;color:var(--teal);margin-bottom:8px}
@@ -473,7 +477,8 @@
   .dmgfloat.heal{color:var(--green)}
   /* ===================== ROOM-ENTER TRANSITIONS ===================== */
   #transition{position:fixed;inset:0;z-index:158;pointer-events:none;opacity:0}
-  #transition.go{animation:roomWipe .5s ease-out}
+  #transition.go{animation:roomWipe .42s ease-out}
+  #transition.go-heavy{animation:roomWipe .8s ease-out}   /* boss rooms & the Abyss descend slower, heavier */
   @keyframes roomWipe{0%{opacity:1;clip-path:inset(0 0 0 0)}68%{opacity:.92}100%{opacity:0;clip-path:inset(0 0 100% 0)}}
   .room-in{animation:roomIn .42s cubic-bezier(.2,.7,.3,1.25)}
   @keyframes roomIn{0%{opacity:0;transform:translateY(16px) scale(.95)}100%{opacity:1;transform:none}}
@@ -2388,7 +2393,12 @@ function setZoneBg(){ try{ const inRun=G.player&&['corridor','room','event','rew
 }catch(e){} }
 function go(s){ G.screen=s; render(); }
 const ROOM_TINT={enemy:'#5a1620',chest:'#5a4410',relic:'#3a1a5a',merchant:'#4a3a12',forge:'#143a3a',echo:'#2a2440',collector:'#4a3a12',shrine:'#3a1a5a',fountain:'#163450',event:'#16403a',empty:'#1c1c30'};
-function playTransition(color){ const t=$('transition'); if(!t||!t.classList)return; t.style.background=`linear-gradient(180deg, ${color} 0%, #050410 92%)`; t.classList.remove('go'); void t.offsetWidth; t.classList.add('go'); }
+function playTransition(color, heavy){ const t=$('transition'); if(!t||!t.classList)return; t.style.background=`linear-gradient(180deg, ${color} 0%, #050410 92%)`; t.classList.remove('go','go-heavy'); void t.offsetWidth; t.classList.add(heavy?'go-heavy':'go'); }
+// NAV LOCK — a brief input lock across screen transitions so a frantic double-click can't enter two
+// rooms, claim a reward twice, or fire an event option twice. Auto-clears after the transition
+// window (the JS guard is the safety; it costs the player nothing at a human click cadence).
+function navBusy(){ return !!G._navLock; }
+function navLock(ms){ G._navLock=true; clearTimeout(G._navTimer); G._navTimer=setTimeout(()=>{ G._navLock=false; }, ms||300); }
 
 /* ---------- TITLE ---------- */
 function renderTitle(){
@@ -2985,7 +2995,7 @@ function stagePopup(d){ const z=ZONES[zoneOf(d)]; let body=`<span class="${z.col
   if(d===11) body+=`<br><br>The Furnace stirs. <b style="color:var(--red)">HEAT</b> now rises as you push deeper — dangerous, but it forges richer loot. Tap the HEAT meter any time to learn how it works.`;
   if(d===21) body+=`<br><br>A cold older than fire seeps in. <b class="purple">MIASMA</b> now corrupts you — wounds stop closing, and only cleansing at fountains/shrines will save you. Tap the MIASMA meter to learn more.`;
   showInfo({title:'ENTERING '+z.name,body}); }
-function takeAllRewards(){ const p=G.player,pd=G.pending; if(!pd||!pd.options)return; let n=0;
+function takeAllRewards(){ const p=G.player,pd=G.pending; if(navBusy()||!pd||!pd.options)return; navLock(); let n=0;
   pd.options.forEach(o=>{ if(o.kind==='gear'){equipItem(p,o.data);n++;} else if(o.kind==='relic'){if(gainRelic(p,o.data))n++;} else {gainUpgrade(p,o.data);n++;} });
   const d=10+n*6; addDebt(d); noteBorrow(d); SFX.play('upgrade'); if(pd.boss)p.potions++;
   let seen=false; try{seen=localStorage.getItem('crypt_seen_debt')==='1';}catch(e){}
@@ -3284,7 +3294,7 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
-function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
+function openDoor(i){ if(navBusy())return; const door=G.doors[i]; if(!door)return; navLock(door.boss?620:300); SFX.play('door'); G.room=door;
   // Fade the recency-weighted damage ledger each chamber so the death recap weighs the last few
   // chambers, not the whole run. ~0.45/chamber => effectively a 3-4 chamber window.
   if(G.dmgRecent){ for(const k in G.dmgRecent){ G.dmgRecent[k]*=0.45; if(G.dmgRecent[k]<0.5)delete G.dmgRecent[k]; } }
@@ -3293,7 +3303,7 @@ function openDoor(i){ SFX.play('door'); G.room=G.doors[i];
   // crossing a threshold stokes the Furnace / lets the cold seep deeper / debt compounds
   addHeat(2); addMiasma(1); tickDebt();
   if(worldOnEnter()){ return; }   // environmental hazards can be lethal
-  if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30')); }
+  if(G.room.type==='event'){ G.room.outcome=null; G.screen='event'; } else G.screen='room'; render(); playTransition(G.room.boss?'#6e0d1a':(ROOM_TINT[G.room.type]||'#1c1c30'), G.room.boss); }
 /* environmental pressure applied on entering a chamber; returns true if it killed you.
    Every damaging tick fires a popup — the player must see what hit them. */
 function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,msg='',popups=[];
@@ -3510,7 +3520,7 @@ function renderEvent(){
       <p class="evtext center">${evText}</p>${opts}
       </div>`;
 }
-function chooseEvent(i){ const r=G.room,res=r.ev.options[i].run(G.player);
+function chooseEvent(i){ if(navBusy())return; navLock(); const r=G.room,res=r.ev.options[i].run(G.player);
   if(res===false) return;            // a battle was started
   r.outcome=res; render();
   // CONSEQUENCE POPUP — any event outcome should be impossible to miss.
@@ -3819,7 +3829,8 @@ function renderBattle(){
           <div class="ffbar"><span class="lbl purple">&#10022;</span><div class="track"><div class="fill chg ${b.charge>=100?'ready':''}" style="width:${clamp(b.charge||0,0,100)}%"></div></div><span class="num">${b.charge>=100?'READY':Math.floor(b.charge||0)+'%'}</span></div>
           <div class="center" style="margin-top:2px">${pStatus}</div>
         </div>
-        ${b.over?'<div class="ff-cmd"><div class="muted center" style="grid-column:1/-1;padding:18px 4px">&#8212; battle over &#8212;</div></div>':`<div class="ff-cmd">
+        ${(!b.over&&b._lock)?'<div class="enemy-turn-banner">&#9876; the enemy answers&hellip;</div>':''}
+        ${b.over?'<div class="ff-cmd"><div class="muted center" style="grid-column:1/-1;padding:18px 4px">&#8212; battle over &#8212;</div></div>':`<div class="ff-cmd${b._lock?' locked':''}">
           <button class="cmd ult ${b.charge>=100?'ready':''}" ${b.charge>=100?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span><span class="lbl">${um.name}<small>${b.charge>=100?um.desc:'charge by fighting &middot; '+Math.floor(b.charge||0)+'/100'}</small></span></button>
           <button class="cmd" onclick="playerAttack()"><span class="k">&#9876;</span><span class="lbl">ATTACK<small>${p.weapon.name} &middot; ${p.atk+p.weapon.dmg} pow</small></span></button>
           <button class="cmd" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span><span class="lbl">POTION<small>${p.potions} left &middot; heal 30%</small></span></button>
@@ -3984,7 +3995,14 @@ function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math
 function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foes for massive magic + heavy BURN'},
   warrior:{name:"EXECUTIONER'S WRATH",desc:'Devastate target (bonus vs missing HP) + heal'},
   ranger:{name:'RAIN OF DEATH',desc:'5 near-guaranteed crits across the foes'}}[cls]; }
-function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<100)return; clearBuildFlash(); b.charge=0;
+// COMBAT INPUT LOCK — turn-based readability. While a turn resolves (player impact -> pause -> enemy
+// answer -> pause), input is locked so the player can't mash through fights. The JS guard is the real
+// safety; the dimmed buttons are just the cue. Cleared by returnControl() when the player can act again.
+function battleBusy(){ const b=G.battle; return !b || b.over || b._lock; }
+function lockBattle(){ const b=G.battle; if(b)b._lock=true; }
+function returnControl(extra){ const b=G.battle; if(!b||b.over)return;
+  setTimeout(()=>{ const bb=G.battle; if(bb&&!bb.over){ bb._lock=false; render(); } }, 240+(extra||0)); }
+function useUltimate(){ const p=G.player,b=G.battle; if(battleBusy()||(b.charge||0)<100)return; lockBattle(); clearBuildFlash(); b.charge=0;
   SFX.play('win'); flash('playerHit'); const mm=Math.min(180,p.maxMana); ensureTarget();
   _fxKind=p.cls==='mage'?'fire':p.cls==='ranger'?'arrow':'crit';
   if(p.cls==='mage'){ blog('&#10022; ARCANE SUPERNOVA! &#10022;','crit');
@@ -3997,13 +4015,13 @@ function useUltimate(){ const p=G.player,b=G.battle; if(b.over||(b.charge||0)<10
   else { blog('&#10022; RAIN OF DEATH! &#10022;','crit'); for(let k=0;k<5;k++){ const liv=living(); if(!liv.length)break;
     const idx=b.enemies.indexOf(pick(liv)); let d=(p.atk*0.8+p.weapon.dmg); let c=chance(effCrit(p)+40); if(c)d*=2; dealToEnemy(idx,d,'Death rains down',c); } }
   afterPlayer(); }
-function playerAttack(){ const p=G.player,b=G.battle; if(b.over)return; clearBuildFlash(); _fxKind='hit'; ensureTarget(); basicHit(b.target);
+function playerAttack(){ const p=G.player,b=G.battle; if(battleBusy())return; lockBattle(); clearBuildFlash(); _fxKind='hit'; ensureTarget(); basicHit(b.target);
   if(p.flags.doubleStrike&&chance(35)&&living().length){ ensureTarget(); blog('Twin Fang — a second strike!','info'); basicHit(b.target,true); }
   gainCharge(20); afterPlayer(); }
 function aoeHit(fn){ G.battle.enemies.forEach((e,i)=>{ if(e.hp>0) fn(i); }); }
 function spendMana(cost){ const p=G.player; p.mana-=cost; let frac=0; if(p.flags.soulSiphon)frac=0.5; if(p.flags.synOver)frac=1.0; if(frac){ heal(p,Math.max(1,Math.round(cost*frac))); } }
-function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find(x=>x.id===id); if(!s||b.over)return; clearBuildFlash();
-  const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; spendMana(cost); ensureTarget();
+function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find(x=>x.id===id); if(!s||battleBusy())return; clearBuildFlash();
+  const cost=Math.max(1,Math.round(s.cost*G.mods.skillCost)); if(p.mana<cost)return; lockBattle(); spendMana(cost); ensureTarget();
   _fxKind={bolt:'arcane',fire:'fire',frost:'frost',power:'hit',reck:'hit',aim:'arrow',volley:'arrow',glass:'arcane',ember:'fire',decree:'crit',hoard:'fire',recall:'arcane',tithe:'heal',devour:'crit',hollow:'frost',curse:'arcane'}[id]||'hit';
   const mm=p.maxMana;
   switch(id){
@@ -4123,7 +4141,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     }
   }
   gainCharge(24); afterPlayer(); }
-function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; clearBuildFlash(); p.potions--;
+function useItem(){ const p=G.player,b=G.battle; if(!p.potions||battleBusy())return; lockBattle(); clearBuildFlash(); p.potions--;
   // Miasma rots healing — at high tiers, potions return less of their promise.
   const rot=miasmaActive()?Math.min(0.45,miasmaTier()*0.07):0;
   const base=Math.max(0.10,(0.40+(p.potionBonus||0)));
@@ -4134,11 +4152,12 @@ function useItem(){ const p=G.player,b=G.battle; if(!p.potions||b.over)return; c
   blog(`You quaff a potion. +${h} HP.`,'heal');
   if(lost>0) blog(`&#9763; MIASMA &mdash; the cold drinks ${lost} HP from the cure.`,'info');
   (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); pushFx(-1,'heal'); afterPlayer(); }
-function fleeBattle(){ const p=G.player,b=G.battle;
+function fleeBattle(){ const p=G.player,b=G.battle; if(battleBusy())return;
   if(b.hadBoss){
     showInfo({title:'NO ESCAPE',body:'<p class="shout-red" style="font-size:11px">There is no fleeing this foe. It blocks the way back.</p>'});
     return render();
   }
+  lockBattle();
   if(p.cls==='ranger'?chance(82):chance(55)){
     const tax=Math.max(6,Math.round(p.hp*0.18));
     selfHurt(p,tax,'hazard');
@@ -4194,7 +4213,9 @@ function afterPlayer(){ const b=G.battle;
   // (0.37/run) was already fine; left as-is. Still one-or-the-other per turn, never both.
   if(miasmaActive() && miasmaTier()>=3 && chance(7)) blog(pick(HALLUCINATIONS),'info');
   else if(heatActive() && heatTier()>=3 && chance(11)) blog(pick(HEAT_AMBIENT),'info');
-  render(); setTimeout(enemyTurn,560); }
+  // Pause before the enemy answers — long enough to read your own hit, snappy enough to keep rhythm.
+  // Boss turns get a touch more weight. The input lock holds through this whole window.
+  render(); setTimeout(enemyTurn, b.hadBoss?640:520); }
 // One-shot physical hit pipeline. Used by attack/heavy/unleash intents.
 function applyEnemyHit(e,p,b,baseDmg,label,kind){
   let dmg=baseDmg;
@@ -4281,7 +4302,7 @@ function executeIntent(e,p,b){
   }
 }
 function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
-  if(b.hollowSkip>0){ b.hollowSkip--; blog('The world is pausing &mdash; your enemies miss this beat.','info'); render(); return; }
+  if(b.hollowSkip>0){ b.hollowSkip--; blog('The world is pausing &mdash; your enemies miss this beat.','info'); render(); returnControl(); return; }
   if(b.emberTurns>0)b.emberTurns--;
   const zone=zoneOf(G.depth);
   for(const e of b.enemies){
@@ -4335,7 +4356,8 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   if(allDead()){ winBattle(); return; }
   // Plan the next round of intents so the player can see what is coming on their turn.
   b.enemies.forEach(e=>{ if(e.hp>0) planIntent(e,b); else e.intent=null; });
-  render(); }
+  // Brief "after enemy answer" beat, then control returns and the buttons re-enable.
+  render(); returnControl(b.hadBoss?140:0); }
 function flash(kind){ const scene=$('scene');
   if(kind==='enemyHit'){ G.battle.anim=''; }
   else { G.battle.anim='shake flash'; if(scene){scene.classList.remove('shake','flash');void scene.offsetWidth;scene.classList.add('shake','flash');} }
@@ -4445,7 +4467,7 @@ function renderReward(){ const p=G.player,pd=G.pending;
         return `<button class="btn center" style="border-left-color:var(--amber)" onclick="takeAllRewards()" title="Take every reward at once. Time Debt +${bd}; enemies +${tough}% tougher while in debt. The Collector comes at 50 debt."><span class="k">&#8987;</span>BORROW — take everything<small><span class="red">+${bd} Time Debt</span></small></button>`;})():''}
       <button class="btn muted center" onclick="takeReward(-1)">${pd.source==='chest'?'Leave it all':'Skip (take nothing)'}</button></div>`;
 }
-function takeReward(i){ const p=G.player,pd=G.pending;
+function takeReward(i){ const p=G.player,pd=G.pending; if(navBusy()||!pd)return; navLock();
   if(i>=0){ const o=pd.options[i];
     if(o.kind==='gear'){equipItem(p,o.data); SFX.play('upgrade');}
     else if(o.kind==='relic')gainRelic(p,o.data);
@@ -4489,7 +4511,7 @@ function startAbyss(){ const p=G.player; G.abyss=1; p.won=true;
   G.mods.essMul=(G.mods.essMul||1)*1.6; G.mods.luck=1; G.mods.goldMul*=1.3;
   discoverLore('l14');
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
-  nextCorridor(); G.screen='corridor'; render(); }
+  nextCorridor(); G.screen='corridor'; render(); playTransition('#1a0e2e', true); }   // the longest, heaviest descent
 function causeOfDeathHtml(){
   const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',deepcold:'The Deep Cold',hazard:'Hazards',debt:'Debt Pressure',self:'Self-Inflicted'};
   const colors={enemy:'#ff6b6b',miasma:'#d9b8ff',burn:'#ff9b4d',poison:'#9be86b',heat:'#ffcf4d',deepcold:'#bcd4ff',hazard:'#cfcfe0',debt:'#ffd27a',self:'#cfcfe0'};
