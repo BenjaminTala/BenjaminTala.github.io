@@ -2824,7 +2824,10 @@ function nextCorridor(){ G.depth++;
   if(G.depth===1||G.depth===11||G.depth===21||G.depth===31){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]&&discoverLore(({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]); if(G.depth>1)stagePopup(G.depth); }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
   else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); }
-  G._whisper = chance(28) ? whisperFor(G.depth) : null; }
+  // Whispers are ambient texture — measured at ~7.8/run (one every ~4 corridors), which read as
+  // constant rather than occasional. Trimmed to ~18% so a whisper feels like a held breath, not a
+  // running commentary. (The priority system also suppresses them whenever a real beat is showing.)
+  G._whisper = chance(18) ? whisperFor(G.depth) : null; }
 /* ROOM ADJACENCY — neighbouring doors bleed into each other */
 function adjacency(doors){ for(let i=0;i<doors.length-1;i++){ const a=doors[i],b=doors[i+1]; pairAdj(a,b); pairAdj(b,a); } }
 function pairAdj(a,b){ // a is influenced by neighbour b
@@ -3782,7 +3785,10 @@ const HALLUCINATIONS=[
 function afterPlayer(){ const b=G.battle;
   b.enemies.forEach(e=>{ if(e.hp>0){ tickDoT(e,e.st,e.name); if(e.hp<=0)onEnemyDeath(e); } });
   if(allDead()){ winBattle(); return; }
-  if(miasmaActive() && miasmaTier()>=3 && chance(11)) blog(pick(HALLUCINATIONS),'info');
+  // Hallucinations measured at ~1.77/run — frequent enough to feel like a mechanic rather than a
+  // creeping dread. Trimmed to ~7%/turn (~1/run) so they stay unsettling-but-rare. Heat ambience
+  // (0.37/run) was already fine; left as-is. Still one-or-the-other per turn, never both.
+  if(miasmaActive() && miasmaTier()>=3 && chance(7)) blog(pick(HALLUCINATIONS),'info');
   else if(heatActive() && heatTier()>=3 && chance(11)) blog(pick(HEAT_AMBIENT),'info');
   render(); setTimeout(enemyTurn,560); }
 // One-shot physical hit pipeline. Used by attack/heavy/unleash intents.
