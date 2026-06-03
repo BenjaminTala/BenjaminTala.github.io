@@ -1594,6 +1594,9 @@ function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loa
   return true; }
 function loadRecords(){ try{ return Object.assign({deepest:0,runs:0,wins:0},JSON.parse(localStorage.getItem('crypt_records')||'{}')); }catch(e){ return {deepest:0,runs:0,wins:0}; } }
 function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(r.deepest||0,G.depth); try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+// Cross-run Time Debt ledger — feeds the Collector's "you again" recognition.
+function noteBorrow(amt){ const r=loadRecords(); r.borrowedTotal=(r.borrowedTotal||0)+amt; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+function noteCollector(){ const r=loadRecords(); r.collectorMet=(r.collectorMet||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 /* ============================================================
    NPC MEMORY — recurring characters that REMEMBER you between runs.
    Each anchor NPC stores a small per-NPC blob (stage, met-count, last-line) so a
@@ -1642,9 +1645,22 @@ const PALE_INSCRIPTIONS=[
   'Tally marks, then a final line struck clean through all of them, then nothing at all.',
   'Carved by a shaking hand: "it leaves no echo. i checked. i checked for mine."',
 ];
+// ABYSS WHISPERS — past the throne the world stops behaving. These never appear in a normal run;
+// the deeper you go, the less the dark pretends to be a dungeon.
+const ABYSS_WHISPERS=[
+  'The chambers have stopped numbering themselves. The floor tag is guessing now.',
+  'You pass a door you have already opened. It is still closed. Both are true.',
+  'Your shadow arrives a moment before you do, and waits for you to catch up.',
+  'There is no up. There has not been an up for some time. You have not needed one.',
+  'Something down here is using your memories for furniture. You recognise the chair.',
+  'The cold has started to feel less like weather and more like an opinion the dark holds about you.',
+  'You hear the surface, very faintly &mdash; the way you hear a place you only invented.',
+  'You meet yourself going the other way. Neither of you is surprised. Neither of you stops.',
+];
 function whisperFor(d){
   if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)) return pick(PALE_INSCRIPTIONS);
-  if(G.abyss)return pick(WHISPERS[3]); return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
+  if(G.abyss) return chance(60)?pick(ABYSS_WHISPERS):pick(WHISPERS[3]);
+  return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
 /* boss bios — shown the first time you meet each boss across all your runs */
 const BOSS_BIO={
   ogre:'An old warlord who chose this crypt over a soft death. He keeps the gate as a kindness — to himself.',
@@ -1787,11 +1803,22 @@ function selfHurt(p,amt,src){ amt=Math.max(0,Math.round(amt)); if(!amt)return 0;
   checkLowHpHeartbeat(p);
   return before-p.hp; }
 /* TIME DEBT — borrow power now, pay survival later. Answers "how much future do I sacrifice?" */
-function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150); if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
+function addDebt(n){ const before=G.debt||0; G.debt=clamp((G.debt||0)+n,0,150);
+  // The Collector is part of the Time Debt IDENTITY — the player should feel it coming, never feel
+  // ambushed. First the debt gets "noticed", then you are marked, then it announces each step in.
+  if(before<25 && G.debt>=25 && !G.collectorEta && !G.abyss){ G._worldMsg='Your debt has grown heavy enough to be noticed. Somewhere far below, an account opens in your name.'; flashWorld(); }
+  if(G.debt>=50&&!G.collectorEta&&!G.abyss){ G.collectorEta=4; G._worldMsg='The COLLECTOR has marked you. It comes for what you owe.'; flashWorld(); } }
 function debtMul(){ return 1+Math.min(G.debt||0,150)*0.0035; }   // every point of debt feeds the crypt's hunger
 function tickDebt(){ if(!G.debt)return; const interest=Math.floor(G.debt/30); if(interest>0)G.debt=clamp(G.debt+interest,0,150);
   addMiasma(Math.floor(G.debt/25));               // borrowed time rots the soul
-  if(G.collectorEta>0){ G.collectorEta--; if(G.collectorEta<=0){ G._forceCollector=1; } } }
+  if(G.collectorEta>0){ G.collectorEta--;
+    // Footsteps, then brass, then it is simply there — telegraphed so the encounter is earned.
+    const signs={3:'A set of footsteps, one corridor back, falls exactly in time with yours.',2:'The air has gone faintly metallic &mdash; old brass, and ledgers, and patience.',1:'It is in the next chamber. It already knows the number. It has always known the number.'};
+    if(signs[G.collectorEta]) G._worldMsg=signs[G.collectorEta];
+    if(G.collectorEta<=0){ G._forceCollector=1; }
+  } else if(G.debt>=25 && !G.abyss && chance(28)){
+    G._worldMsg=pick(['Somewhere below, something turns a page and makes a small mark.','You feel watched the way a borrower is watched &mdash; patiently, and without malice.','A debt you do not remember agreeing to sits cold and exact in your chest.']);
+  } }
 
 function makePlayer(key){
   const c=CLASSES[key];
@@ -2502,6 +2529,22 @@ const DISCOVERIES=[
         {label:'Take its weapon',desc:'It is still holding one',run:p=>{ const w=makeItem('weapon',p.cls,G.depth+2); equipItem(p,w); addMiasma(6); return `You pry the ${w.name} (Lv${w.ilvl}) from hands that do not let go so much as forget they were holding anything. (the cold thickens)`; }},
       ]})
   },
+  // A DISTORTED ECHO — Abyss-only. Echoes do not come back as people this far down. Also a Devour
+  // reaction: it tastes what you have been eating. (rare · Abyss only)
+  { id:'abyss_echo', tier:'rare',
+    when:()=> G.abyss,
+    build:()=>{ const p=G.player; const path=(p&&p.memory&&p.memory.path)||[];
+      const knows = path.length>=2 ? ` <span class="shout-purple">"You taste of ${path.slice(-2).join(' and ')} now. We never got that far. We never thought to."</span>` : '';
+      return ({ title:'A DISTORTED ECHO', sprite:{src:'assets/monsters/ghost.png',tint:'tint-shadow'},
+      art:"  .-?-.\n ( >< )\n  )~~~( \n  /|x|\\",
+      _peek:'Something ahead is shaped like an echo, but it is the wrong number of dimensions.',
+      text:'It is one of you &mdash; you can tell by the walk, even folded wrong like this: too many joints, the face running a half-second behind the head. This far down, the echoes do not come back as people. They come back as the idea of having been one.',
+      options:[
+        {label:'"How far did you get?"',desc:'Ask',run:p=>'It answers in your own voice, a half-second before its mouth moves. <span class="shout-purple">"Further than this. Not far enough. There is no far enough &mdash; that is the joke."</span>'+knows},
+        {label:'Devour it',desc:'It is a piece of you &middot; risk',run:p=>{ addMiasma(10); p.essence+=24; SFX.play('kill'); return 'You consume it. It does not scream &mdash; it agrees. For a moment you remember a chamber you have never walked, in detail, and then you do not. (+24 essence, the cold thickens)'; }},
+        {label:'Walk through it',desc:'It is not really there',run:p=>'You step through the place it is standing. It does not move aside. You simply end up on the far side of it, and so does it, and neither of you remarks on the matter.'},
+      ]}); }
+  },
   // THE TALLY WALL — a once-ever discovery deep in the cold that counts YOUR runs. (very rare · once-ever)
   { id:'tallywall', tier:'veryrare', once:true,
     when:()=> G.abyss || zoneOf(G.depth)>=3,
@@ -2520,7 +2563,9 @@ const DISCOVERIES=[
 function discoveryRoom(depth){
   if(G._discRolled) return null;     // at most ONE discovery attempt per corridor (first door only)
   G._discRolled=1;
-  if(G._discoveryEntered || BOSS_CHAMBERS[depth]!==undefined) return null;
+  // The one-per-run cap is lifted in the Abyss — past the throne the world is SUPPOSED to keep
+  // breaking. Per-corridor + rarity + condition gates still keep abyss discoveries occasional.
+  if((G._discoveryEntered && !G.abyss) || BOSS_CHAMBERS[depth]!==undefined) return null;
   for(const d of DISCOVERIES){
     if(d.once && discSeen(d.id)) continue;
     if(!d.when()) continue;
@@ -2674,11 +2719,19 @@ function collectorEnemy(){ const f=depthFactor()*debtMul(); const hp=Math.round(
   return freshEnemy({name:'THE COLLECTOR',sprite:"  .-=-.\n ( $ $ )\n  )___(\n /|   |\\\n  ^   ^",hp,maxHp:hp,atk,def:6,boss:true,caster:true,xp:160,_collector:1,cry:'"Pay what you owe, champion — or pay with all of it."'}); }
 function renderCollector(){ const p=G.player; discoverLore('l8'); const bs=bestItem(p); const it=bs?p.equip[bs]:null;
   const gold=p.gold, ess=p.essence; const debt=G.debt;
+  // The Collector remembers prior collections across runs — by the third time, it has given up
+  // expecting the arrangement to ever end.
+  const cm=(loadRecords().collectorMet)||0;
+  const greet = cm<=1
+    ? `"You borrowed against your future, and the future is now. Your debt: <span class="red">${debt}</span>." It extends a hand of brass and shadow.`
+    : cm===2
+    ? `"You again. You always pay. You always borrow again the moment I am gone." It turns to a page that already has your name at the top. "Your debt: <span class="red">${debt}</span>."`
+    : `"We have an arrangement, you and I. You take. I collect. I have stopped expecting it to end." A long, patient pause. "Your debt, as ever: <span class="red">${debt}</span>."`;
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in">
       <pre class="sprite amber">  .-=-.\n ( $ $ )\n  )___(\n /|   |\\</pre>
       <h3 class="center amber" style="margin:8px 0">THE COLLECTOR</h3>
-      <p class="evtext center">"You borrowed against your future, and the future is now. Your debt: <span class="red">${debt}</span>." It extends a hand of brass and shadow.</p>
+      <p class="evtext center">${greet}</p>
       ${it?`<button class="btn" onclick="collectorPay('item')"><span class="k amber">&#9876;</span>Surrender ${bs.toUpperCase()}: ${itemLabel(it)}<small>hand over your finest piece — debt cleared</small></button>`:''}
       <button class="btn" onclick="collectorPay('tribute')"><span class="k amber">&#128176;</span>Pay tribute<small>all ${gold}g, ${Math.floor(ess/2)} ${ESS}, and 15% HP — debt cleared</small></button>
       <button class="btn red" onclick="collectorPay('refuse')"><span class="k">&#9876;</span>REFUSE — face the Collector<small>win and the debt dies with it; lose and you pay everything</small></button>
@@ -2700,7 +2753,7 @@ function stagePopup(d){ const z=ZONES[zoneOf(d)]; let body=`<span class="${z.col
   showInfo({title:'ENTERING '+z.name,body}); }
 function takeAllRewards(){ const p=G.player,pd=G.pending; if(!pd||!pd.options)return; let n=0;
   pd.options.forEach(o=>{ if(o.kind==='gear'){equipItem(p,o.data);n++;} else if(o.kind==='relic'){if(gainRelic(p,o.data))n++;} else {gainUpgrade(p,o.data);n++;} });
-  const d=10+n*6; addDebt(d); SFX.play('upgrade'); if(pd.boss)p.potions++;
+  const d=10+n*6; addDebt(d); noteBorrow(d); SFX.play('upgrade'); if(pd.boss)p.potions++;
   let seen=false; try{seen=localStorage.getItem('crypt_seen_debt')==='1';}catch(e){}
   if(!seen){ try{localStorage.setItem('crypt_seen_debt','1');}catch(e){} showInfo('timedebt'); }
   G.pending=null; proceed(`You seize it all. The crypt records the debt (+${d} time debt).`); }
@@ -2714,7 +2767,7 @@ function doorHint(room){ return room.peek||'A door. Closed.'; }
 function nextCorridor(){ G.depth++;
   G._discRolled=0;   // one rare-discovery attempt per corridor
   if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
-  if(G._forceCollector){ G._forceCollector=0; G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
+  if(G._forceCollector){ G._forceCollector=0; noteCollector(); G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
   if(G.abyss){ const floor=G.depth-RUN_LENGTH;
     if(floor%4===0){
       let key, peek;
