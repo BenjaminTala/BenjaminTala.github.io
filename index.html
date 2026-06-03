@@ -1258,18 +1258,42 @@ const EVENTS=[
   // === LIVING INHABITANTS ===
   // These NPCs live in the crypt. Some are older than the descent. They have their own business
   // here, their own grief, their own gods. Most do not particularly care about you.
-  {id:'lantern',title:'THE LANTERN KEEPER',zone:0,sprite:{src:'assets/players/mage.png',tint:'tint-amber'},art:"  .o.o.o.\n  | | | |\n  ( \" )\n  )===( \n  /| |\\",
-   text:'An old man passes you, carrying an iron frame strung with hundreds of tiny lanterns. Each one burns a different colour. He stops to look at you the way one looks at weather.',
+  {id:'lantern',title:'THE LANTERN KEEPER',zone:0,npc:'lantern',sprite:{src:'assets/players/mage.png',tint:'tint-amber'},art:"  .o.o.o.\n  | | | |\n  ( \" )\n  )===( \n  /| |\\",
+   text:p=>{ const r=loadRecords(); const n=npcState('lantern'); const deaths=Math.max(0,(r.runs||0)-(r.wins||0));
+     if(n.met<=1) return 'An old man passes you, carrying an iron frame strung with hundreds of tiny lanterns. Each one burns a different colour. He stops to look at you the way one looks at weather.';
+     if(n.met===2) return 'The lantern keeper again. He nods like he expected the appointment. There is a new lantern on his frame, small and green, that he did not have last time.';
+     return `The lantern keeper sets down his frame. There are ${deaths===0?'no':deaths===1?'one':deaths} green lanterns on it that you are sure were not there the first time you met. He counts them under his breath as if he is checking against a list only he can read.`;
+   },
    options:[
-     {label:'"What are the lanterns?"',desc:'Listen',run:p=>{discoverLore('l17');return '<span class="shout">"I light one every time somebody dies."</span> He glances at his frame. "Most of these are not yours. Most are not anybody you have met."';}},
-     {label:'Buy a lantern (-30 gold)',desc:'+10 max HP, the lantern is warm',run:p=>{if(p.gold<30)return 'He looks at your purse and says nothing. The silence is somehow worse.';p.gold-=30;p.maxHp+=10;heal(p,10);return 'You take a small green lantern. It is heavier than it should be. Something in it settles, like a sleeper turning over. (+10 max HP)';}},
-     {label:'"How many have you lit?"',desc:'Press him',run:p=>{discoverLore('l17');return '"Stopped counting around the Sixth Expedition." A long pause. "There was one after that. We do not talk about it."';}},
+     {label:'"What are the lanterns?"',desc:'Listen',run:p=>{discoverLore('l17'); const r=loadRecords(); const deaths=Math.max(0,(r.runs||0)-(r.wins||0));
+       if(deaths<=1) return '<span class="shout">"I light one every time somebody dies."</span> He glances at his frame. "Most of these are not yours. Most are not anybody you have met."';
+       return `<span class="shout">"I light one every time somebody dies."</span> He does not look up from the lanterns. <span class="shout-red">"${deaths} of them are yours."</span> A pause. "I keep them separate."`;}},
+     {label:'Buy a lantern (-30 gold)',desc:'+10 max HP, the lantern is warm',run:p=>{if(p.gold<30)return 'He looks at your purse and says nothing. The silence is somehow worse.';p.gold-=30;p.maxHp+=10;heal(p,10); npcSet('lantern',{stage:Math.max(1,npcState('lantern').stage),bought:(npcState('lantern').bought||0)+1});
+       const n=npcState('lantern');
+       if(n.bought===1) return 'You take a small green lantern. It is heavier than it should be. Something in it settles, like a sleeper turning over. (+10 max HP)';
+       if(n.bought===2) return '"You bought one before." He hands you another green lantern. It hums against your palm in the same rhythm as the first. He notices the matching and does not say anything. (+10 max HP)';
+       return `He hands you the ${ordinal(n.bought)} lantern without being asked. "Some of you collect them. I have stopped wondering why." (+10 max HP)`;}},
+     {label:'"How many have you lit?"',desc:'Press him',run:p=>{discoverLore('l17'); npcSet('lantern',{stage:Math.max(2,npcState('lantern').stage),pressed:1}); const r=loadRecords(); const deaths=Math.max(0,(r.runs||0)-(r.wins||0));
+       if(deaths<=2) return '"Stopped counting around the Sixth Expedition." A long pause. "There was one after that. We do not talk about it."';
+       if(deaths<=10) return `"Stopped counting around the Sixth Expedition." A pause. "Of your run though, I do keep count. ${deaths}. So far."`;
+       return `He turns the frame so you can see the bottom row. ${deaths} small green lights, in neat order. <span class="shout-red">"I do not light them for everyone. Only the ones the crypt keeps sending back."</span>`;}},
    ]},
-  {id:'cardinal',title:'THE CARDINAL WITHOUT A FACE',zone:1,sprite:{src:'assets/players/warrior.png',tint:'tint-gold'},art:"  ,---,\n  |   |\n  )...(\n  /|=|\\\n  d   b",
-   text:'A priest in robes of beaten gold stands at a small stone altar. His hood is up. Where his face should be, there is nothing — not darkness, not skin. Nothing.',
+  {id:'cardinal',title:'THE CARDINAL WITHOUT A FACE',zone:1,npc:'cardinal',sprite:{src:'assets/players/warrior.png',tint:'tint-gold'},art:"  ,---,\n  |   |\n  )...(\n  /|=|\\\n  d   b",
+   text:p=>{ const n=npcState('cardinal');
+     if(n.met<=1) return 'A priest in robes of beaten gold stands at a small stone altar. His hood is up. Where his face should be, there is nothing — not darkness, not skin. Nothing.';
+     if(n.met===2) return 'The faceless priest is still at his altar. He does not move when you enter, but the absence under his hood orients toward you with patience.';
+     return 'The cardinal turns the unface toward you as you arrive. "Again." He says it as a fact, the way one says a date. "Again."';
+   },
    options:[
-     {label:'"Which god do you serve?"',desc:'Ask',run:p=>{discoverLore('l19');return '"A patient one." He does not turn his head. <span class="shout">"She does not enter the lower chambers."</span> A pause. <span class="shout-red">"I would not, if I were her."</span>';}},
-     {label:'Make an offering (-25 gold)',desc:'+12 max HP, partial heal',run:p=>{if(p.gold<25)return 'He says nothing about your empty purse. It is somehow worse than disapproval.';p.gold-=25;p.maxHp+=12;heal(p,Math.round(p.maxHp*0.18));return 'The coin is gone before it reaches the altar. You feel briefly, terribly observed. (+12 max HP)';}},
+     {label:'"Which god do you serve?"',desc:'Ask',run:p=>{discoverLore('l19'); const n=npcState('cardinal');
+       if(n.met<=2) return '"A patient one." He does not turn his head. <span class="shout">"She does not enter the lower chambers."</span> A pause. <span class="shout-red">"I would not, if I were her."</span>';
+       npcSet('cardinal',{stage:Math.max(1,n.stage),asked:1});
+       return '"A patient one." A long pause. "She has watched you come back. She is curious about you. She is afraid OF you." <span class="shout-red">"That is not a thing a god should be."</span>';}},
+     {label:'Make an offering (-25 gold)',desc:'+12 max HP, partial heal',run:p=>{if(p.gold<25)return 'He says nothing about your empty purse. It is somehow worse than disapproval.';p.gold-=25;p.maxHp+=12;heal(p,Math.round(p.maxHp*0.18)); const n=npcState('cardinal'); npcSet('cardinal',{stage:Math.max(2,n.stage),offered:(n.offered||0)+1});
+       const o=(n.offered||0)+1;
+       if(o===1) return 'The coin is gone before it reaches the altar. You feel briefly, terribly observed. (+12 max HP)';
+       if(o<=3) return 'The coin is gone. He inclines his hood half a degree. From him, it is a benediction. (+12 max HP)';
+       return `Your ${ordinal(o)} offering. The altar is warm where the coin lands. <span class="shout">"She is starting to recognise you. I am not certain that is a kindness."</span> (+12 max HP)`;}},
      {label:'Step around him',desc:'No questions',run:p=>'He does not move. He does not turn. You walk past. The hairs on your neck do not settle for some time.'},
    ]},
   {id:'wsmith',title:'THE WEEPING SMITH',zone:2,sprite:{src:'assets/monsters/golem.png',tint:'tint-amber'},art:"  ,---,\n  |( )|\n  )===( \n /|fire|\\\n  d   b",
@@ -1279,12 +1303,22 @@ const EVENTS=[
      {label:'"Whose swords were these?"',desc:'Press',run:p=>{discoverLore('l18');return '"Champions." He says it without looking up. "Like you. Some of them were even good." He keeps snapping.';}},
      {label:'Give him a piece to destroy',desc:'-1 armor piece, +random upgrade',run:p=>{const slots=['head','chest','legs','boots','ring'].filter(s=>p.equip[s]);if(!slots.length)return 'He shakes his head at your bare hands.';const slot=pick(slots);const it=p.equip[slot];unequip(p,slot);const up=pick(UPGRADES);gainUpgrade(p,up);return `He takes your ${it.name} and breaks it across his knee. Something old comes loose. (${up.note})`;}},
    ]},
-  {id:'cartog',title:'THE LAST CARTOGRAPHER',zone:1,sprite:{src:'assets/players/ranger.png',tint:'tint-grey'},art:"  ,---,\n  |~~~|\n  ( o )\n  )===( \n  d   b",
-   text:'An old explorer sits with a map spread across his knees. The lines on the map move when you are not looking directly at them.',
+  {id:'cartog',title:'THE LAST CARTOGRAPHER',zone:1,npc:'cartog',sprite:{src:'assets/players/ranger.png',tint:'tint-grey'},art:"  ,---,\n  |~~~|\n  ( o )\n  )===( \n  d   b",
+   text:p=>{ const r=loadRecords(); const n=npcState('cartog');
+     if(n.met<=1) return 'An old explorer sits with a map spread across his knees. The lines on the map move when you are not looking directly at them.';
+     if(r.deepest>=RUN_LENGTH) return `The cartographer looks up before you reach him. "You. The one who got to ${r.deepest}." He marks a small black cross at the bottom of his map. "I will add a line."`;
+     return 'The cartographer recognises you and does not bother greeting you. He just slides a new sheet of paper out and writes your name at the top, in handwriting you cannot read.';
+   },
    options:[
-     {label:'"What are you mapping?"',desc:'Ask',run:p=>{discoverLore('l18');return '"This." He gestures at the wall. "It is not where it was yesterday." He goes back to his sketching, unbothered.';}},
-     {label:'"Have you mapped the bottom?"',desc:'Press',run:p=>{discoverLore('l19');return '<span class="shout">"Once."</span> He does not look up. <span class="shout-red">"Never again."</span> He does not say why.';}},
-     {label:'Buy a partial map (-40 gold)',desc:'Next 2 corridors hit louder loot',run:p=>{if(p.gold<40)return 'He shrugs without looking up.';p.gold-=40;G._luckBoom=2;return 'The lines on the paper he gives you twitch and resettle as you watch. The next two chambers feel... helpful.';}},
+     {label:'"What are you mapping?"',desc:'Ask',run:p=>{discoverLore('l18'); const n=npcState('cartog');
+       if(n.met<=2) return '"This." He gestures at the wall. "It is not where it was yesterday." He goes back to his sketching, unbothered.';
+       return '"This." He gestures at the wall. A pause. "And you. I started mapping you about three of your visits ago. You take the same wrong turn at the same corner, every time. I find it comforting."';}},
+     {label:'"Have you mapped the bottom?"',desc:'Press',run:p=>{discoverLore('l19'); const r=loadRecords(); npcSet('cartog',{stage:Math.max(1,npcState('cartog').stage),askedBottom:1});
+       if(r.deepest<RUN_LENGTH) return '<span class="shout">"Once."</span> He does not look up. <span class="shout-red">"Never again."</span> He does not say why.';
+       return `<span class="shout">"Once."</span> Now he looks up. "You have been further than me, you know. Past the throne." <span class="shout-red">"There is a thing in the cold below the throne. It does not have a name. Even the dragon would not look at it."</span>`;}},
+     {label:'Buy a partial map (-40 gold)',desc:'Next 2 corridors hit louder loot',run:p=>{if(p.gold<40)return 'He shrugs without looking up.';p.gold-=40;G._luckBoom=2; const n=npcState('cartog');
+       if((n.bought||0)===0){ npcSet('cartog',{bought:1}); return 'The lines on the paper he gives you twitch and resettle as you watch. The next two chambers feel... helpful.'; }
+       npcSet('cartog',{bought:(n.bought||0)+1}); return `"You buy these every time." He hands you a fresh sheet. "I do not know if they are different. They feel different to draw."`;}},
    ]},
   // === FURNACE EVENTS — stoke the Heat meter through chamber events too ===
   {id:'valve',title:'THE VALVE BURSTS',zone:1,art:"  ###    \n  )()(   \n  )()(   \n  ###    ",
@@ -1343,14 +1377,18 @@ const EVENTS=[
      {label:'"I don\'t know you."',desc:'Insist &middot; they may teach you',run:p=>{heal(p,Math.round(p.maxHp*0.12));let extra='';if(!p.memory && chance(55)){grantMemory(p,'hollow');extra=' Before they vanish, they show you how to step outside a moment.';}return '"...oh." The child looks down. "I am sorry. I thought you were ready." They press warm hands to your wound and walk into the wall. (heal)'+extra;}},
      {label:'Walk through them',desc:'They were never there',run:p=>{addMiasma(8);return 'There was no child. Of course there was no child. The Miasma is doing its work. (the cold thickens)';}},
    ]},
-  {id:'scholar',title:'THE FROZEN SCHOLAR',zone:2,sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  [_=_]\n  ( o )\n  )===( \n  /| |\\",
-   text:'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.',
+  {id:'scholar',title:'THE FROZEN SCHOLAR',zone:2,npc:'scholar',sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  [_=_]\n  ( o )\n  )===( \n  /| |\\",
+   text:p=>{ const r=loadRecords(); const n=npcState('scholar');
+     if(n.met<=1) return 'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.';
+     return `The scholar is on a new ledger. There are ${Math.max(0,(r.runs||1)-1)} closed ones stacked beside her, each one bound in pale leather. She does not look up. She is already writing your name.`;
+   },
    options:[
-     {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3);
-       // Handwriting beat is a heavy hand. Only land it once the player has heard a couple of flashbacks
-       // (Miasma >= 18 means the second flashback has fired). Before that, soften to a generic ledger line.
-       const punch = (G.miasma>=18) ? 'Your name is there. Yours. <b>In your handwriting.</b>' : 'There are a great many names.';
-       return `"A record of every champion who came this far." She turns the ledger. ${punch} (+8 max mana, the cold thickens)`;}},
+     {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3); npcSet('scholar',{stage:Math.max(1,npcState('scholar').stage),read:1});
+       const r=loadRecords(); const showHand=(G.miasma>=18 || (r.runs||0)>=2);
+       const punch = showHand
+         ? `She turns the ledger. Your name is there ${(r.runs||0)>=2?`<b>${r.runs} times</b>`:'<b>once</b>'}. <b>In your handwriting.</b> The most recent entry is dated today.`
+         : 'She turns the ledger. There are a great many names.';
+       return `"A record of every champion who came this far." ${punch} (+8 max mana, the cold thickens)`;}},
      {label:'"Have you remembered yet?"',desc:'She asked you',run:p=>'<span class="shout-purple">"...then there is still time."</span> She does not look sad. She looks tired. She closes the ledger and is gone.'},
      {label:'Leave her',desc:'No questions',run:p=>'You walk on. The desk and the scholar are not behind you when you glance back.'},
    ]},
@@ -1548,6 +1586,23 @@ function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loa
   return true; }
 function loadRecords(){ try{ return Object.assign({deepest:0,runs:0,wins:0},JSON.parse(localStorage.getItem('crypt_records')||'{}')); }catch(e){ return {deepest:0,runs:0,wins:0}; } }
 function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(r.deepest||0,G.depth); try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+/* ============================================================
+   NPC MEMORY — recurring characters that REMEMBER you between runs.
+   Each anchor NPC stores a small per-NPC blob (stage, met-count, last-line) so a
+   second meeting can land differently from a first. Persists in crypt_npc.
+   ============================================================ */
+function loadNpc(){ try{ return JSON.parse(localStorage.getItem('crypt_npc')||'{}'); }catch(e){ return {}; } }
+function saveNpc(s){ try{ localStorage.setItem('crypt_npc',JSON.stringify(s)); }catch(e){} }
+// Read this NPC's state (always returns an object with `met` and `stage` defined).
+function npcState(id){ const s=loadNpc(); return Object.assign({met:0,stage:0},s[id]||{}); }
+// Advance one or more fields on this NPC's persistent record.
+function npcSet(id, patch){ const s=loadNpc(); s[id]=Object.assign({met:0,stage:0},s[id]||{},patch); saveNpc(s); return s[id]; }
+// Called the first time the player opens an anchor NPC's screen this run — bumps the
+// truthful lifetime meeting counter and stamps which run-number this meeting happened on.
+function npcMeet(id){ const r=loadRecords(); const s=loadNpc(); const cur=Object.assign({met:0,stage:0},s[id]||{});
+  cur.met=(cur.met||0)+1; cur.lastRun=r.runs||0; s[id]=cur; saveNpc(s); return cur; }
+// Human-readable ordinal for run/meeting counters: 1st, 2nd, 3rd, 4th...
+function ordinal(n){ n=n|0; const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
 /* atmospheric whispers — drip the world into the player run by run */
 const WHISPERS={
   0:['You hear something turn over in its sleep, far below.','Dust falls in still air. The crypt is listening.','A name is scratched into the stone — you do not know it. Yet.','The torches here are newer than the tombs.','A single boot lies forgotten. Its owner did not walk back this way.'],
@@ -2814,6 +2869,13 @@ function drinkFountain(){ const p=G.player,roll=rnd(100); const cl=miasmaActive(
 /* ---------- EVENTS ---------- */
 function renderEvent(){
   const r=G.room,ev=r.ev,p=G.player;
+  // First reveal of an anchor NPC this room — bump their persistent meet counter once.
+  // Doors get re-rendered; without this guard the counter would tick on every render call.
+  // The counter MUST tick before any text is computed so the intro reflects this meeting.
+  if(!r._npcMet && ev.npc){ npcMeet(ev.npc); r._npcMet=1; }
+  // Anchor NPCs put their intro text in a function so it reads current persistence; ordinary
+  // events keep using a plain string. Resolve either form here.
+  const evText = (typeof ev.text==='function') ? ev.text(p) : ev.text;
   const art=ev.sprite
     ?`<img class="ev-sprite ${ev.sprite.tint||''}" src="${ev.sprite.src}" alt="${ev.title}" draggable="false">`
     :`<pre class="sprite teal">${ev.art}</pre>`;
@@ -2830,7 +2892,7 @@ function renderEvent(){
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
       ${art}
-      <p class="evtext center">${ev.text}</p>${opts}
+      <p class="evtext center">${evText}</p>${opts}
       <button class="btn muted center" onclick="openInventory()"><span class="k">&#9776;</span>INVENTORY (i)</button></div>`;
 }
 function chooseEvent(i){ const r=G.room,res=r.ev.options[i].run(G.player);
