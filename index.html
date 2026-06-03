@@ -1608,6 +1608,14 @@ function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.w
 // Cross-run Time Debt ledger — feeds the Collector's "you again" recognition.
 function noteBorrow(amt){ const r=loadRecords(); r.borrowedTotal=(r.borrowedTotal||0)+amt; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 function noteCollector(){ const r=loadRecords(); r.collectorMet=(r.collectorMet||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+// Boss kills (mirror of bossDeaths) — feeds the Saga tab's THE FALLEN section so the player sees
+// their lifetime hunt count next to each boss's death count. Bumped once per boss-kill via winBattle.
+function noteBossKill(key){ if(!key)return; const r=loadRecords(); r.bossKills=r.bossKills||{}; r.bossKills[key]=(r.bossKills[key]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+// Rumor fragments collected — the Saga tab surfaces "you've heard 5 things about the Pale Devourer"
+// without revealing what those things are. Bumped at the existing fragment-emission sites.
+function noteRumor(topic){ if(!topic)return; const r=loadRecords(); r.rumors=r.rumors||{}; r.rumors[topic]=(r.rumors[topic]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+// Collector resolution counters — bumped from collectorPay so the Saga can show items vs tribute vs fought.
+function noteCollectorPaid(kind){ const r=loadRecords(); r.collectorPaid=r.collectorPaid||{}; r.collectorPaid[kind]=(r.collectorPaid[kind]||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 // ============================================================
 // FIRST-RUN ONBOARDING — true the first time anyone opens the game (before any run has recorded).
 // Used to: skip the Omen screen, gate a guaranteed early relic + event, soften enemies ~12%, and
@@ -1645,7 +1653,7 @@ function paleRumorChance(){ const d=(loadRecords().deepest)||0;
   if(d>=30) return 36;          // far into the cold
   if(d>=18) return 23;          // past the Warden
   return 11; }                  // a faint, rare fragment
-function paleRumor(){ return chance(paleRumorChance()); }
+function paleRumor(){ const hit=chance(paleRumorChance()); if(hit)noteRumor('pale'); return hit; }
 /* atmospheric whispers — drip the world into the player run by run */
 const WHISPERS={
   0:['You hear something turn over in its sleep, far below.','Dust falls in still air. The crypt is listening.','A name is scratched into the stone — you do not know it. Yet.','The torches here are newer than the tombs.','A single boot lies forgotten. Its owner did not walk back this way.'],
@@ -1677,7 +1685,7 @@ const ABYSS_WHISPERS=[
   'Someone is waiting at the very bottom of this. They have been you for far longer than you have, and they are patient about it.',
 ];
 function whisperFor(d){
-  if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)) return pick(PALE_INSCRIPTIONS);
+  if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)){ noteRumor('pale'); return pick(PALE_INSCRIPTIONS); }
   if(G.abyss) return chance(60)?pick(ABYSS_WHISPERS):pick(WHISPERS[3]);
   return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
 /* boss bios — shown the first time you meet each boss across all your runs */
@@ -2883,9 +2891,9 @@ function renderCollector(){ const p=G.player; discoverLore('l8'); const bs=bestI
     </div>${statusFooter()}`;
 }
 function collectorPay(kind){ const p=G.player;
-  if(kind==='item'){ const bs=bestItem(p); if(bs){ const it=unequip(p,bs); G.debt=0; G.collectorEta=0; SFX.play('door'); return proceed(`You surrender the ${it.name}. The Collector fades. Your debt is paid.`); } }
+  if(kind==='item'){ const bs=bestItem(p); if(bs){ const it=unequip(p,bs); G.debt=0; G.collectorEta=0; noteCollectorPaid('item'); SFX.play('door'); return proceed(`You surrender the ${it.name}. The Collector fades. Your debt is paid.`); } }
   if(kind==='tribute'){ const goldPaid=p.gold,essPaid=Math.floor(p.essence/2),hpCost=Math.round(p.maxHp*0.15);
-    p.gold=0; p.essence-=essPaid; hurt(p,hpCost,'debt'); G.debt=0; G.collectorEta=0; SFX.play('gold');
+    p.gold=0; p.essence-=essPaid; hurt(p,hpCost,'debt'); G.debt=0; G.collectorEta=0; noteCollectorPaid('tribute'); SFX.play('gold');
     if(p.hp<=0){G.screen='gameover';return render();}
     showInfo({title:'THE COLLECTOR &mdash; PAID',body:`<p class="shout-red" style="font-size:11px;line-height:1.8">You empty your purse and your veins. <b>${goldPaid} gold, ${essPaid} essence, ${hpCost} HP</b> &mdash; the debt is gone. For now.</p>`});
     return proceed('You empty your purse and your veins. The Collector is satisfied — for now.'); }
@@ -2995,11 +3003,131 @@ let _invReturn='corridor';
 function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
 function closeInventory(){ G.screen=_invReturn; render(); }
 function setInvTab(t){ G._invTab=t; SFX.play('click'); render(); }
+// =====================================================================================
+// THE SAGA TAB — surfaces the cross-run history that already exists in localStorage so the player
+// can FEEL the accumulation. No new state; just visualization. Sections:
+//   1) THE RECORD        runs / triumphs / deepest / lifetime borrowed
+//   2) THE FALLEN        per-boss kill count and death count (silhouettes for never-met)
+//   3) ANCHOR NPCS       met-count + stage-aware single-line subtitle
+//   4) DISCOVERIES       seen vs rumored vs unseen (silhouettes preserve the letter shape)
+//   5) RUMORS HEARD      fragment counters per topic — knows you know something, not what
+//   6) THE COLLECTOR     marked / met / paid (items / tribute / fought)
+// Unseen content is shown as ▣ blocks (same letter count as the real title) so players see
+// the SHAPE of the long tail without spoilers.
+// =====================================================================================
+// Per-NPC stage-aware subtitle. Reflects the current persistent state in the player's saga so
+// they SEE the relationship evolve. Returns null when never met.
+function sagaNpcLine(id){ const n=npcState(id); if(!n.met)return null;
+  const lines={
+    lantern: [
+      'Met once. Hands you a small green lantern that hums against your palm.',
+      'Recognises you now. Has stopped expecting the appointment to end.',
+      'Has stopped counting your deaths out loud.'],
+    cartog: [
+      'Recognises you on sight. Slides a fresh sheet of paper out without speaking.',
+      'Marks a small black cross at the bottom of his map when you arrive.',
+      'Knows you are coming before you arrive.'],
+    cardinal: [
+      'Has greeted you twice. The unface orients toward you patiently.',
+      'Says his patient god is starting to recognise you.',
+      'His god is starting to be afraid of what you are becoming.'],
+    scholar: [
+      `${Math.max(0,(loadRecords().runs||1)-1)} closed ledgers stacked beside her, in pale leather.`,
+      'Writes your name without looking up.',
+      'No longer turns the ledger toward you. She knows you have seen the column.'],
+    wsmith: [
+      'Snaps blades at his anvil. Hands you one without being asked.',
+      'The stack of broken blades is taller than last time.',
+      'Has stopped crying. That is somehow worse.'],
+    watcher: [
+      'Chained to his pillar. Recognises something in you.',
+      'Says you carry more of HIM each visit. He sounds tired.',
+      'Watches you go past in silence now. He has stopped asking you to stop.']};
+  const tier = n.met>=4?2 : n.met>=2?1 : 0;
+  return (lines[id]||['','',''])[tier];
+}
+// Long catalog of discoveries — both seen and unseen — so silhouettes promise the shape of more.
+// Names matched to the DISCOVERIES array in the code; titles are the player-facing strings used in
+// the build() functions, in the SAME ORDER, so a player who hasn't seen them gets a consistent
+// silhouette letter count.
+const SAGA_DISCOVERY_CATALOG=[
+  {id:'blackfount', title:'THE BLACK FOUNTAIN'},
+  {id:'faceless',   title:'AN ECHO WITH NO FACE'},
+  {id:'still_mirror', title:'THE STILL MIRROR'},
+  {id:'gorge',      title:'THE GORGE'},
+  {id:'abyss_echo', title:'A DISTORTED ECHO'},
+  {id:'tallywall',  title:'THE TALLY WALL', once:true},
+];
+function silhouette(s){ return s.replace(/[A-Za-z0-9]/g,'▣'); }
+function loadDiscSet(){ try{ return new Set(JSON.parse(localStorage.getItem('crypt_disc')||'[]')); }catch(e){ return new Set(); } }
+// Whether a given discovery has been SEEN this run (via G._discoveryEntered tracking the last id).
+// For once-ever discoveries we trust crypt_disc. For repeatable ones we can't truly know without a
+// per-run-seen log; we treat any once-ever as seen-when-in-crypt_disc and repeatable as seen-when
+// any rumor fragment exists (best-effort soft-knowledge — never spoils).
+function discoverySeen(d){ const set=loadDiscSet(); if(d.once) return set.has(d.id); return set.has(d.id) || !!(G._sagaDiscSeen && G._sagaDiscSeen[d.id]); }
+function renderSagaBody(){ const p=G.player; const r=loadRecords();
+  // ----- 1) THE RECORD -----
+  const wins=r.wins||0, runs=r.runs||0, winPct = runs?Math.round(wins/runs*100):0;
+  const deepest=r.deepest||0;
+  const recordRow=`<div class="slot" style="border-left-color:var(--amber)">
+    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Runs</span><span>${runs}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Triumphs</span><span class="green">${wins}${runs?` &middot; ${winPct}%`:''}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Deepest</span><span class="purple">${deepest?(deepest>RUN_LENGTH?'Abyss floor '+(deepest-RUN_LENGTH):'chamber '+deepest):'—'}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Borrowed lifetime</span><span class="amber">${r.borrowedTotal||0}</span></div></div>`;
+  // ----- 2) THE FALLEN -----
+  // Show ALL bosses, sorted by kills desc then deaths desc; silhouette names for never-met ones.
+  const bossOrder=['gobking','ogre','spider','warden','demon','lich','flameknight','dragon','king','devourer','remembered','paledevourer'];
+  const kills=r.bossKills||{}, deaths=r.bossDeaths||{};
+  const knownKey=k=>(kills[k]||0)>0 || (deaths[k]||0)>0;
+  const visible=bossOrder.filter(knownKey).sort((a,b)=>((kills[b]||0)-(kills[a]||0))||((deaths[b]||0)-(deaths[a]||0)));
+  const hiddenCount=bossOrder.filter(k=>!knownKey(k)).length;
+  const fallenRows=visible.length?visible.map(k=>{ const name=BOSSES[k]?BOSSES[k].name:k; const kc=kills[k]||0, dc=deaths[k]||0;
+    return `<div class="slot" style="display:flex;justify-content:space-between;align-items:center">
+      <span>${name}</span><span class="muted" style="font-size:9px">⚔ <span class="red">${kc}</span> &nbsp; ☠ <span class="purple">${dc}</span></span></div>`;}).join(''):'<div class="slot muted">No bosses fought yet.</div>';
+  // ONE merged silhouette row for everything you've never even met — preserves the SHAPE of "there's
+  // more out there" without naming bosses you haven't seen.
+  const hiddenRow = hiddenCount>0 ? `<div class="slot muted" style="display:flex;justify-content:space-between;align-items:center"><span>▣▣▣ ▣▣▣▣ ▣▣▣▣▣ <span class="muted" style="font-size:8px;opacity:.7">(${hiddenCount} more never met)</span></span><span class="muted">?</span></div>` : '';
+  // ----- 3) ANCHOR NPCS -----
+  const npcs=[{id:'lantern',name:'THE LANTERN KEEPER'},{id:'cartog',name:'THE LAST CARTOGRAPHER'},{id:'cardinal',name:'THE CARDINAL WITHOUT A FACE'},{id:'scholar',name:'THE FROZEN SCHOLAR'},{id:'wsmith',name:'THE WEEPING SMITH'},{id:'watcher',name:'THE WATCHFUL PRISONER'}];
+  const npcRows=npcs.map(n=>{ const st=npcState(n.id); const sub=sagaNpcLine(n.id);
+    if(!st.met) return `<div class="slot muted" style="opacity:.65"><span>${silhouette(n.name)}</span><br><span class="muted" style="font-size:8px">never met</span></div>`;
+    return `<div class="slot" style="border-left-color:var(--teal)"><span class="teal">${n.name}</span> <span class="muted" style="font-size:8px">met ${st.met}</span><br><span class="muted" style="font-size:8px;line-height:1.8">"${sub}"</span></div>`;}).join('');
+  // ----- 4) DISCOVERIES -----
+  const set=loadDiscSet();
+  const discRows=SAGA_DISCOVERY_CATALOG.map(d=>{ const seen=discoverySeen(d);
+    if(seen) return `<div class="slot" style="border-left-color:var(--green);font-size:10px"><span class="green">✓</span> ${d.title}</div>`;
+    return `<div class="slot muted" style="opacity:.65;font-size:10px"><span class="muted">◯</span> ${silhouette(d.title)} <span class="muted" style="font-size:8px;opacity:.6">${d.once?'(once-ever)':'(rumored)'}</span></div>`;}).join('');
+  // ----- 5) RUMORS HEARD -----
+  const rumors=r.rumors||{};
+  const known = [['pale','THE PALE DEVOURER',rumors.pale||0]];
+  // Hidden rumor topics — one merged silhouette so the player knows there are mysteries left.
+  const rumorRows = known.map(([k,name,n])=>n>0
+    ? `<div class="slot" style="border-left-color:var(--purple);font-size:10px;display:flex;justify-content:space-between"><span class="purple">◆ ${name}</span><span class="muted">${'·'.repeat(Math.min(8,n))} (${n})</span></div>`
+    : `<div class="slot muted" style="opacity:.55;font-size:10px"><span class="muted">◆ ${silhouette(name)}</span></div>`).join('')
+    + `<div class="slot muted" style="opacity:.5;font-size:10px"><span class="muted">◆ ▣▣▣ ▣▣▣ ▣▣▣▣ ▣▣▣</span></div>`;
+  // ----- 6) COLLECTOR -----
+  const cm=r.collectorMet||0, cp=r.collectorPaid||{}, paidItem=cp.item||0, paidTribute=cp.tribute||0, fought=cp.fought||0;
+  const collRow = (cm||paidItem||paidTribute||fought)
+    ? `<div class="slot" style="border-left-color:var(--amber)">
+        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Met</span><span>${cm}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Paid in items</span><span>${paidItem}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Paid in blood</span><span>${paidTribute}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">Fought</span><span class="red">${fought}</span></div></div>`
+    : `<div class="slot muted" style="opacity:.65;font-size:10px">never met — but the debt remembers</div>`;
+  return `
+    <p class="muted" style="font-size:8px;line-height:1.7;margin-bottom:6px">Every run leaves a mark. This is what the crypt remembers about you.</p>
+    <h3 class="amber ivh">THE RECORD</h3>${recordRow}
+    <h3 class="red ivh">THE FALLEN</h3>${fallenRows}${hiddenRow}
+    <h3 class="teal ivh">ANCHOR NPCS</h3>${npcRows}
+    <h3 class="green ivh">DISCOVERIES</h3>${discRows}
+    <h3 class="purple ivh">RUMORS YOU HAVE HEARD</h3>${rumorRows}
+    <h3 class="amber ivh">THE COLLECTOR</h3>${collRow}`;
+}
 function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
   const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
   // Tab labels name their contents — players were missing skills / sets / relics because "POWERS"
   // didn't say what was inside. GEAR holds armor sets; SKILLS holds skills, paths, relics, synergies.
-  const tabs=`<div class="invtabs">${tb('gear','&#9876; GEAR &amp; SETS')}${tb('powers','&#10022; SKILLS &amp; BUILD')}${tb('best','&#128050; BEASTS')}${tb('lore','&#128220; LORE')}</div>`;
+  const tabs=`<div class="invtabs">${tb('gear','&#9876; GEAR &amp; SETS')}${tb('powers','&#10022; SKILLS &amp; BUILD')}${tb('best','&#128050; BEASTS')}${tb('lore','&#128220; LORE')}${tb('saga','&#9774; SAGA')}</div>`;
   const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
   let body='';
   if(tab==='gear'){
@@ -3033,6 +3161,8 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       ?`<div class="slot" style="border-left-color:var(--amber)"><span class="amber">&#128220; ${l.t}</span><br><span style="font-size:8px;line-height:1.8;color:#cfcbef">${l.x}</span></div>`
       :`<div class="slot muted">&#128274; ??? &mdash; undiscovered</div>`).join('');
     body=`<h3 class="amber ivh">THE CODEX &mdash; ${found}/${LORE.length}</h3><p class="muted" style="font-size:8px;line-height:1.8">Fragments uncovered at story beats — descending, felling bosses, meeting the dead. They persist across every run.</p>${rows}`;
+  } else if(tab==='saga'){
+    body = renderSagaBody();
   }
   app.innerHTML=`<div class="floortag">INVENTORY &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
     <div class="panel fade room-in">${cur}${tabs}${body}
@@ -4092,6 +4222,8 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   // Trimmed so a careful player can stay below the cliff without skipping fights.
   const elites=b.enemies.filter(e=>e.elite).length;
   addHeat(2+elites); addMiasma(3+elites);
+  // Record every boss kill for the Saga tab's THE FALLEN section, ONCE per boss per fight.
+  Object.keys(BOSSES).forEach(k=>{ if(b.enemies.some(e=>e.name===BOSSES[k].name)) noteBossKill(k); });
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); G._pendingBossDeath='warden'; }
   // Devour can already have captured these bosses (via processDevourCast). Skip the legacy memory
@@ -4113,7 +4245,7 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   // under the bigger meta-reveal. Flagged here, fired in proceed().
   if(b.isFinal){ G._pendingTruth=1; }
   // Defeating the Collector burns away your debt
-  if(b.enemies.some(e=>e._collector)){ G.debt=0; G.collectorEta=0; blog('The Collector shatters — your debt dies with it.','lvl'); discoverLore('l8'); }
+  if(b.enemies.some(e=>e._collector)){ G.debt=0; G.collectorEta=0; noteCollectorPaid('fought'); blog('The Collector shatters — your debt dies with it.','lvl'); discoverLore('l8'); }
   SFX.play(b.hadBoss?'win':'gold');
   blog('The chamber is clear!','info'); render();
   setTimeout(()=>{
