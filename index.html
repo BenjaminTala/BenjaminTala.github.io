@@ -1608,6 +1608,13 @@ function recordRun(win){ const r=loadRecords(); r.runs=(r.runs||0)+1; if(win)r.w
 // Cross-run Time Debt ledger — feeds the Collector's "you again" recognition.
 function noteBorrow(amt){ const r=loadRecords(); r.borrowedTotal=(r.borrowedTotal||0)+amt; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
 function noteCollector(){ const r=loadRecords(); r.collectorMet=(r.collectorMet||0)+1; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
+// ============================================================
+// FIRST-RUN ONBOARDING — true the first time anyone opens the game (before any run has recorded).
+// Used to: skip the Omen screen, gate a guaranteed early relic + event, soften enemies ~12%, and
+// delay system-tutorial dogpiles so the player learns COMBAT before SYSTEMS.
+// ============================================================
+function isFirstRun(){ try{ return (loadRecords().runs||0)===0; }catch(e){ return false; } }
+function firstRunMul(){ return isFirstRun()?0.88:1; }   // enemy HP/ATK softener; off forever after run 1
 /* ============================================================
    NPC MEMORY — recurring characters that REMEMBER you between runs.
    Each anchor NPC stores a small per-NPC blob (stage, met-count, last-line) so a
@@ -2317,7 +2324,7 @@ function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'
    ============================================================ */
 function render(){
   setMusicForScreen();
-  ({title:renderTitle,class:renderClassSelect,omen:renderOmen,corridor:renderCorridor,room:renderRoom,
+  ({title:renderTitle,class:renderClassSelect,omen:renderOmen,tutorial:renderTutorial,corridor:renderCorridor,room:renderRoom,
     event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,triumph:renderTriumph,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
   const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
@@ -2384,8 +2391,65 @@ function renderClassSelect(){
 function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes();
   // Every champion begins with DEVOUR in the 4th slot. The skill mutates by killing.
   G.player.memory=makeDevourBase();
+  // FIRST-RUN PATH: skip Omen selection (one fewer screen of choice-with-no-context) and route into
+  // the 90-second guided combat. After the first run ends, omens unlock for run 2 onward.
+  if(isFirstRun()){
+    G.omen=OMENS[0]; G.omen.apply(G.mods,G.player); discoverLore('l1');
+    G.screen='tutorial'; render(); return; }
   G.omenChoices=shuffle(OMENS.filter(o=>o.id!=='none')).slice(0,2); G.omenChoices.unshift(OMENS[0]); G.omenChoices=shuffle(G.omenChoices);
   G.screen='omen'; render(); }
+/* ---------- TUTORIAL — guided 3-round combat, only on the very first run ---------- */
+function renderTutorial(){ const p=G.player;
+  // The opener teaches VERBS (attack/defend/dodge/intent), not SYSTEMS. We do it with a hand-shaped
+  // "Stray Goblin" outside the run proper, so a brand-new player learns the combat surface before
+  // any concept (Heat/Miasma/Debt/Devour/Affinity) appears. After it ends, the real run begins.
+  if(!G._tutB){
+    const hp=22; G._tutB={hp,maxHp:hp,atk:6,intent:'attack',name:'Stray Goblin',round:0,over:false,msg:''}; }
+  const t=G._tutB;
+  const intentLabel=t.intent==='attack'?`<span class="red">ATTACK</span> &mdash; will hit for ~${t.atk}`:t.intent==='heavy'?`<span class="red">HEAVY</span> &mdash; will hit hard, DEFEND now!`:'<span class="amber">DOZING</span> &mdash; it is your free turn';
+  app.innerHTML=`<div class="floortag"><span class="amber">PROLOGUE</span> &middot; LEARN THE VERBS</div>
+    <div class="panel fade room-in">
+      <h3 class="center amber" style="font-size:11px;margin-bottom:6px">A STRAY GOBLIN BARS THE WAY</h3>
+      <p class="muted center" style="font-size:9px;line-height:1.7;margin-bottom:8px">Before the descent, learn the four verbs every champion uses.</p>
+      <pre class="sprite teal" style="font-size:10px">  ,---,\n ( o o )\n  )___( \n  /| |\\</pre>
+      <div class="stats center" style="font-size:10px;margin:6px 0"><b class="red">GOBLIN HP</b> ${t.hp}/${t.maxHp}<br><b class="amber">INTENT</b> &mdash; ${intentLabel}</div>
+      <div class="stats center" style="font-size:10px"><b class="red">YOU HP</b> ${p.hp}/${p.maxHp}</div>
+      ${t.msg?`<p class="evtext center" style="font-size:10px;margin:8px 0">${t.msg}</p>`:''}
+      <button class="btn red" onclick="tutorialAct('attack')"><span class="k">&#9876;</span>ATTACK<small>deal damage equal to your power</small></button>
+      <button class="btn" onclick="tutorialAct('defend')"><span class="k">&#9747;</span>DEFEND<small>halve the next incoming hit</small></button>
+      <button class="btn" onclick="tutorialAct('dodge')"><span class="k">&#10548;</span>DODGE<small>50% chance to take ZERO damage</small></button>
+      <button class="btn muted" onclick="tutorialSkip()"><span class="k">&#9654;</span>SKIP TUTORIAL<small>go straight to the crypt</small></button>
+    </div>
+    <p class="muted center" style="font-size:8px;line-height:1.7;margin-top:8px;opacity:.85">Once you kill the goblin, the throne calls you down.</p>`;
+}
+function tutorialAct(action){ const p=G.player; const t=G._tutB; if(t.over) return; t.round++;
+  // Player turn first
+  if(action==='attack'){ const d=Math.max(3,Math.round(p.atk*0.6)); t.hp=Math.max(0,t.hp-d); SFX.play('hit'); t.msg=`You strike the goblin for <b>${d}</b>.`; }
+  else if(action==='defend'){ t._pdef=1; SFX.play('block'); t.msg='You raise your guard. The next hit will land softer.'; }
+  else if(action==='dodge'){ t._dodge=1; SFX.play('dodge'); t.msg='You shift your weight. There is a chance the next hit misses entirely.'; }
+  if(t.hp<=0){ tutorialWin(); return; }
+  // Enemy reveals what it actually does, based on the intent it had telegraphed
+  const willHeavy = t.intent==='heavy';
+  if(t.intent==='doze'){ t.msg+=' The goblin yawns and does nothing this round.'; }
+  else { let dmg = willHeavy ? Math.round(t.atk*1.6) : t.atk;
+    if(t._dodge && Math.random()<0.5){ t.msg+=' <span class="amber">You dodge entirely!</span>'; dmg=0; }
+    else if(t._pdef){ dmg=Math.max(1,Math.round(dmg*0.5)); t.msg+=` Your guard catches it &mdash; you take only <b>${dmg}</b>.`; }
+    else { t.msg+=` The goblin hits you for <b>${dmg}</b>.`; }
+    p.hp=Math.max(1,p.hp-dmg);   // never lethal in the tutorial; floor 1 HP
+  }
+  t._pdef=0; t._dodge=0;
+  // Re-telegraph next intent (rotating attack -> heavy -> doze -> attack so the player sees each)
+  t.intent = t.intent==='attack' ? 'heavy' : t.intent==='heavy' ? 'doze' : 'attack';
+  render();
+}
+function tutorialWin(){ const t=G._tutB; t.over=true; SFX.play('win');
+  showInfo({title:'YOU HAVE LEARNED THE VERBS',body:
+    `<p class="shout" style="font-size:11px;line-height:1.8">Attack does damage. Defend halves the next hit. Dodge gambles. The enemy <b>tells you what it will do</b> on its next turn &mdash; read the INTENT, then choose.</p>
+     <p class="muted" style="font-size:10px;line-height:1.7;margin-top:8px">Below the throne, you will gather gear, relics, allies and enemies. You will learn the deeper systems as you meet them. For now &mdash; the crypt is waiting.</p>`});
+  G._tutB=null; G._postTutorial=1; G._firstRelicQueued=1; G._firstEventQueued=1;
+  nextCorridor(); G.screen='corridor'; render(); }
+function tutorialSkip(){ G._tutB=null; G._firstRelicQueued=1; G._firstEventQueued=1;
+  nextCorridor(); G.screen='corridor'; render(); }
 /* ---------- OMEN ---------- */
 function renderOmen(){
   const cards=G.omenChoices.map((o,i)=>`<button class="btn" onclick="chooseOmen(${i})">
@@ -2649,6 +2713,12 @@ function discoveryRoom(depth){
 function makeRoom(depth){
   if(BOSS_CHAMBERS[depth]!==undefined){ const key=pick(BOSS_POOL[BOSS_CHAMBERS[depth]]);
     return {type:'enemy',boss:key,peek:peek(depth===RUN_LENGTH?'bossFinal':'boss')}; }
+  // First-run scripted beats — at most one is taken from a corridor (the FIRST door rolled);
+  // the rest of the corridor's doors keep their natural variety so the player still chooses.
+  if(G._firstRelicQueued && depth===2 && !G._firstRelicPlaced){ G._firstRelicPlaced=1; G._firstRelicQueued=0;
+    return {type:'relic',peek:peek('relic')}; }
+  if(G._firstEventQueued && depth===4 && !G._firstEventPlaced){ G._firstEventPlaced=1; G._firstEventQueued=0;
+    return {type:'event',ev:pickEvent(),peek:peek('event')}; }
   // The Abyss has its own signature room — a distorted echo turns up now and then in the deep, so the
   // endless game has a recurring face the main run never shows. Rare enough to stay unsettling (~8%).
   if(G.abyss && chance(4)){ const ev=distortedEchoEvent(); return {type:'event', ev, peek:ev._peek}; }
@@ -3018,7 +3088,9 @@ function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,ms
    ENEMY BUILD / SCALING
    ============================================================ */
 function newStatus(){ return {burn:0,burnT:0,poison:0,poisonT:0,weak:0,weakT:0,vuln:0,vulnT:0,stunT:0,regen:0,regenT:0}; }
-function freshEnemy(o){ return Object.assign({st:newStatus(),_dead:false},o); }
+function freshEnemy(o){ const m=firstRunMul();
+  if(m!==1){ if(o.hp)o.hp=Math.max(1,Math.round(o.hp*m)); if(o.maxHp)o.maxHp=Math.max(1,Math.round(o.maxHp*m)); if(o.atk)o.atk=Math.max(1,Math.round(o.atk*m)); }
+  return Object.assign({st:newStatus(),_dead:false},o); }
 function applyAffix(e,affix){
   if(!affix) return e;
   e.name=affix.tag+' '+e.name; e.elite=true;
@@ -3545,7 +3617,10 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
   // First-kill Devour explainer — gated by localStorage so it shows once across all runs.
-  try{ if(!localStorage.getItem('crypt_seen_devour') && p.memory && p.memory.devour){
+  // On the very first run we ADDITIONALLY hold it until chamber 8+, so it doesn't pile onto the
+  // attack/defend/dodge teaching in the first few chambers.
+  try{ if(!localStorage.getItem('crypt_seen_devour') && p.memory && p.memory.devour
+       && !(isFirstRun() && G.depth<8) ){
     localStorage.setItem('crypt_seen_devour','1');
     G._buildQueue=G._buildQueue||[];
     G._buildQueue.push({title:'YOUR 4TH SKILL',
