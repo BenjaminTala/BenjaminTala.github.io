@@ -3025,7 +3025,9 @@ function planIntent(e,b){
   if(e.caster){
     const wounded=(b.enemies||[]).find(x=>x.hp>0 && x.hp<x.maxHp*0.55 && x!==e);
     if(wounded && chance(45)){
-      const h=Math.max(8,Math.round(wounded.maxHp*0.20));
+      // Priest heals are now a real threat (30% of ally maxHP, was 20%) so killing the healer
+      // FIRST becomes a genuine target-priority decision instead of always hitting lowest HP.
+      const h=Math.max(10,Math.round(wounded.maxHp*0.30));
       e.intent={kind:'heal', label:`HEAL ally +${h}`, value:h, targetIdx:b.enemies.indexOf(wounded)};
       return;
     }
@@ -3223,6 +3225,13 @@ function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.
   blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${b.enemies.length>1?` [${e.name}]`:''}`,crit?'crit':'dmg');
   if(p.lifesteal>0&&!e.bloodless){ const ls=Math.max(1,Math.round(dmg*p.lifesteal/100)); heal(p,ls); blog(`You drain ${ls} HP.`,'heal'); }
   if(crit&&p.affTier.g>=3){ p.mana=clamp(p.mana+5,0,p.maxMana); }
+  // INTERRUPT WINDOW — a heavy single blow (>=15% of the enemy's max HP) SHATTERS a telegraphed
+  // charge/cataclysm. Gives every class a way to answer a telegraph through burst, not just stun,
+  // and makes "focus the charging threat" a real decision instead of always killing lowest-HP.
+  if(e.hp>0 && e.intent && (e.intent.kind==='charge'||e.intent.kind==='unleash') && dmg>=e.maxHp*0.18){
+    blog(`${e.name}'s ${e.intent.kind==='unleash'?'cataclysm':'charge'} SHATTERS under your blow!`,'crit');
+    SFX.play('crit'); e.intent=null;
+  }
   if(e.hp<=0) onEnemyDeath(e);
   return dmg; }
 function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
@@ -3462,7 +3471,7 @@ function afterPlayer(){ const b=G.battle;
   if(miasmaActive() && miasmaTier()>=3 && chance(11)) blog(pick(HALLUCINATIONS),'info');
   render(); setTimeout(enemyTurn,560); }
 // One-shot physical hit pipeline. Used by attack/heavy/unleash intents.
-function applyEnemyHit(e,p,b,baseDmg,label){
+function applyEnemyHit(e,p,b,baseDmg,label,kind){
   let dmg=baseDmg;
   if(e.st.weakT>0)dmg=Math.round(dmg*(1-e.st.weak));
   if(e._frostRamp) dmg=Math.round(dmg*(1+e._frostRamp));
@@ -3475,6 +3484,9 @@ function applyEnemyHit(e,p,b,baseDmg,label){
   const dodgeChance=Math.max(0,Math.min(55,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
   if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; return; }
   let red=(b.pdefTurns>0?b.pdef:0);
+  // Shield Wall is the deliberate answer to a telegraphed HEAVY/UNLEASH — guard blocks far more of
+  // a big, announced blow than of a basic swing. Now seeing "UNLEASH" is a reason to raise guard.
+  if(red>0 && (kind==='heavy'||kind==='unleash')){ red=Math.min(0.85, red+0.20); blog('Your guard catches the brunt of it!','info'); }
   dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.6)));
   if(b.guardDown>0)dmg=Math.round(dmg*1.3);
   if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
@@ -3501,7 +3513,7 @@ function executeIntent(e,p,b){
   const it=e.intent; if(!it) return;
   switch(it.kind){
     case 'charge':
-      blog(`${e.name} is charging &mdash; ${it.turns} turn(s) until it lands.`,'info');
+      blog(`${e.name} is charging &mdash; ${it.turns} turn(s) until it lands. STUN it, break it with a heavy blow, or raise your guard!`,'info');
       return;
     case 'enrage':
       e.atk += it.value;
@@ -3522,11 +3534,11 @@ function executeIntent(e,p,b){
     case 'vuln':  addVuln(b.pst, it.value); blog(`${e.name} marks you VULNERABLE!`,'info'); return;
     case 'manaburn':{ const mb=Math.min(p.mana,Math.round(p.maxMana*0.20)+4); if(mb>0){p.mana-=mb; blog(`${e.name} BURNS ${mb} mana from you!`,'dmg');} else blog(`${e.name} reaches for mana you do not have.`,'info'); return; }
     case 'unleash':
-      applyEnemyHit(e,p,b,it.value,`${e.name} UNLEASHES its cataclysm`);
+      applyEnemyHit(e,p,b,it.value,`${e.name} UNLEASHES its cataclysm`,'unleash');
       // Combo phase still applies post-unleash for late-game bosses
       return;
     case 'heavy':
-      applyEnemyHit(e,p,b,it.value,`${e.name} HEAVY strike`);
+      applyEnemyHit(e,p,b,it.value,`${e.name} HEAVY strike`,'heavy');
       return;
     case 'attack':
     default:
@@ -3540,7 +3552,13 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   const zone=zoneOf(G.depth);
   for(const e of b.enemies){
     if(e.hp<=0)continue; if(p.hp<=0)break;
-    if(e.st.stunT>0){ blog(`${e.name} is stunned and cannot act!`,'info'); e.st.stunT--; continue; }
+    if(e.st.stunT>0){ blog(`${e.name} is stunned and cannot act!`,'info'); e.st.stunT--;
+      // Stun is a true interrupt — it CANCELS a telegraphed charge/cataclysm. (Boss phase-2 can
+      // still re-arm later, so this rewards the interrupt without trivializing the boss.)
+      if(e.intent && (e.intent.kind==='charge'||e.intent.kind==='unleash')){
+        blog(`${e.name}'s ${e.intent.kind==='unleash'?'cataclysm':'charge'} is INTERRUPTED by the stun!`,'crit'); e.intent=null;
+      }
+      continue; }
     e._alive=(e._alive||0)+1;
     if(zone>=2 && e._alive===3){ blog(`${e.name} steadies its stance &mdash; growing more dangerous.`,'info'); }
     if(zone>=2 && e._alive>=3 && !e.boss){
