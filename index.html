@@ -28,7 +28,8 @@
   .blink{animation:blink 1s steps(2,start) infinite}@keyframes blink{to{visibility:hidden}}
   .panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5);padding:12px;margin-bottom:10px;}
   .panel.tight{padding:9px 12px;margin-bottom:8px}
-  .panel.tight{padding:12px}
+  .pstrip .track.xpline{height:5px;margin-top:3px;border-width:1px}
+  .pstrip .stats.pstats{font-size:8.5px;line-height:1.7;margin-top:4px;color:var(--dim)}
   .center{text-align:center}.muted{color:var(--dim)}
   .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
   pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
@@ -1715,7 +1716,7 @@ const ABYSS_WHISPERS=[
   'Someone is waiting at the very bottom of this. They have been you for far longer than you have, and they are patient about it.',
 ];
 function whisperFor(d){
-  if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)){ noteRumor('pale'); return pick(PALE_INSCRIPTIONS); }
+  if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)){ return pick(PALE_INSCRIPTIONS); }   // paleRumor() already noteRumor'd — don't double-count
   if(G.abyss) return chance(60)?pick(ABYSS_WHISPERS):pick(WHISPERS[3]);
   return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
 /* boss bios — shown the first time you meet each boss across all your runs */
@@ -1768,7 +1769,8 @@ function showBossDeath(key){ if(!BOSS_DEATHCRY[key]||!BOSSES[key])return;
   showInfo({title:BOSSES[key].name+' — falls',body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_DEATHCRY[key]}</p>`}); }
 let G=null;
 function defaultMods(){ return {eDmg:1.06,eHp:1.06,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.22,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
-function newGame(){ G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
+function newGame(){ try{clearTimeout(G&&G._navTimer);}catch(e){}   // don't orphan the prior run's nav-lock timer
+  G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
   heat:0,miasma:0,collapsed:0,dmgBy:{},debt:0,collectorEta:0,_forceCollector:0}; }
 newGame();
 
@@ -2243,12 +2245,12 @@ function showFragmentChoice(){
   const combo=evolveCombo(d, fam);
   const evolveLabel=combo?combo.name:`Bind in ${fdef.label}`;
   const evolveDesc=combo
-    ? `${combo.desc} <span class="amber">(+0.35 damage scaling)</span>`
-    : `Add <b>${fdef.desc}</b> to ${d.name}, +0.20 damage scaling.`;
+    ? `${combo.desc} <span class="amber">&mdash; a stronger hunger.</span>`
+    : `Add <b>${fdef.desc}</b> to ${d.name}. It grows hungrier.`;
   const empowerLabel=`Deepen ${d.name}`;
-  const empowerDesc=`Improve current path. +0.25 damage scaling, effects last longer.`;
+  const empowerDesc=`Sharpen the current path &mdash; it strikes harder and its effects linger.`;
   const replaceLabel=`Become ${fdef.label} Strike`;
-  const replaceDesc=`Abandon ${d.name} entirely. Adopt a pure ${fdef.label} skill (${fdef.desc}). Resets to 2.0x + slayer momentum.`;
+  const replaceDesc=`Abandon ${d.name} for a pure ${fdef.label} skill (${fdef.desc}). It begins fresh, and fierce.`;
   const body=
     `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; You ${verb} a <b>${fdef.label} ${noun}</b>.</p>`+
     `<p class="muted" style="font-size:9px;margin:8px 0">Current: <b>${d.name}</b> &middot; path: ${d.path.length?d.path.join(' &rarr; '):'(none)'}</p>`+
@@ -3028,12 +3030,10 @@ function doorHint(room){
   // Boss doors keep their dread line — the player already KNOWS it's the boss (the door is labelled
   // "THE BOSS DOOR"), so this isn't a room-type leak, it's tension.
   if(room.boss) return room.peek||'The door is older than the rest. It does not want to be opened.';
-  // Everything else: a sensory clue with NO correlation to what's behind it. Cached per door object
-  // so it stays stable across re-renders. Chambers 1-3 keep the slightly-clearer type hint that
-  // makeRoom set (the tutorial exception); after that the crypt stops telling you what it holds.
-  if(room._clue==null){
-    room._clue = (!G.abyss && G.depth<=3 && room.peek) ? room.peek : doorClue();
-  }
+  // Everything else: a sensory clue with NO correlation to what's behind it (material, smell, sound,
+  // light under the frame...). The crypt never tells you what a room holds — you infer, and sometimes
+  // guess wrong. Cached per door object so it stays stable across re-renders.
+  if(room._clue==null) room._clue = doorClue();
   return room._clue;
 }
 function nextCorridor(){ G.depth++;
@@ -3756,7 +3756,7 @@ function intentBadgeHtml(e){
   const d=INTENT_DISPLAY[e.intent.kind]||INTENT_DISPLAY.attack;
   return `<div class="intent ${d.cls}" title="${escAttr('Next action: '+(e.intent.label.replace(/&[a-z]+;/g,'')))}"><span class="i-ico">${d.ico}</span> ${e.intent.label}</div>`;
 }
-function setTarget(i){ if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }
+function setTarget(i){ if(battleBusy())return; if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }   // retarget only on your turn (don't let it bypass the lock / wipe damage floats mid-enemy-turn)
 function stChips(st){ let c='';
   if(st.burnT>0)   c+=`<span class="chip c-burn" title="BURN — ${Math.max(1,Math.round(st.burn))} damage at end of every turn. ${st.burnT} turn(s) left.">BURN ${st.burnT}</span>`;
   if(st.poisonT>0) c+=`<span class="chip c-pois" title="POISON — ${Math.max(1,Math.round(st.poison))} damage at end of every turn. ${st.poisonT} turn(s) left.">PSN ${st.poisonT}</span>`;
@@ -4360,6 +4360,7 @@ function flash(kind){ const scene=$('scene');
   setTimeout(()=>{ if(G.battle){G.battle.anim='';G.battle.animIdx=-1;} },300); }
 function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   G._curBossKey=null;   // survived — a later mob death must not attribute to this boss
+  b._lock=false;        // explicit (battle's over anyway, but don't leave a stuck lock behind)
   // carry ultimate charge to the next fight
   p._charge=clamp(b.charge||0,0,100);
   // Eternal Cyclone stacks per-fight ATK that must be unwound at battle end.
@@ -4701,23 +4702,19 @@ function affinityBar(p){
   return s;
 }
 function playerBar(p,full){
-  const relics=p.relics.length?`<div class="relics">${p.relics.map(r=>
-    `<span class="chip clickable" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`
-  ).join('')}</div>`:'';
+  // COMPACT out-of-combat strip. Only HP matters at a glance here; MP/ULT/XP become small inline
+  // text instead of four stacked tracks (the battle screen has its own full-resource portrait, so
+  // this is pure waste outside combat). Reclaims ~80-110px on every exploration/menu screen.
+  const ec=effCrit(p),ed=effDodge(p); const ch=p._charge||0;
   const xpPct=clamp(p.xp/xpNeeded(p.level)*100,0,100);
-  const ec=effCrit(p),ed=effDodge(p);
-  const ch=p._charge||0;
-  return `<div class="panel tight">
-    <div class="bar"><div class="lbl"><span class="green">HP ${CLASSES[p.cls].name} &middot; LV${p.level}</span><span>${p.hp}/${p.maxHp}</span></div>
-      <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div></div>
-    <div class="bar"><div class="lbl"><span class="blue">MP</span><span>${p.mana}/${p.maxMana}</span></div>
-      <div class="track"><div class="fill mp" style="width:${p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0}%"></div></div></div>
-    <div class="bar"><div class="lbl"><span class="purple">&#10022; ULT (carries between fights)</span><span>${ch>=100?'READY':Math.floor(ch)+'%'}</span></div>
-      <div class="track"><div class="fill chg ${ch>=100?'ready':''}" style="width:${clamp(ch,0,100)}%"></div></div></div>
-    <div class="bar xp"><div class="track"><div class="fill xpf" style="width:${xpPct}%"></div></div></div>
-    ${affinityBar(p)}
-    ${full?`<div class="stats">ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence}${ESS}</span></div>`:''}
-    ${full?relics:''}</div>`;
+  const mpPct=p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0;
+  const ultTag = ch>=100?' &middot; <span class="purple">&#10022; ULT READY</span>':'';
+  return `<div class="panel tight pstrip">
+    <div class="bar mini" style="margin:0 0 4px"><div class="lbl"><span class="green">${CLASSES[p.cls].name} &middot; LV${p.level}</span><span>${p.hp}/${p.maxHp} HP${ultTag}</span></div>
+      <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div>
+      <div class="track xpline"><div class="fill mp" style="width:${mpPct}%"></div></div></div>
+    <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple">&#9670;${p.relics.length}</span>`:''}</div>
+  </div>`;
 }
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
