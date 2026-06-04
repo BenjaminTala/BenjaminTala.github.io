@@ -1472,7 +1472,7 @@ const AFF_THRESH=[3,6,9];
 const AFF_META={w:{key:'w',name:'WRATH',color:'red'},g:{key:'g',name:'GUILE',color:'teal'},v:{key:'v',name:'VEIL',color:'blue'}};
 const AFF_TIER_TITLE={
   w:['','WRATH I: +12% damage &middot; RENDING EDGE — every 3rd strike sinks deeper (+60% dmg)','WRATH II: +12% damage, +8% crit','AVATAR OF WRATH: +15% dmg & your hits CLEAVE'],
-  g:['','GUILE I: +12% crit, +10% dodge &middot; FEINT — the strike after DEFEND is guaranteed crit','GUILE II: status effects last longer, +8% crit','TRICKSTER: basic hits inflict random status; crits refund mana'],
+  g:['','GUILE I: +12% crit, +10% dodge &middot; FEINT — the strike right after Shield Wall lands a guaranteed crit','GUILE II: status effects last longer, +8% crit','TRICKSTER: basic hits inflict random status; crits refund mana'],
   v:['','VEIL I: +18 max HP, +12 mana &middot; STEADY HEART — every 3rd hit you take heals you','VEIL II: regenerate HP each combat turn','WARDEN: begin each battle with a damage BARRIER'],
 };
 /* ---------- synergies (named relic-combo payoffs) ---------- */
@@ -2691,52 +2691,55 @@ function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMo
   G.screen='omen'; render(); }
 /* ---------- TUTORIAL — guided 3-round combat, only on the very first run ---------- */
 function renderTutorial(){ const p=G.player;
-  // The opener teaches VERBS (attack/defend/dodge/intent), not SYSTEMS. We do it with a hand-shaped
-  // "Stray Goblin" outside the run proper, so a brand-new player learns the combat surface before
-  // any concept (Heat/Miasma/Debt/Devour/Affinity) appears. After it ends, the real run begins.
+  // Teach the verbs that actually exist in real combat: ATTACK, POTION, and reading the enemy
+  // INTENT. The old tutorial pretended there were universal DEFEND and DODGE buttons; there aren't
+  // — defense is per-class (Warrior Shield Wall, Ranger Evade, Mage has neither). The wrap-up
+  // names SKILLS and ULTIMATE so the player isn't surprised by them below the throne.
   if(!G._tutB){
     const hp=22; G._tutB={hp,maxHp:hp,atk:6,intent:'attack',name:'Stray Goblin',round:0,over:false,msg:''}; }
   const t=G._tutB;
-  const intentLabel=t.intent==='attack'?`<span class="red">ATTACK</span> &mdash; will hit for ~${t.atk}`:t.intent==='heavy'?`<span class="red">HEAVY</span> &mdash; will hit hard, DEFEND now!`:'<span class="amber">DOZING</span> &mdash; it is your free turn';
+  const intentLabel=t.intent==='attack'?`<span class="red">ATTACK</span> &mdash; will hit for ~${t.atk}`:t.intent==='heavy'?`<span class="red">HEAVY</span> &mdash; a bigger blow incoming. Heal up, or finish it first.`:'<span class="amber">DOZING</span> &mdash; it is your free turn';
   app.innerHTML=`<div class="floortag"><span class="amber">PROLOGUE</span> &middot; LEARN THE VERBS</div>
     <div class="panel fade room-in">
       <h3 class="center amber" style="font-size:11px;margin-bottom:6px">A STRAY GOBLIN BARS THE WAY</h3>
-      <p class="muted center" style="font-size:9px;line-height:1.7;margin-bottom:8px">Before the descent, learn the four verbs every champion uses.</p>
+      <p class="muted center" style="font-size:9px;line-height:1.7;margin-bottom:8px">Before the descent, learn the verbs every fight asks of you.</p>
       <pre class="sprite teal" style="font-size:10px">  ,---,\n ( o o )\n  )___( \n  /| |\\</pre>
       <div class="stats center" style="font-size:10px;margin:6px 0"><b class="red">GOBLIN HP</b> ${t.hp}/${t.maxHp}<br><b class="amber">INTENT</b> &mdash; ${intentLabel}</div>
-      <div class="stats center" style="font-size:10px"><b class="red">YOU HP</b> ${p.hp}/${p.maxHp}</div>
+      <div class="stats center" style="font-size:10px"><b class="red">YOU HP</b> ${p.hp}/${p.maxHp} &middot; <b class="green">POTIONS</b> ${p.potions}</div>
       ${t.msg?`<p class="evtext center" style="font-size:10px;margin:8px 0">${t.msg}</p>`:''}
       <button class="btn red" onclick="tutorialAct('attack')"><span class="k">&#9876;</span>ATTACK<small>strike the goblin (about 3 will fell it)</small></button>
-      <button class="btn" onclick="tutorialAct('defend')"><span class="k">&#9747;</span>DEFEND<small>halve the next incoming hit</small></button>
-      <button class="btn" onclick="tutorialAct('dodge')"><span class="k">&#10548;</span>DODGE<small>50% chance to take ZERO damage</small></button>
+      <button class="btn green" onclick="tutorialAct('potion')" ${p.potions?'':'disabled'}><span class="k">&#10010;</span>POTION<small>heal ~30% of your max HP &middot; ${p.potions} left</small></button>
       <button class="btn muted" onclick="tutorialSkip()"><span class="k">&#9654;</span>SKIP TUTORIAL<small>go straight to the crypt</small></button>
     </div>
-    <p class="muted center" style="font-size:8px;line-height:1.7;margin-top:8px;opacity:.85">Once you kill the goblin, the throne calls you down.</p>`;
+    <p class="muted center" style="font-size:8px;line-height:1.7;margin-top:8px;opacity:.85">Real combat adds your class SKILLS and a charging ULTIMATE &mdash; you'll meet them below the throne.</p>`;
 }
 function tutorialAct(action){ const p=G.player; const t=G._tutB; if(t.over) return; t.round++;
   // Player turn first
   if(action==='attack'){ const d=8+rnd(2); t.hp=Math.max(0,t.hp-d); SFX.play('hit'); t.msg=`You strike the goblin for <b>${d}</b>.`; }   // fixed teaching damage — the lesson must be the same for every class (goblin dies in ~3 attacks)
-  else if(action==='defend'){ t._pdef=1; SFX.play('block'); t.msg='You raise your guard. The next hit will land softer.'; }
-  else if(action==='dodge'){ t._dodge=1; SFX.play('dodge'); t.msg='You shift your weight. There is a chance the next hit misses entirely.'; }
-  if(t.hp<=0){ tutorialWin(); return; }
-  // Enemy reveals what it actually does, based on the intent it had telegraphed
-  const willHeavy = t.intent==='heavy';
-  if(t.intent==='doze'){ t.msg+=' The goblin yawns and does nothing this round.'; }
-  else { let dmg = willHeavy ? Math.round(t.atk*1.6) : t.atk;
-    if(t._dodge && Math.random()<0.5){ t.msg+=' <span class="amber">You dodge entirely!</span>'; dmg=0; }
-    else if(t._pdef){ dmg=Math.max(1,Math.round(dmg*0.5)); t.msg+=` Your guard catches it &mdash; you take only <b>${dmg}</b>.`; }
-    else { t.msg+=` The goblin hits you for <b>${dmg}</b>.`; }
-    p.hp=Math.max(1,p.hp-dmg);   // never lethal in the tutorial; floor 1 HP
+  else if(action==='potion'){
+    if(!p.potions){ t.msg='You are out of potions.'; render(); return; }
+    p.potions--; const before=p.hp; const h=Math.round(p.maxHp*0.30); p.hp=Math.min(p.maxHp,p.hp+h);
+    SFX.play('potion'); t.msg=`You drink a potion and heal <b>${p.hp-before}</b>.`;
   }
-  t._pdef=0; t._dodge=0;
+  if(t.hp<=0){ tutorialWin(); return; }
+  // Enemy reveals what it actually does, based on the intent it had telegraphed.
+  // No more fake "you dodge" / "you guard" branches — the tutorial only teaches verbs that exist
+  // in real combat (ATTACK + POTION + reading INTENT). The HEAVY beat still teaches "watch the
+  // telegraph and heal in time" without inventing a universal block button.
+  if(t.intent==='doze'){ t.msg+=' The goblin yawns and does nothing this round.'; }
+  else { const willHeavy = t.intent==='heavy';
+    const dmg = Math.max(1, willHeavy ? Math.round(t.atk*1.6) : t.atk);
+    t.msg += ` The goblin hits you for <b>${dmg}</b>.`;
+    p.hp = Math.max(1, p.hp - dmg);   // never lethal in the tutorial; floor 1 HP
+  }
   // Re-telegraph next intent (rotating attack -> heavy -> doze -> attack so the player sees each)
   t.intent = t.intent==='attack' ? 'heavy' : t.intent==='heavy' ? 'doze' : 'attack';
   render();
 }
 function tutorialWin(){ const t=G._tutB; t.over=true; SFX.play('win');
   showInfo({title:'YOU HAVE LEARNED THE VERBS',body:
-    `<p class="shout" style="font-size:11px;line-height:1.8">Attack does damage. Defend halves the next hit. Dodge gambles. The enemy <b>tells you what it will do</b> on its next turn &mdash; read the INTENT, then choose.</p>
-     <p class="muted" style="font-size:10px;line-height:1.7;margin-top:8px">Below the throne, you will gather gear, relics, allies and enemies. You will learn the deeper systems as you meet them. For now &mdash; the crypt is waiting.</p>`});
+    `<p class="shout" style="font-size:11px;line-height:1.8">ATTACK does damage. POTION heals. The enemy <b>tells you what it will do</b> on its next turn &mdash; read the INTENT, then choose.</p>
+     <p class="muted" style="font-size:10px;line-height:1.7;margin-top:8px">Below the throne you will also wield your class <b>SKILLS</b>, an <b>ULTIMATE</b> that charges as you fight, and the option to <b>FLEE</b>. You will learn the deeper systems as you meet them. For now &mdash; the crypt is waiting.</p>`});
   G._tutB=null; G._postTutorial=1; G._firstRelicQueued=1; G._firstEventQueued=1;
   nextCorridor(); G.screen='corridor'; render(); }
 function tutorialSkip(){ G._tutB=null; G._firstRelicQueued=1; G._firstEventQueued=1;
@@ -4353,7 +4356,7 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
   // First-kill Devour explainer — gated by localStorage so it shows once across all runs.
   // On the very first run we ADDITIONALLY hold it until chamber 8+, so it doesn't pile onto the
-  // attack/defend/dodge teaching in the first few chambers.
+  // attack / potion / intent-reading teaching in the first few chambers.
   try{ if(!localStorage.getItem('crypt_seen_devour') && p.memory && p.memory.devour
        && !(isFirstRun() && G.depth<8) ){
     localStorage.setItem('crypt_seen_devour','1');
@@ -4428,8 +4431,8 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   // WRATH I — RENDING EDGE: every 3rd basic strike sinks deeper. Rewards aggression cadence.
   if(domA==='w' && !isExtra){ p._wrathStrikes=(p._wrathStrikes||0)+1;
     if(p._wrathStrikes>=3){ p._wrathStrikes=0; d=Math.round(d*1.6); blog('&#9876; RENDING EDGE — your blow sinks deeper!','crit'); SFX.play('crit'); } }
-  // GUILE I — FEINT: the strike immediately after a DEFEND is guaranteed crit. Rewards a
-  //   defend-then-strike rhythm.
+  // GUILE I — FEINT: the strike immediately after the Warrior's Shield Wall is guaranteed crit.
+  //   Rewards a guard-then-strike rhythm. Trigger lives in case 'shield' below; this is the payoff.
   if(domA==='g' && p._feintPrimed && !isExtra){ p._feintPrimed=0;
     if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); blog('&#10022; FEINT — the opening you waited for!','crit'); SFX.play('crit'); } }
   // Mob Rule consumes a one-shot +50% buff on next basic strike
