@@ -33,6 +33,39 @@
   .shop-grid .btn{margin:0;height:100%}
   .shop-panel{border-color:#7a5a1a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 30px rgba(255,180,60,.06)}
   .forge-panel{border-color:#8a3a18;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(255,90,30,.10)}
+  /* FORGE FLASH — the smith's one-line reaction to your last move. Hot iron framing, brief shimmer. */
+  .forge-flash{margin:8px 0;padding:9px 12px;font-size:9.5px;line-height:1.7;color:#ffd29a;
+    border:2px solid #c8722a;background:linear-gradient(180deg,rgba(255,140,40,.10),rgba(140,60,20,.04));
+    box-shadow:0 0 0 1px #000, 0 0 22px rgba(255,140,60,.30); font-style:italic;
+    animation:forgeFlash 0.7s ease-out}
+  @keyframes forgeFlash{0%{opacity:0;transform:translateY(-6px) scale(.98);filter:brightness(2.2)}100%{opacity:1;transform:translateY(0) scale(1);filter:brightness(1)}}
+  #app.forge-clang{animation:forgeClang .26s steps(2)}
+  @keyframes forgeClang{0%,100%{transform:translateX(0)}33%{transform:translateX(-2px)}66%{transform:translateX(2px)}}
+  /* COLLECTOR — the encounter, not a menu. The figure looms, the room dims around it, the choices
+     are smaller and below. Brass-and-shadow panel, never the standard purple. */
+  .collector-panel{padding:18px 16px 14px;border:3px solid #8a6a18;
+    background:linear-gradient(180deg,#1a1408 0%,#0a0805 100%);
+    box-shadow:0 0 0 3px #000, 0 0 80px rgba(180,140,40,.30), inset 0 0 90px rgba(80,60,10,.45)}
+  .collector-panel .col-head{text-align:center;margin-bottom:12px}
+  .collector-panel .col-figure{margin:0 auto 6px;font-family:'Press Start 2P',monospace;font-size:16px;line-height:1.3;color:#c8a050;
+    text-shadow:0 0 14px rgba(200,160,80,.55),0 0 30px rgba(200,160,80,.35);
+    animation:colLoom 3.6s ease-in-out infinite}
+  @keyframes colLoom{0%,100%{transform:translateY(0);text-shadow:0 0 14px rgba(200,160,80,.55)}50%{transform:translateY(-1px);text-shadow:0 0 22px rgba(220,180,90,.8)}}
+  .collector-panel .col-title{font-size:15px;letter-spacing:3px;color:#e0c060;margin:6px 0 2px;text-shadow:0 0 12px rgba(200,160,80,.55)}
+  .collector-panel .col-sub{font-size:9px;color:#bbab78;letter-spacing:1px}
+  .collector-panel .col-greet{text-align:center;font-size:10px;line-height:1.95;color:#d8c898;margin:8px 6px 14px;font-style:italic}
+  .collector-panel .col-choices{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+  .collector-panel .col-pay,.collector-panel .col-refuse{display:block;width:100%;padding:9px 13px;font-family:inherit;text-align:left;
+    cursor:pointer;color:#fff;border:2px solid #6a5018;background:linear-gradient(180deg,#1a1408,#0e0a04);
+    transition:transform .05s, box-shadow .2s, border-color .2s}
+  .collector-panel .col-pay:hover{border-color:#e0c060;box-shadow:0 0 0 1px #000, 0 0 18px rgba(200,160,80,.35)}
+  .collector-panel .col-refuse{border-color:#7a2a3a;background:linear-gradient(180deg,#1a0a0e,#0a0406)}
+  .collector-panel .col-refuse:hover{border-color:var(--red);box-shadow:0 0 0 1px #000, 0 0 22px rgba(255,90,90,.4)}
+  .collector-panel .col-pay:active,.collector-panel .col-refuse:active{transform:translate(2px,2px)}
+  .collector-panel .cp-h{display:block;font-size:10px;letter-spacing:1px;color:#e0c060}
+  .collector-panel .col-refuse .cp-h{color:var(--red)}
+  .collector-panel .cp-w{display:block;font-size:8.5px;line-height:1.55;color:#bba888;font-style:italic;margin:3px 0 4px}
+  .collector-panel .cp-cost{display:block;font-size:8px;color:#9a8b60;letter-spacing:.5px}
   .shrine-panel{border-color:#5a3a8a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(160,90,220,.10)}
   .pstrip .track.xpline{height:5px;margin-top:3px;border-width:1px}
   .pstrip .stats.pstats{font-size:8.5px;line-height:1.7;margin-top:4px;color:var(--dim)}
@@ -99,6 +132,17 @@
   body.abyss .invtabs button{border-color:#3a2a60}
   body.abyss h3{text-shadow:0 0 6px rgba(160,100,220,.35)}
   body.abyss .panel.tight{border-color:#5a4080}
+  /* ABYSS COMBAT BARS — the HP/MP/charge bars stop reading as the bright Crypt-above palette.
+     The fills are paler, frostier, and the borders carry a faint violet crack. */
+  body.abyss .ffbar .track,body.abyss .bar .track{border-color:#4a3a70;box-shadow:inset 0 0 0 1px rgba(120,100,160,.25)}
+  body.abyss .fill.hp{background:linear-gradient(#a8e6c4,#3a7a6a)}
+  body.abyss .fill.mp{background:linear-gradient(#a0c6e0,#3a5a7a)}
+  body.abyss .fill.boss{background:linear-gradient(#cba0d8,#5a2a70)}
+  body.abyss .fill.chg{background:linear-gradient(#d4b8e8,#6c3cbf)}
+  body.abyss .enemy-cell{border-color:#3a2a60}
+  body.abyss .enemy-cell.target{border-color:#c0a0ff;background:#1a0d2e55}
+  body.abyss .ff-narrator{border-color:#4a3a70;background:linear-gradient(180deg,#0a0816 0%,#0a0612 100%)}
+  body.abyss #scene.ff{background:linear-gradient(180deg,#0a0814 0%,#0d0a18 55%,#1a1226 100%);border-color:#4a3a70}
   /* PACTS — the shrine's three offers, framed as small contracts. Each carries its own band so the
      player FEELS the difference between mercy, blood, and the ward — not a list of three buttons. */
   .pact{display:block;width:100%;margin:7px 0;padding:9px 13px 11px;font-family:inherit;cursor:pointer;
@@ -123,6 +167,12 @@
     border:1px solid var(--teal);padding:2px 7px;margin:0 0 6px;border-radius:1px;
     box-shadow:0 0 12px rgba(76,224,208,.25);text-shadow:0 0 6px rgba(76,224,208,.5)}
   .panel.anchor-event{border-color:#2a8a82;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 26px rgba(76,224,208,.05)}
+  /* GENERIC EVENT ART — framed as a "field sketch" so the ASCII reads as a hurried drawing in a
+     traveler's journal, not as a debug placeholder. Smaller, dimmer, parchment-bordered. */
+  .ev-ascii{margin:8px auto 10px;padding:10px 12px;font-size:9px;line-height:1.35;
+    max-width:240px;color:#9bcfb8;opacity:.85;
+    border:1px dashed rgba(120,200,170,.35);background:rgba(40,60,55,.18);
+    box-shadow:inset 0 0 14px rgba(20,40,30,.4)}
   .center{text-align:center}.muted{color:var(--dim)}
   .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
   pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
@@ -424,6 +474,11 @@
   @keyframes idleBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
   .sprite-player.dead{filter:grayscale(1) brightness(.5);animation:none}
   /* title-screen centerpiece */
+  .title-throne{display:block;margin:6px auto 14px;font-family:'Press Start 2P',monospace;
+    font-size:14px;line-height:1.4;color:#7a6aa6;text-shadow:0 0 12px rgba(120,90,180,.5);
+    white-space:pre;text-align:center;opacity:.9;letter-spacing:2px;
+    animation:throneBreath 4.5s ease-in-out infinite}
+  @keyframes throneBreath{0%,100%{opacity:.7;text-shadow:0 0 8px rgba(120,90,180,.35)}50%{opacity:1;text-shadow:0 0 22px rgba(160,110,220,.65)}}
   .title-art{display:block;margin:8px auto 14px;image-rendering:pixelated;
     max-width:220px;max-height:170px;width:auto;height:auto;
     filter:drop-shadow(0 0 14px rgba(255,92,106,.5)) drop-shadow(0 0 22px rgba(255,207,77,.3));
@@ -1371,21 +1426,23 @@ const SYNERGIES=[
 /* ============================================================
    OMENS  (run modifiers — pick 1 of 3 each run)
    ============================================================ */
+// Omens are FATES, not modifiers. The note line should sell the run-feel, not the percentage.
+// Mechanics still live in the apply functions and on the info-modal at chooseOmen time.
 const OMENS=[
-  {id:'none',name:'Calm Descent',note:'+10% player damage. A steady, even run.',apply:g=>{g.pDmg=(g.pDmg||1)*1.10;}},
-  {id:'blood',name:'Bloodmoon',note:'Enemies deal +15% damage, but drop +60% gold.',apply:g=>{g.eDmg*=1.15;g.goldMul*=1.6;}},
-  {id:'arcane',name:'Arcane Surge',note:'All skills cost 20% less mana.',apply:g=>{g.skillCost=0.80;}},
-  {id:'brittle',name:'Brittle Bones',note:'Enemies have -22% HP, but you have -12% max HP.',apply:(g,p)=>{g.eHp*=0.78;const c=Math.round(p.maxHp*0.12);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
-  {id:'greedy',name:'Greedy Halls',note:'Far more chests & merchants; gold is plentiful.',apply:g=>{g.greedy=1;g.goldMul*=1.3;}},
-  {id:'veteran',name:"Veteran's Path",note:'Start at level 4, but enemies +12% HP.',apply:(g,p)=>{g.eHp*=1.12;for(let i=0;i<3;i++)levelUp(p,true);}},
-  {id:'glassworld',name:'Glass World',note:'EVERYONE deals +30% damage. Fast & deadly.',apply:g=>{g.eDmg*=1.3;g.pDmg*=1.3;}},
-  {id:'lucky',name:'Lucky Star',note:'+12% crit and richer rewards (extra choices).',apply:(g,p)=>{p.crit+=12;g.luck=1;}},
-  {id:'elites',name:'Cursed Riches',note:'Start with 90 gold, but elites prowl everywhere.',apply:(g,p)=>{p.gold+=90;g.eliteMul=2.4;}},
-  {id:'endless',name:'Endless Night',note:'Monsters relentless (+1 per pack), but you regen between rooms.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
-  {id:'harvest',name:'Soul Harvest',note:'+70% Soul Essence (the kill currency spent at The Forge).',apply:g=>{g.essMul=(g.essMul||1)*1.7;}},
-  {id:'hunter',name:"Hunter's Instinct",note:'Slayer damage tiers (per-family kill bonuses) unlock far sooner (3/7/13 kills).',apply:g=>{g.slayFast=1;}},
-  {id:'resolve',name:"Champion's Resolve",note:'Your Ultimate (the &#10022; bar in battle) charges 50% faster.',apply:g=>{g.ultFast=1;}},
-  {id:'fragile',name:'Fragile Might',note:'You deal +40% damage, but take +25%.',apply:g=>{g.pDmg*=1.4;g.eDmg*=1.25;}},
+  {id:'none',name:'Calm Descent',note:'The crypt is quiet tonight. Walk steady. Walk a little harder.',apply:g=>{g.pDmg=(g.pDmg||1)*1.10;}},
+  {id:'blood',name:'Bloodmoon',note:'Red light on the stones. Every hurt costs more &mdash; every kill pays more.',apply:g=>{g.eDmg*=1.15;g.goldMul*=1.6;}},
+  {id:'arcane',name:'Arcane Surge',note:'Something hums under the floor and your mana refuses to spend itself.',apply:g=>{g.skillCost=0.80;}},
+  {id:'brittle',name:'Brittle Bones',note:'Every thing down here is hollow. You too. Glass against glass.',apply:(g,p)=>{g.eHp*=0.78;const c=Math.round(p.maxHp*0.12);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
+  {id:'greedy',name:'Greedy Halls',note:'The chambers have been arranged for trade. Coin everywhere. Eyes on it.',apply:g=>{g.greedy=1;g.goldMul*=1.3;}},
+  {id:'veteran',name:"Veteran's Path",note:'You wake up older than you went to sleep. The dark woke up bigger.',apply:(g,p)=>{g.eHp*=1.12;for(let i=0;i<3;i++)levelUp(p,true);}},
+  {id:'glassworld',name:'Glass World',note:'Every blow lands, on both sides. The world is a held breath.',apply:g=>{g.eDmg*=1.3;g.pDmg*=1.3;}},
+  {id:'lucky',name:'Lucky Star',note:'Something is watching you kindly. Just for tonight. Just for now.',apply:(g,p)=>{p.crit+=12;g.luck=1;}},
+  {id:'elites',name:'Cursed Riches',note:'You start with full pockets. The crypt sent its captains to take them back.',apply:(g,p)=>{p.gold+=90;g.eliteMul=2.4;}},
+  {id:'endless',name:'Endless Night',note:'No room is ever empty. You bleed less between them, somehow.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
+  {id:'harvest',name:'Soul Harvest',note:'Every kill leaves more of itself behind. The forge will be hungry.',apply:g=>{g.essMul=(g.essMul||1)*1.7;}},
+  {id:'hunter',name:"Hunter's Instinct",note:'Your hands learn quickly tonight. Each kind teaches you faster than the last.',apply:g=>{g.slayFast=1;}},
+  {id:'resolve',name:"Champion's Resolve",note:'Your great breath comes back to you twice as fast as it should.',apply:g=>{g.ultFast=1;}},
+  {id:'fragile',name:'Fragile Might',note:'You strike like a man with nothing to lose &mdash; and you take like one too.',apply:g=>{g.pDmg*=1.4;g.eDmg*=1.25;}},
 ];
 
 /* ============================================================
@@ -2531,7 +2588,12 @@ function renderTitle(){
   app.innerHTML=`<h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
     <div class="subtitle">an 8-bit text roguelike</div>
     <div class="panel center fade">
-      <img class="title-art" src="assets/monsters/dragon.png" alt="Crypt Dragon" draggable="false">
+      <pre class="title-throne" aria-hidden="true">    /\\___/\\
+   |       |
+   |  &#9819;   |
+   |_______|
+   ||     ||
+  / |     | \\</pre>
       <p class="evtext center" style="font-size:9px;line-height:2;color:#cfcbef">
         Below the dead city lies the Crypt — a prison sunk to cage<br>
         <span class="red">the Devourer</span>, eater of worlds. Its hoarded power calls to<br>
@@ -3095,15 +3157,26 @@ function renderCollector(){ const p=G.player; discoverLore('l8'); const bs=bestI
     : cm===2
     ? `"You again. You always pay. You always borrow again the moment I am gone." It turns to a page that already has your name at the top. "Your debt: <span class="red">${debt}</span>."`
     : `"We have an arrangement, you and I. You take. I collect. I have stopped expecting it to end." A long, patient pause. "Your debt, as ever: <span class="red">${debt}</span>."`;
+  // The encounter is now a custom panel — brass-and-shadow border, the figure looming in the head,
+  // the choices smaller and below. He should dominate the screen the way his footsteps dominated the
+  // corridors leading here, not present as a vendor.
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
-    <div class="panel fade room-in">
-      <pre class="sprite amber">  .-=-.\n ( $ $ )\n  )___(\n /|   |\\</pre>
-      <h3 class="center amber" style="margin:8px 0">THE COLLECTOR</h3>
-      <p class="evtext center">${greet}</p>
-      ${it?`<button class="btn" onclick="collectorPay('item')"><span class="k amber">&#9876;</span>Surrender ${bs.toUpperCase()}: ${itemLabel(it)}<small>hand over your finest piece — debt cleared</small></button>`:''}
-      <button class="btn" onclick="collectorPay('tribute')"><span class="k amber">&#128176;</span>Pay tribute<small>all ${gold}g, ${Math.floor(ess/2)} ${ESS}, and 15% HP — debt cleared</small></button>
-      <button class="btn red" onclick="collectorPay('refuse')"><span class="k">&#9876;</span>REFUSE — face the Collector<small>win and the debt dies with it; lose and you pay everything</small></button>
-          </div>${statusFooter()}`;
+    <div class="panel fade collector-panel">
+      <div class="col-head">
+        <pre class="col-figure">    .-=-.
+   ( $ $ )
+    )___(
+   /|   |\\</pre>
+        <h2 class="col-title">THE COLLECTOR</h2>
+        <div class="col-sub">debt of <span class="red">${debt}</span></div>
+      </div>
+      <p class="col-greet">${greet}</p>
+      <div class="col-choices">
+        ${it?`<button class="col-pay" onclick="collectorPay('item')"><span class="cp-h">&#9876; SURRENDER YOUR ${bs.toUpperCase()}</span><span class="cp-w">"${bs}: ${itemLabel(it)}. It will look well on someone else."</span><span class="cp-cost">debt cleared</span></button>`:''}
+        <button class="col-pay" onclick="collectorPay('tribute')"><span class="cp-h">&#128176; PAY TRIBUTE</span><span class="cp-w">"Your purse. Some of your essence. A little of your blood. Standard terms."</span><span class="cp-cost">&minus;${gold}g, &minus;${Math.floor(ess/2)} ${ESS}, &minus;15% HP &middot; debt cleared</span></button>
+        <button class="col-refuse" onclick="collectorPay('refuse')"><span class="cp-h">&#9876; REFUSE</span><span class="cp-w">"Then we will negotiate the older way. I am ready when you are."</span><span class="cp-cost">win &mdash; the debt dies with him &middot; lose &mdash; he takes everything</span></button>
+      </div>
+    </div>`;
 }
 function collectorPay(kind){ const p=G.player;
   if(kind==='item'){ const bs=bestItem(p); if(bs){ const it=unequip(p,bs); G.debt=0; G.collectorEta=0; noteCollectorPaid('item'); SFX.play('door'); return proceed(`You surrender the ${it.name}. The Collector fades. Your debt is paid.`); } }
@@ -3379,11 +3452,16 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
   const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
   let body='';
   if(tab==='gear'){
-    const slot=s=>{ const it=p.equip[s]; if(!it)return `<div class="slot muted">${s.toUpperCase()}: — empty —</div>`;
-      return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> &nbsp; ${itemLabel(it)}<br><span style="font-size:8px">${gearCompareHtml(it,null)}</span></div>`; };
+    // Equipped slots get a full row; empty slots collapse to ONE muted line so the inventory isn't
+    // half "empty" rows.
+    const equipped=SLOTS.filter(s=>p.equip[s]);
+    const empties=SLOTS.filter(s=>!p.equip[s]);
+    const gearRows=equipped.map(s=>{ const it=p.equip[s];
+      return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> &nbsp; ${itemLabel(it)}<br><span style="font-size:8px">${gearCompareHtml(it,null)}</span></div>`; }).join('')
+      + (empties.length?`<div class="slot muted" style="font-size:9px">Empty: ${empties.map(s=>s.toUpperCase()).join(' &middot; ')}</div>`:'');
     const setProg=Object.keys(SETS).map(sn=>{ const set=SETS[sn]; const have=SLOTS.filter(s=>p.equip[s]&&p.equip[s].set===sn).length;
       const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
-    body=`<h3 class="amber ivh">EQUIPMENT</h3>${SLOTS.map(slot).join('')}
+    body=`<h3 class="amber ivh">EQUIPMENT</h3>${gearRows}
       <h3 class="teal ivh">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}`;
   } else if(tab==='powers'){
     const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
@@ -3639,7 +3717,7 @@ function renderEvent(){
   const evText = (typeof ev.text==='function') ? ev.text(p) : ev.text;
   const art=ev.sprite
     ?`<img class="ev-sprite ${ev.sprite.tint||''}" src="${ev.sprite.src}" alt="${ev.title}" draggable="false">`
-    :`<pre class="sprite teal">${ev.art}</pre>`;
+    :`<pre class="sprite teal ev-ascii">${ev.art}</pre>`;
   // Anchor NPCs (lantern keeper / cardinal / scholar / smith / prisoner / cartographer) get a teal
   // sigil + a faintly haloed panel so the player can FEEL "this is someone the crypt has been
   // keeping" without being told. Generic one-shot events keep the default look.
@@ -3777,10 +3855,36 @@ function forgeImbue(){ const p=G.player,w=p.weapon,cost=24; if(p.essence<cost||w
 // SOUL ESSENCE -> AFFINITY: a late-game sink that feeds the identity system instead of capping out.
 function forgeAttune(path){ const p=G.player,cost=40; if(p.essence<cost)return false; p.essence-=cost;
   addAffinity(p,{[path]:2}); checkAffinityTiers(p); return true; }
-function fAttune(path){ SFX.play(forgeAttune(path)?'upgrade':'fail'); renderForge(); }
-function fUpgrade(s){ SFX.play(forgeUpgrade(s)?'upgrade':'fail'); renderForge(); }
-function fReforge(s){ SFX.play(forgeReforge(s)?'upgrade':'fail'); renderForge(); }
-function fImbue(){ SFX.play(forgeImbue()?'upgrade':'fail'); renderForge(); }
+// FORGE MOMENT — every successful action carries a one-line in-fiction reaction shown as a brief
+// banner above the panel + a "clang" body shake. The forge stops being a spreadsheet and starts
+// being a smith taking your blade out of your hands and giving it back hotter.
+const FORGE_LINES={
+  upgrade:[
+    'The smith&rsquo;s hammer rings on the bone of your weapon. It comes back hotter than you left it.',
+    'Sparks fall in a slow, patient rain. You did not know your blade could sing this clearly.',
+    'He works the metal until it forgets what it was. The new shape is closer to what you meant.'],
+  reforge:[
+    'He grinds the old grade off. The metal underneath is brighter than anything above ground.',
+    'The starlight bleeds into the cracks. Your gear is no longer common. Nothing here is common.',
+    'He spits on the iron. The iron does not steam &mdash; it answers.'],
+  imbue:[
+    'He whispers something into the edge. You feel the words move down your arm. The blade catches.',
+    'A single rune burns where the cross-guard meets the blade. Tomorrow it will look like a stain.',
+    'The element finds the metal the way water finds a slope. The edge takes on a colour.'],
+  attune:[
+    'The forge&rsquo;s heat moves through you toward the path you have chosen. You stand a little straighter.',
+    'A door opens somewhere in your shoulders. You do not need to know to which path.',
+    'He nods, once. You did not know smiths approved of anything.'],
+  fail:[
+    'The smith does not look up. There is not enough essence on the anvil to interest him.',
+    'A line is drawn. Your weapon is already as good as it knows how to be tonight.']
+};
+function forgeFlash(kind){ const sc=document.getElementById('app'); if(sc){ sc.classList.remove('forge-clang'); void sc.offsetWidth; sc.classList.add('forge-clang'); }
+  G._forgeFlash = (FORGE_LINES[kind]||FORGE_LINES.upgrade)[Math.floor(Math.random()*((FORGE_LINES[kind]||FORGE_LINES.upgrade).length))]; }
+function fAttune(path){ const ok=forgeAttune(path); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'attune':'fail'); renderForge(); }
+function fUpgrade(s){ const ok=forgeUpgrade(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'upgrade':'fail'); renderForge(); }
+function fReforge(s){ const ok=forgeReforge(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'reforge':'fail'); renderForge(); }
+function fImbue(){ const ok=forgeImbue(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'imbue':'fail'); renderForge(); }
 function leaveForge(){ leaveRoom(); }
 function renderForge(){ const p=G.player; discoverLore('l11');
   const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${sub}</small></button>`;
@@ -3793,10 +3897,13 @@ function renderForge(){ const p=G.player; discoverLore('l11');
   // Pour essence into your PATH — the late-game essence sink that feeds affinity (Wrath/Guile/Veil).
   const at=['w','g','v'].map(k=>{const meta=AFF_META[k];
     return fb(`Attune to ${meta.name}`,40,`+2 ${meta.name} affinity (toward the tier capstones)`,`fAttune('${k}')`,p.essence>=40);}).join('');
+  const flash = G._forgeFlash ? `<div class="forge-flash">${G._forgeFlash}</div>` : '';
+  G._forgeFlash = null;
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in forge-panel">
       <h3 class="center amber" style="margin:2px 0 2px">&#128296; THE SOUL FORGE</h3>
       <p class="muted center" style="font-size:8px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS}</span> to grow stronger.</p>
+      ${flash}
       ${up}${im}${re}${at}
       <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>`;
 }
@@ -3824,7 +3931,9 @@ function startBattle(intro){
   if(intro) blog(intro,'info');
   blog(enemies.length>1?`${enemies.length} foes block your path!`:`A ${enemies[0].name} appears!`,'info');
   const bk=enemies.find(e=>e.boss); G._curBossKey=(bk&&bk._key)||null;   // for "you again" death recognition
-  const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE){ blog(bossE.cry,'crit'); if(bossE._key)showBossIntro(bossE._key); }
+  // Defer the boss bio so the player sees the boss + its charge banner (if any) FIRST. The bio's
+  // weight lands better as a reaction to the silhouette than as a blocker on top of it.
+  const bossE=enemies.find(e=>e.boss&&e.cry); if(bossE){ blog(bossE.cry,'crit'); if(bossE._key){ const k=bossE._key; setTimeout(()=>{ if(G.battle && !G.battle.over) showBossIntro(k); }, 1400); } }
   const heatFed=enemies.find(e=>e._heatFed); if(heatFed){ blog(`&#128293; The Furnace howls &mdash; its keeper feeds on the heat you carried in. (+${Math.round((heatFed-2)*20)}% HP & ATK)`,'crit'); }
   G.battle.intro=true;
   // First-round intents — the player sees what every foe plans before they act.
@@ -4861,13 +4970,13 @@ function renderEnd(win){ const p=G.player;
         <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level} &middot; <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
         <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills} &middot; <span class="muted">Gold:</span> ${p.gold}</p>
       ${win?'':causeOfDeathHtml()}
-      ${deathEpitaphHtml(p, win)}
       <h3 class="amber center" style="font-size:11px;margin:6px 0">YOUR BUILD</h3>
       ${gear}
       <p style="font-size:9px;line-height:2"><span class="muted">Paths:</span> ${paths}<br>
         ${p.sets&&p.sets.length?`<span class="teal">Sets: ${p.sets.join(', ')}</span><br>`:''}
         ${p.synergies&&p.synergies.length?`<span class="teal">Synergies: ${p.synergies.join(', ')}</span><br>`:''}
         <span class="muted">Relics:</span> ${p.relics.length?p.relics.join(', '):'none'}</p>
+      ${deathEpitaphHtml(p, win)}
       <button class="btn center" onclick="restart()"><span class="k">&#8635;</span>PLAY AGAIN</button></div>`;
 }
 function restart(){ newGame(); render(); }
