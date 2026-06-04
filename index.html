@@ -1865,10 +1865,15 @@ const LORE=[
   {id:'l20',t:'The Thing Before',x:'The lowest stone is colder than ice has any right to make it, and it is older than the marks the masons left. They did not build a cage down here. They built around something they found and could not move. Even the Devourer was cut from it. Even the Devourer is a splinter.'},
 ];
 function loadLore(){ try{ return JSON.parse(localStorage.getItem('crypt_lore')||'[]'); }catch(e){ return []; } }
-function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); if(k.includes(id))return false; k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg;
+function discoverLore(id){ if(!LORE.find(l=>l.id===id))return false; const k=loadLore(); const already=k.includes(id);
   // l15 is "The Lie You Were Told" — the truth about the Champion. At that moment,
-  // Harvest Essence renames itself to DEVOUR.
+  // Harvest Essence renames itself to DEVOUR. The reveal is PER-RUN state (p.memory.revealed),
+  // so re-trigger it every time, even if the codex already has l15 from a previous run —
+  // otherwise the rename only ever happens on the player's very first l15 discovery and every
+  // subsequent run leaves the 4th skill stuck on "Harvest Essence". (revealDevour is idempotent.)
   if(id==='l15' && G.player) try{ revealDevour(); }catch(e){}
+  if(already) return false;
+  k.push(id); try{localStorage.setItem('crypt_lore',JSON.stringify(k));}catch(e){} const l=LORE.find(x=>x.id===id); const msg='&#128220; LORE UNCOVERED — '+l.t; if(G.screen==='battle')blog(msg,'lvl'); else G._loreMsg=msg;
   return true; }
 function loadRecords(){ try{ return Object.assign({deepest:0,runs:0,wins:0},JSON.parse(localStorage.getItem('crypt_records')||'{}')); }catch(e){ return {deepest:0,runs:0,wins:0}; } }
 function recordRun(win){ const r=loadRecords(); const prevDeepest=r.deepest||0; r.runs=(r.runs||0)+1; if(win)r.wins=(r.wins||0)+1; r.deepest=Math.max(prevDeepest,G.depth); if(G.depth>prevDeepest)memoir().wentDeeper=true; try{localStorage.setItem('crypt_records',JSON.stringify(r));}catch(e){} }
