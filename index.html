@@ -104,7 +104,10 @@
      scans the stats, and never needs to open SKILLS just to check how close the next tier is. */
   .pstrip-aff{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;font-size:8.5px;line-height:1.45}
   .aff-pill{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border:1px solid var(--line);
-    background:#0a0916;letter-spacing:.5px;border-radius:1px}
+    background:#0a0916;letter-spacing:.5px;border-radius:1px;cursor:pointer;
+    transition:background .15s,border-color .15s,box-shadow .15s}
+  .aff-pill:hover{background:#161025;filter:brightness(1.15)}
+  .aff-pill:focus{outline:none;box-shadow:0 0 0 1px #fff}
   .aff-pill b{font-weight:normal}
   .aff-pill.aff-red  {border-color:#7a2030;color:#ffb0b8}
   .aff-pill.aff-red b{color:var(--red)}
@@ -5257,7 +5260,9 @@ function playerBar(p,full){
   const affEntry=k=>{ const meta=AFF_META[k]; const t=p.affTier[k]; const pts=p.aff[k]; const next=t<3?AFF_THRESH[t]:null;
     const lbl = t>0?` <span class="muted">${tierRoman[t]}</span>`:'';
     const prog = next!=null ? `<span class="muted">${pts}/${next}</span>` : `<span class="amber">MAX</span>`;
-    return `<span class="aff-pill aff-${meta.color}"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
+    // Hover -> native tooltip; click/tap -> info modal. Same path the inventory pills use, so a tester
+    // (and a phone player who can't hover) gets the same explanation either way.
+    return `<span class="aff-pill aff-${meta.color}" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}" role="button" tabindex="0"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
   const affRow = `<div class="pstrip-aff">${['w','g','v'].map(affEntry).join('')}</div>`;
   // Each button TOGGLES its own view (tap again to close). The active view is highlighted so the strip
   // doubles as the tab bar — no in-panel tabs needed.
