@@ -290,14 +290,8 @@
   .boss-charge.imm{color:#ff5c6a;border-color:#ff5c6a;box-shadow:0 0 0 1px #000, 0 0 34px rgba(255,90,90,.8);animation-duration:0.45s}
   .boss-charge .bc-count{display:inline-block;margin-left:8px;padding:1px 8px;border:2px solid #ffcf4d;background:#000;color:#fff;font-weight:bold}
   @keyframes bossCharge{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
-  /* KEYBOARD CHIP — every command shows its hotkey, mirroring the [1]/[2] chips on door buttons. */
-  .cmd .kbd{display:inline-block;font-size:7.5px;letter-spacing:1px;padding:1px 5px;margin-left:6px;
-    border:1px solid #4a4070;color:#bbb1d0;background:#0a0816;border-radius:1px;vertical-align:1px}
-  /* PROJECTED DAMAGE chip on skill buttons — shows what the strike will do to the current target
-     so the player picks by feel, not by re-reading the description every turn. */
-  .cmd .proj{display:inline-block;font-size:8.5px;color:#ffd57a;background:#1c1408;border:1px solid #6a4818;
-    padding:1px 6px;margin-left:6px;letter-spacing:0;vertical-align:1px}
-  .cmd .proj.aoe{color:#ffb8e0;border-color:#7a3a6a}
+  /* PROJECTED DAMAGE — inline dim suffix next to the skill name. Not a chip. Reads as a stat note. */
+  .cmd .proj-inline{color:#ffd57a;font-size:9px;letter-spacing:0;opacity:.9}
   /* EMBERS — pseudo-particle field that drifts up at heat tier 2+. Three layers so it looks alive. */
   body.world-hot::after,body.world-sear::after,body.world-furnace::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:141;opacity:.55;
     background-image:
@@ -661,11 +655,11 @@
   .enter-pop{animation:enterPop .5s cubic-bezier(.2,.7,.3,1.5)}
   @keyframes enterPop{0%{opacity:0;transform:scale(.2) rotate(-8deg)}60%{opacity:1;transform:scale(1.12) rotate(2deg)}100%{transform:none}}
   /* ===================== FF-STYLE BATTLE LAYOUT ===================== */
-  #scene.ff{display:grid;grid-template-rows:minmax(138px,1fr) auto auto;gap:6px;padding:8px;
+  #scene.ff{display:grid;grid-template-rows:minmax(110px,1fr) auto auto;gap:4px;padding:6px;
     background:linear-gradient(180deg,#0a0814 0%,#0d0a18 55%,#1a1226 100%);
     border:2px solid #322856;box-shadow:0 0 0 1px #000,inset 0 0 28px rgba(120,80,200,.18)}
-  .ff-stage{display:flex;align-items:flex-end;justify-content:center;gap:14px;min-height:138px;
-    padding:10px 6px 6px;position:relative;
+  .ff-stage{display:flex;align-items:flex-end;justify-content:center;gap:10px;min-height:110px;
+    padding:6px 4px 4px;position:relative;
     background:radial-gradient(ellipse at 50% 95%,rgba(120,80,200,.16) 0%,transparent 65%);
     border-bottom:1px dashed #2a2046}
   .ff-stage .enemy-cell{display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -683,7 +677,7 @@
   .ff-stage .enemy-cell .tgt.on{border-color:var(--amber);color:var(--amber);background:#1a1428}
   .ff-narrator{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
     border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20,0 0 0 1px #000;
-    padding:6px 10px;min-height:30px;max-height:72px;overflow:hidden;
+    padding:4px 8px;min-height:24px;max-height:52px;overflow:hidden;
     display:flex;flex-direction:column;justify-content:flex-end;position:relative}
   .ff-narrator::before{content:'';position:absolute;top:4px;left:4px;right:4px;bottom:4px;
     border:1px solid #1a2244;pointer-events:none}
@@ -704,10 +698,10 @@
   .ff-portrait .ffbar .fill::after{content:'';position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0));pointer-events:none}
   .ff-cmd{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
     border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20;
-    padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;align-content:start}
+    padding:4px;display:grid;grid-template-columns:1fr 1fr;gap:3px;align-content:start}
   .ff-cmd .cmd{background:#10142a;border:1px solid #2a3a6a;color:var(--ink);
-    padding:6px 8px;font:inherit;font-size:9px;text-align:left;cursor:pointer;
-    display:flex;align-items:flex-start;gap:6px;transition:all .12s;line-height:1.3}
+    padding:4px 7px;font:inherit;font-size:9px;text-align:left;cursor:pointer;
+    display:flex;align-items:flex-start;gap:5px;transition:all .12s;line-height:1.25}
   .ff-cmd .cmd:hover:not(:disabled){background:#1a2042;border-color:var(--amber);
     color:var(--amber);transform:translateX(2px)}
   .ff-cmd .cmd:disabled{opacity:.4;cursor:not-allowed}
@@ -2588,12 +2582,7 @@ function renderTitle(){
   app.innerHTML=`<h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
     <div class="subtitle">an 8-bit text roguelike</div>
     <div class="panel center fade">
-      <pre class="title-throne" aria-hidden="true">    /\\___/\\
-   |       |
-   |  &#9819;   |
-   |_______|
-   ||     ||
-  / |     | \\</pre>
+      <img class="title-art" src="assets/monsters/dragon.png" alt="Crypt Dragon" draggable="false">
       <p class="evtext center" style="font-size:9px;line-height:2;color:#cfcbef">
         Below the dead city lies the Crypt — a prison sunk to cage<br>
         <span class="red">the Devourer</span>, eater of worlds. Its hoarded power calls to<br>
@@ -4107,10 +4096,12 @@ function projectSkillDmg(p, skillId, e){
     default: return null;
   }
 }
+// Inline projection — sits next to the skill name as a small dim suffix ("~25 dmg"), NOT a chip.
+// No border, no own line. Reads like a stat note, not like a clickable thing.
 function skillProjChip(p, s, isAOE){
   const e=G.battle.enemies[G.battle.target]; const proj=projectSkillDmg(p, s.id, e);
   if(proj==null) return '';
-  return `<span class="proj ${isAOE?'aoe':''}" title="Approximate hit (no crits, no slayer/affinity boosts modeled)">~${proj}${isAOE?' ea':''}</span>`;
+  return ` <span class="proj-inline" title="Approximate hit (no crits, no slayer/affinity boosts modeled)">~${proj}${isAOE?' each':''}</span>`;
 }
 function setTarget(i){ if(battleBusy())return; if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }   // retarget only on your turn (don't let it bypass the lock / wipe damage floats mid-enemy-turn)
 function stChips(st){ let c='';
@@ -4165,19 +4156,13 @@ function renderBattle(){
     +(p._saturated>0?`<span class="chip c-pois" title="SATURATED — recently harvested a fragment. Cannot harvest again until this fades. ${p._saturated} turn(s) left.">SATURATED ${p._saturated}</span>`:'')
     +(b.guardDown>0?`<span class="chip c-vuln">EXPOSED</span>`:'')+stChips(b.pst);
   const cm=G.mods.skillCost;
-  // Hotkey counter — increments only over ENABLED buttons (matches the keyboard handler which
-  // selects .cmd:not([disabled])). So the player can press the number they SEE on each button.
-  let _hk=0; const kbd=(enabled)=>enabled?`<span class="kbd">${++_hk}</span>`:'';
   const ultReady=b.charge>=100;
-  const ultKb=kbd(ultReady);
-  const atkKb=kbd(true);
-  const potKb=kbd(!!p.potions);
-  const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm)); const enabled=p.mana>=cost; const k=kbd(enabled);
-    return `<button class="cmd" ${enabled?'':'disabled'} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name}${k} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,s,!!s.aoe):''}<small>${s.desc}</small></span></button>`;}).join('')
+  const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm)); const enabled=p.mana>=cost;
+    return `<button class="cmd" ${enabled?'':'disabled'} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,s,!!s.aoe):''}<small>${s.desc}</small></span></button>`;}).join('')
     +(p.memory
-      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm)); const enabled=p.mana>=cost; const k=kbd(enabled); return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${enabled?'':'disabled'} onclick="playerSkill('${m.id}')"><span class="k purple">&#9763;</span><span class="lbl">${m.name}${k} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,m,!!m.aoe):''}<small>MEMORY &middot; ${m.desc}</small></span></button>`;})()
+      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm)); const enabled=p.mana>=cost; return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${enabled?'':'disabled'} onclick="playerSkill('${m.id}')"><span class="k purple">&#9763;</span><span class="lbl">${m.name} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,m,!!m.aoe):''}<small>MEMORY &middot; ${m.desc}</small></span></button>`;})()
       :'<button class="cmd" disabled style="opacity:.45;border-style:dashed"><span class="k purple">&#9763;</span><span class="lbl">MEMORY (empty)<small>find an Echo, a king, a dragon, a priest... they remember things you do not.</small></span></button>');
-  const fleeEnabled=!b.hadBoss; const fleeKb=kbd(fleeEnabled);
+  const fleeEnabled=!b.hadBoss;
   const pSprite=playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`;
   const um=ultMeta(p.cls);
   app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>${worldBar()}
@@ -4195,11 +4180,11 @@ function renderBattle(){
           <div class="center" style="margin-top:2px">${pStatus}</div>
         </div>
         ${b.over?'<div class="ff-cmd"><div class="muted center" style="grid-column:1/-1;padding:18px 4px">&#8212; battle over &#8212;</div></div>':b._lock?'<div class="ff-cmd"><div class="enemy-turn-banner" style="grid-column:1/-1">&#9876; the enemy answers&hellip;</div></div>':`<div class="ff-cmd">
-          <button class="cmd ult ${ultReady?'ready':''}" ${ultReady?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span><span class="lbl">${um.name}${ultKb}<small>${ultReady?um.desc:'charge by fighting &middot; '+Math.floor(b.charge||0)+'/100'}</small></span></button>
-          <button class="cmd" onclick="playerAttack()"><span class="k">&#9876;</span><span class="lbl">ATTACK${atkKb} ${skillProjChip(p,{id:'attack'},false)}<small>${p.weapon.name} &middot; ${p.atk+p.weapon.dmg} pow</small></span></button>
-          <button class="cmd" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span><span class="lbl">POTION${potKb}<small>${p.potions} left &middot; heal 30%</small></span></button>
+          <button class="cmd ult ${ultReady?'ready':''}" ${ultReady?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span><span class="lbl">${um.name}<small>${ultReady?um.desc:'charge by fighting &middot; '+Math.floor(b.charge||0)+'/100'}</small></span></button>
+          <button class="cmd" onclick="playerAttack()"><span class="k">&#9876;</span><span class="lbl">ATTACK${skillProjChip(p,{id:'attack'},false)}<small>${p.weapon.name} &middot; ${p.atk+p.weapon.dmg} pow</small></span></button>
+          <button class="cmd" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span><span class="lbl">POTION<small>${p.potions} left &middot; heal 30%</small></span></button>
           <hr>${skills}
-          <button class="cmd flee" ${fleeEnabled?'':'disabled'} onclick="fleeBattle()" title="${b.hadBoss?'There is no fleeing a boss.':'Risky — they may strike on the way out.'}"><span class="k">&#10551;</span><span class="lbl">FLEE${fleeKb}<small>${b.hadBoss?'no escape from a boss':'risky &middot; foes may strike'}</small></span></button>
+          <button class="cmd flee" ${fleeEnabled?'':'disabled'} onclick="fleeBattle()" title="${b.hadBoss?'There is no fleeing a boss.':'Risky — they may strike on the way out.'}"><span class="k">&#10551;</span><span class="lbl">FLEE<small>${b.hadBoss?'no escape from a boss':'risky &middot; foes may strike'}</small></span></button>
         </div>`}
       </div>
     </div>`;
@@ -5141,10 +5126,7 @@ function playerBar(p,full){
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
   if((e.key==='i'||e.key==='I')&&G.player){ if(G.screen==='inventory')closeInventory(); else if(['corridor','room','event','reward','triumph'].includes(G.screen))openInventory(); return; }
-  // On the battle screen, hotkeys target the .cmd grid so the player can fight by feel; everywhere
-  // else, .btn (doors / rewards / events).
-  const selector = (G.screen==='battle') ? '.cmd:not([disabled])' : '.btn:not([disabled])';
-  const btns=[...document.querySelectorAll(selector)];
+  const btns=[...document.querySelectorAll('.btn:not([disabled])')];
   const n=parseInt(e.key,10); if(!isNaN(n)&&n>=1&&n<=btns.length){btns[n-1].click();return;}
   if(e.key==='Enter'&&btns.length)btns[0].click(); });
 
