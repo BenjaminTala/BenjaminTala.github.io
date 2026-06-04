@@ -99,6 +99,30 @@
   body.abyss .invtabs button{border-color:#3a2a60}
   body.abyss h3{text-shadow:0 0 6px rgba(160,100,220,.35)}
   body.abyss .panel.tight{border-color:#5a4080}
+  /* PACTS — the shrine's three offers, framed as small contracts. Each carries its own band so the
+     player FEELS the difference between mercy, blood, and the ward — not a list of three buttons. */
+  .pact{display:block;width:100%;margin:7px 0;padding:9px 13px 11px;font-family:inherit;cursor:pointer;
+    text-align:left;color:#fff;border:3px solid var(--line);background:var(--panel2);
+    transition:transform .05s, box-shadow .2s, border-color .2s}
+  .pact:hover{border-color:#fff}
+  .pact:active{transform:translate(2px,2px)}
+  .pact .pact-h{font-size:10.5px;letter-spacing:1px;margin-bottom:3px}
+  .pact .pact-w{font-size:8.5px;line-height:1.6;color:#cfcbef;font-style:italic;margin:3px 0 4px}
+  .pact .pact-cost{font-size:8.5px;color:var(--dim)}
+  .pact.pact-heal{border-color:#3a6a9a;background:linear-gradient(180deg,rgba(108,184,255,.07),transparent)}
+  .pact.pact-heal .pact-h{color:var(--blue);text-shadow:0 0 8px rgba(108,184,255,.4)}
+  .pact.pact-blood{border-color:#8a2a3a;background:linear-gradient(180deg,rgba(255,92,106,.08),transparent)}
+  .pact.pact-blood .pact-h{color:var(--red);text-shadow:0 0 8px rgba(255,92,106,.5)}
+  .pact.pact-blood .pact-cost b{color:var(--amber)}
+  .pact.pact-ward{border-color:#5a3a8a;background:linear-gradient(180deg,rgba(192,108,255,.07),transparent)}
+  .pact.pact-ward .pact-h{color:var(--purple);text-shadow:0 0 8px rgba(192,108,255,.45)}
+  /* ANCHOR EVENT — recurring NPC encounters get a small teal sigil + a subtle border treatment so
+     the player can FEEL "this is someone the crypt has been keeping" without being told. Generic
+     events keep the default look. */
+  .anchor-mark{display:inline-block;font-size:8px;letter-spacing:2px;color:var(--teal);
+    border:1px solid var(--teal);padding:2px 7px;margin:0 0 6px;border-radius:1px;
+    box-shadow:0 0 12px rgba(76,224,208,.25);text-shadow:0 0 6px rgba(76,224,208,.5)}
+  .panel.anchor-event{border-color:#2a8a82;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 26px rgba(76,224,208,.05)}
   .center{text-align:center}.muted{color:var(--dim)}
   .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
   pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
@@ -3523,12 +3547,23 @@ function renderRoom(){
   } else if(r.type==='echo'){ return renderEcho();
   } else if(r.type==='collector'){ return renderCollector();
   } else if(r.type==='shrine'){
-    body=`<pre class="sprite purple">   _/\\_\n  /    \\\n |  *   |\n |______|</pre>
-      <h3 class="center purple" style="margin:8px 0">CRACKED ALTAR</h3>
-      <p class="muted center" style="font-size:9px">Offer your strength to mend, or your blood for power.</p>
-      <button class="btn" onclick="shrine('heal')"><span class="k">&#10010;</span>Pray — restore 45% HP &amp; MP</button>
-      <button class="btn" onclick="shrine('power')"><span class="k">&#9876;</span>Blood pact — +4 ATK, lose 12 HP</button>
-      <button class="btn" onclick="shrine('ward')"><span class="k">&#128737;</span>Ward — +3 DEF &amp; +8 max HP</button>`;
+    // Three pacts, not three menu options. Each carries a whisper that frames the bargain so the
+    // player HESITATES before pressing — the shrine should feel like a small contract, not a list.
+    body=`<h3 class="center purple" style="margin:2px 0 6px;letter-spacing:1px">&#10070; A CRACKED ALTAR</h3>
+      <p class="evtext center" style="font-size:9px;line-height:1.7;margin:6px 4px 2px;color:#e6d8f5">"Set something on the stone. The stone takes its measure of you."</p>
+      <p class="muted center" style="font-size:8px;line-height:1.6;opacity:.75">The altar is older than the chambers it sits in. The dust on it is not from down here.</p>
+      <button class="pact pact-heal" onclick="shrine('heal')">
+        <div class="pact-h">&#10010; THE PRAYER</div>
+        <div class="pact-w">"Kneel. Promise nothing. Receive a small mercy."</div>
+        <div class="pact-cost">restore 45% HP &amp; MP</div></button>
+      <button class="pact pact-blood" onclick="shrine('power')">
+        <div class="pact-h">&#9876; THE BLOOD PACT</div>
+        <div class="pact-w">"Open a vein on the stone. Walk away sharper. It remembers your blood."</div>
+        <div class="pact-cost">&minus;12 HP &middot; <b>+4 ATK permanent</b></div></button>
+      <button class="pact pact-ward" onclick="shrine('ward')">
+        <div class="pact-h">&#128737; THE WARDING</div>
+        <div class="pact-w">"Lay your hand flat. Take what kept the previous champion warm a little longer."</div>
+        <div class="pact-cost">&plus;3 DEF, +8 max HP permanent</div></button>`;
   } else if(r.type==='fountain'){
     body=`<pre class="sprite blue">  .-~~~-.\n (~ ~ ~ ~)\n  \\~~~~~/\n   |   |\n  /_____\\</pre>
       <h3 class="center blue" style="margin:8px 0">SHIMMERING FOUNTAIN</h3>
@@ -3581,9 +3616,14 @@ function renderEvent(){
   const art=ev.sprite
     ?`<img class="ev-sprite ${ev.sprite.tint||''}" src="${ev.sprite.src}" alt="${ev.title}" draggable="false">`
     :`<pre class="sprite teal">${ev.art}</pre>`;
+  // Anchor NPCs (lantern keeper / cardinal / scholar / smith / prisoner / cartographer) get a teal
+  // sigil + a faintly haloed panel so the player can FEEL "this is someone the crypt has been
+  // keeping" without being told. Generic one-shot events keep the default look.
+  const anchorMark = ev.npc ? `<div class="anchor-mark center" style="display:block;width:fit-content;margin:0 auto 6px">&#10070; RECURRING</div>` : '';
+  const anchorCls  = ev.npc ? ' anchor-event' : '';
   if(r.outcome){
     app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
-      <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
+      <div class="panel fade room-in${anchorCls}">${anchorMark}<h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
         ${art}
         <p class="evtext center">${r.outcome}</p>
         <button class="btn center" onclick="proceed()"><span class="k">&#9654;</span>CONTINUE</button></div>`;
@@ -3591,7 +3631,7 @@ function renderEvent(){
   }
   const opts=ev.options.map((o,i)=>`<button class="btn" onclick="chooseEvent(${i})"><span class="k teal">[${i+1}]</span>${o.label}<small>${o.desc}</small></button>`).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
-    <div class="panel fade room-in"><h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
+    <div class="panel fade room-in${anchorCls}">${anchorMark}<h3 class="center teal" style="margin-bottom:8px">${ev.title}</h3>
       ${art}
       <p class="evtext center">${evText}</p>${opts}
       </div>`;
