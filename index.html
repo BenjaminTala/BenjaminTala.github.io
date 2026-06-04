@@ -68,7 +68,27 @@
   .collector-panel .cp-cost{display:block;font-size:8px;color:#9a8b60;letter-spacing:.5px}
   .shrine-panel{border-color:#5a3a8a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(160,90,220,.10)}
   .pstrip .track.xpline{height:5px;margin-top:3px;border-width:1px}
-  .pstrip .stats.pstats{font-size:8.5px;line-height:1.7;margin-top:4px;color:var(--dim)}
+  .pstrip .stats.pstats{font-size:8.5px;line-height:1.7;margin-top:4px;color:var(--dim);flex:1;min-width:0}
+  /* INTEGRATED HUD ACTIONS — INVENTORY + SAGA inline on the right of the stats row. Same row as
+     the player's numbers, so the eye that just read the stats lands on them naturally. */
+  .pstrip-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hud-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+  .hud-btn{font-family:inherit;font-size:8.5px;letter-spacing:1px;color:var(--amber);
+    background:linear-gradient(180deg,#2a1c10,#1a1408);border:1px solid #6a4818;
+    padding:5px 9px 5px 8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+    transition:background .15s,border-color .15s,color .15s,box-shadow .2s}
+  .hud-btn:hover{border-color:var(--amber);color:#fff;background:linear-gradient(180deg,#3a2818,#2a1c10);
+    box-shadow:0 0 0 1px #000, 0 0 14px rgba(255,207,77,.45)}
+  .hud-btn:active{transform:translate(1px,1px)}
+  .hud-btn .hud-k{display:inline-block;font-size:7.5px;letter-spacing:0;padding:0 4px;margin-left:2px;
+    border:1px solid #6a5a30;color:#bba888;background:#0a0805;border-radius:1px;opacity:.85}
+  .hud-btn.hud-saga{color:#9b8cd8;border-color:#3a2a60}
+  .hud-btn.hud-saga:hover{border-color:#c0a0ff;color:#fff;box-shadow:0 0 0 1px #000, 0 0 14px rgba(160,100,220,.5)}
+  @media (max-width:560px){
+    .pstrip-row{flex-direction:column;align-items:stretch;gap:6px}
+    .hud-actions{justify-content:center}
+    .hud-btn{padding:7px 10px;font-size:9px}
+  }
   /* EPITAPH — the death-screen hook to the next run. Deliberately not a "slot" or a "card" — a
      hand-written breath in the dark, framed in pale violet. The crypt speaking, not the UI. */
   .epitaph{margin:12px 6px;padding:11px 14px 13px;border-left:3px solid var(--purple);
@@ -368,14 +388,9 @@
   .btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   /* audio toggles */
   #audio-toggles{position:fixed;top:6px;right:6px;z-index:200;display:flex;gap:4px;font-family:'Press Start 2P',monospace}
-  /* INVENTORY FAB anchored bottom-right of the viewport — always visible, always near content, large and obvious. */
-  #inv-fab{position:fixed;right:18px;bottom:18px;z-index:200;font-family:'Press Start 2P',monospace}
-  #inv-fab button{font-family:inherit;font-size:11px;background:linear-gradient(180deg,#3a2810,#1a1408);color:var(--amber);border:2px solid var(--amber);padding:12px 16px;cursor:pointer;letter-spacing:2px;touch-action:manipulation;
-    box-shadow:0 0 0 1px #000, 0 0 18px rgba(255,207,77,.45), inset 0 0 10px rgba(255,207,77,.12);
-    animation:invPulse 2.2s ease-in-out infinite}
-  #inv-fab button:hover{border-color:#fff;color:#fff;background:linear-gradient(180deg,#5a3818,#2a1c10);box-shadow:0 0 0 1px #000, 0 0 28px rgba(255,207,77,.8)}
-  @keyframes invPulse{0%,100%{box-shadow:0 0 0 1px #000, 0 0 14px rgba(255,207,77,.4), inset 0 0 10px rgba(255,207,77,.12)}50%{box-shadow:0 0 0 1px #000, 0 0 26px rgba(255,207,77,.7), inset 0 0 10px rgba(255,207,77,.20)}}
-  @media (max-width:560px){ #inv-fab{right:10px;bottom:10px} #inv-fab button{font-size:9px;padding:8px 10px} }
+  /* (Old floating inventory FAB removed — INVENTORY now lives inside the player HUD strip, where
+     the eye actually travels: chamber title -> HP bar -> stats + INVENTORY -> doors. The corner
+     button was invisible after a few minutes because nothing else important lives there.) */
   .coinbar{display:flex;justify-content:center;gap:14px;align-items:center;margin:6px 0 12px;font-size:14px;letter-spacing:1px}
   .coinbar .amber{text-shadow:0 0 10px rgba(255,207,77,.6)}
   .coinbar .teal{text-shadow:0 0 10px rgba(76,224,208,.5)}
@@ -734,7 +749,6 @@
   <button id="btn-music" type="button" onclick="toggleMusic()" aria-label="Toggle music">&#9834; ON</button>
   <button id="btn-sfx" type="button" onclick="toggleSfx()" aria-label="Toggle sound effects">SFX ON</button>
 </div>
-<div id="inv-fab" style="display:none"><button type="button" onclick="openInventory()" aria-label="Open inventory">&#9776; INVENTORY</button></div>
 <div id="crt"></div>
 <div id="transition"></div>
 <div id="vignette"></div>
@@ -2545,9 +2559,7 @@ function render(){
     event:renderEvent,battle:renderBattle,reward:renderReward,merchant:renderMerchant,inventory:renderInventory,triumph:renderTriumph,
     gameover:()=>renderEnd(false),victory:()=>renderEnd(true)}[G.screen])();
   const v=$('vignette'); if(v&&v.classList){ const low=G.screen==='battle'&&G.player&&G.player.hp>0&&G.player.hp<G.player.maxHp*0.25; v.classList.toggle('on',!!low); }
-  // Inventory FAB — visible on every screen where checking your build matters. Players were
-  // missing armor sets / passives / tabs entirely because the only entry was a muted inline button.
-  const ib=$('inv-fab'); if(ib&&ib.style){ ib.style.display=(['corridor','room','event','reward','triumph','merchant'].includes(G.screen)&&G.player)?'block':'none'; }
+  // (Old inv-fab show/hide logic removed — INVENTORY now lives inline in the player HUD strip.)
   setZoneBg();
 }
 const ZONE_BG=['radial-gradient(circle at 50% 15%, #2a1e10 0%, #0d0b16 58%, #070510 100%)',
@@ -5109,18 +5121,26 @@ function affinityBar(p){
   return s;
 }
 function playerBar(p,full){
-  // COMPACT out-of-combat strip. Only HP matters at a glance here; MP/ULT/XP become small inline
-  // text instead of four stacked tracks (the battle screen has its own full-resource portrait, so
-  // this is pure waste outside combat). Reclaims ~80-110px on every exploration/menu screen.
+  // COMPACT out-of-combat strip. HP gets the visible bar; MP/ATK/DEF/etc. become inline text.
+  // INVENTORY now lives INSIDE this strip, on the same row as the stats — so it sits inside the
+  // player's natural eye path (chamber title -> HP bar -> stats + INVENTORY -> doors) instead of
+  // floating in the empty bottom-right corner where players stop scanning after a few minutes.
   const ec=effCrit(p),ed=effDodge(p); const ch=p._charge||0;
   const xpPct=clamp(p.xp/xpNeeded(p.level)*100,0,100);
   const mpPct=p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0;
   const ultTag = ch>=100?' &middot; <span class="purple">&#10022; ULT READY</span>':'';
+  const invBtns = `<div class="hud-actions">
+    <button class="hud-btn" onclick="openInventory()" title="Open inventory (i)"><span>&#9776;</span> INVENTORY <span class="hud-k">i</span></button>
+    <button class="hud-btn hud-saga" onclick="openInventory();setInvTab('saga')" title="Open your Saga"><span>&#9774;</span> SAGA</button>
+  </div>`;
   return `<div class="panel tight pstrip">
     <div class="bar mini" style="margin:0 0 4px"><div class="lbl"><span class="green">${CLASSES[p.cls].name} &middot; LV${p.level}</span><span>${p.hp}/${p.maxHp} HP${ultTag}</span></div>
       <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div>
       <div class="track xpline"><div class="fill mp" style="width:${mpPct}%"></div></div></div>
-    <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple">&#9670;${p.relics.length}</span>`:''}</div>
+    <div class="pstrip-row">
+      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple">&#9670;${p.relics.length}</span>`:''}</div>
+      ${invBtns}
+    </div>
   </div>`;
 }
 /* ---------- keyboard ---------- */
