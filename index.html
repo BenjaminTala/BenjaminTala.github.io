@@ -3535,12 +3535,30 @@ function worldOnEnter(){ const p=G.player; if(!p)return false; let dead=false,ms
     if(d>0){ SFX.play('hurt'); popups.push({title:'THE FURNACE BURNS YOU',body:`<p class="shout-red" style="font-size:12px;line-height:1.7">The Furnace ${verb} you for <b>${d} HP</b>.</p><p class="muted" style="font-size:10px;line-height:1.7;margin-top:6px">Heat ${G.heat} &mdash; chamber crossings cost <b>${d}</b> HP. Cool down or you die in your boots.</p>`}); }
   }
   if(!dead && miasmaActive()){ const t=miasmaTier();
-    // Miasma damage tightened — sim showed 0 deaths from it. Tier 4 was 4-9 HP, now 7-13.
-    // Tier 5 was 8-15, now 12-20. Tier 6 (60+) now also bites.
-    if(t>=3){ const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp); msg=`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`; SFX.play('hurt'); popups.push({title:'SOUL ROT',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold gnaws on you. You lose <b>${rot}</b> max HP &mdash; permanently, until you cleanse it.</p>`}); }
-    if(t>=4){ const d=7+rnd(7); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold drinks ${d} HP from you.`; SFX.play('hurt'); popups.push({title:'THE COLD DRINKS FROM YOU',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The miasma reaches in and takes <b>${d} HP</b>.</p>`}); }
-    if(t>=5){ const d=12+rnd(9); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; you come undone (-${d} HP).`; SFX.play('hurt'); popups.push({title:'YOU COME UNDONE',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold takes <b>${d} HP</b>. You can feel the seams.</p>`}); }
-    if(t>=6){ const d=18+rnd(10); dead=hurt(p,d,'miasma')||dead; msg=`&#9763; MIASMA &mdash; the cold has nothing left of you (-${d} HP).`; SFX.play('hurt'); popups.push({title:'DECAY',body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">There is more cold inside you than there is you. <b>${d} HP</b>.</p>`}); }
+    // ONE message per chamber, the tier the player is CURRENTLY at — not a stack of every
+    // threshold they crossed. Balance is preserved: at t>=3 the rot still trims max HP; at t>=4+
+    // we add the highest applicable hit on top of it (so a tier-6 chamber stings as before, but
+    // the player sees one beat ("DECAY") instead of three queued popups in sequence).
+    if(t>=3){
+      const rot=2+Math.floor(t/2); p.maxHp=Math.max(24,p.maxHp-rot); p.hp=clamp(p.hp,0,p.maxHp);
+      // Hit damage scales by tier: t6=18+rnd(10), t5=12+rnd(9), t4=7+rnd(7), t3=0 (rot only).
+      let hit=0; if(t>=6)hit=18+rnd(10); else if(t>=5)hit=12+rnd(9); else if(t>=4)hit=7+rnd(7);
+      if(hit>0) dead=hurt(p,hit,'miasma')||dead;
+      SFX.play('hurt');
+      // One title + body per tier — escalating, not stacking.
+      const beats={
+        3:{ title:'SOUL ROT',           msg:`&#9763; MIASMA &mdash; Soul Rot eats ${rot} from your max HP.`,
+            body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold gnaws on you. You lose <b>${rot}</b> max HP &mdash; permanently, until you cleanse it.</p>` },
+        4:{ title:'THE COLD DRINKS FROM YOU', msg:`&#9763; MIASMA &mdash; the cold drinks ${hit} HP and eats ${rot} from your max.`,
+            body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The miasma reaches in and takes <b>${hit} HP</b>. <span class="muted">Your max HP drops by ${rot} until you cleanse.</span></p>` },
+        5:{ title:'YOU COME UNDONE',    msg:`&#9763; MIASMA &mdash; you come undone (-${hit} HP, -${rot} max).`,
+            body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">The cold takes <b>${hit} HP</b>. You can feel the seams.<br><span class="muted">Your max HP rots by ${rot} until you cleanse.</span></p>` },
+        6:{ title:'DECAY',              msg:`&#9763; MIASMA &mdash; the cold has nothing left of you (-${hit} HP, -${rot} max).`,
+            body:`<p class="shout-purple" style="font-size:12px;line-height:1.7">There is more cold inside you than there is you. <b>${hit} HP</b>.<br><span class="muted">Max HP rots by ${rot}.</span></p>` }
+      };
+      const beat = beats[Math.min(6,t)];
+      msg = beat.msg; popups.push({title:beat.title, body:beat.body});
+    }
   }
   if(!dead && G.abyss){ const dc=deepColdDamage();
     if(dc>0){ dead=hurt(p,dc,'deepcold')||dead; const fl=G.depth-RUN_LENGTH;
@@ -4591,9 +4609,10 @@ function afterPlayer(){ const b=G.battle;
   // (0.37/run) was already fine; left as-is. Still one-or-the-other per turn, never both.
   if(miasmaActive() && miasmaTier()>=3 && chance(7)) blog(pick(HALLUCINATIONS),'info');
   else if(heatActive() && heatTier()>=3 && chance(11)) blog(pick(HEAT_AMBIENT),'info');
-  // Pause before the enemy answers — long enough to read your own hit, snappy enough to keep rhythm.
-  // Boss turns get a touch more weight. The input lock holds through this whole window.
-  render(); setTimeout(enemyTurn, b.hadBoss?640:520); }
+  // Pause before the enemy answers — long enough to read your own hit, snappy enough to keep
+  // rhythm. Same delay for boss and normal turns: the prior boss bias added ~120ms per turn and
+  // compounded badly on 10+ turn fights (especially at high Heat).
+  render(); setTimeout(enemyTurn, 520); }
 // One-shot physical hit pipeline. Used by attack/heavy/unleash intents.
 function applyEnemyHit(e,p,b,baseDmg,label,kind){
   let dmg=baseDmg;
@@ -4735,7 +4754,7 @@ function enemyTurn(){ const p=G.player,b=G.battle; if(b.over)return;
   // Plan the next round of intents so the player can see what is coming on their turn.
   b.enemies.forEach(e=>{ if(e.hp>0) planIntent(e,b); else e.intent=null; });
   // Brief "after enemy answer" beat, then control returns and the buttons re-enable.
-  render(); returnControl(b.hadBoss?140:0); }
+  render(); returnControl(0); }   // unified, no boss bias — long fights compounded the per-turn delay
 function flash(kind){ const scene=$('scene');
   if(kind==='enemyHit'){ G.battle.anim=''; }
   else { G.battle.anim='shake flash'; if(scene){scene.classList.remove('shake','flash');void scene.offsetWidth;scene.classList.add('shake','flash');} }
