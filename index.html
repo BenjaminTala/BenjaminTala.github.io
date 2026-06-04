@@ -218,12 +218,36 @@
   .intent{display:inline-block;font-size:8px;letter-spacing:1px;padding:2px 6px;margin:2px auto 4px;border:1px solid #4a3260;background:#1a1424;color:#cbb6e6;border-radius:2px;line-height:1.4;text-align:center;max-width:200px}
   .intent .i-ico{margin-right:3px}
   .intent.i-danger {color:#ff9a3c;border-color:#a8482a;background:#2a1410}
+  /* HEAVY — Shield Wall's reason to exist. Larger, glowing, unmistakably louder than ATK. */
+  .intent.i-heavy  {color:#ffce4d;border-color:#c8722a;background:#3a1c08;font-weight:bold;
+    font-size:9.5px;padding:3px 8px;box-shadow:0 0 12px rgba(255,160,60,.55);
+    animation:intentPulse 1.1s ease-in-out infinite}
+  .intent.i-lethal {color:#ff5c6a;border-color:#ff5c6a;background:#3a0a12;font-weight:bold;
+    animation:intentPulse 0.7s ease-in-out infinite;text-shadow:0 0 6px rgba(255,90,90,.8)}
   .intent.i-charge {color:#ffce4d;border-color:#a8581a;background:#3a2208;animation:intentPulse 0.9s ease-in-out infinite;font-weight:bold}
   .intent.i-cast   {color:#a6d3ff;border-color:#365a8a;background:#0e1a2a}
   .intent.i-heal   {color:#7cff8f;border-color:#2a7a3a;background:#0a2010}
   .intent.i-armor  {color:#cfe0ff;border-color:#4a6090;background:#0e1422}
   .intent.i-enrage {color:#ff5c6a;border-color:#8a2030;background:#2a0a12;font-weight:bold;animation:intentPulse 1s ease-in-out infinite}
   @keyframes intentPulse{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 10px rgba(255,140,60,.7)}}
+  /* BOSS CHARGE BANNER — the single most important readability moment in a boss fight. Full-width
+     above the boss cell, hard pulse, count-down by turn. Replaces a polite chip with a real warning. */
+  .boss-charge{display:block;margin:6px 0 8px;padding:7px 10px;text-align:center;
+    font-size:11px;letter-spacing:2px;color:#ffcf4d;
+    border:3px solid #c8722a;background:linear-gradient(180deg,#3a1c06,#1a0e02);
+    box-shadow:0 0 0 1px #000, 0 0 24px rgba(255,160,60,.7); animation:bossCharge 0.7s ease-in-out infinite;
+    text-shadow:0 0 6px rgba(255,200,80,.7)}
+  .boss-charge.imm{color:#ff5c6a;border-color:#ff5c6a;box-shadow:0 0 0 1px #000, 0 0 34px rgba(255,90,90,.8);animation-duration:0.45s}
+  .boss-charge .bc-count{display:inline-block;margin-left:8px;padding:1px 8px;border:2px solid #ffcf4d;background:#000;color:#fff;font-weight:bold}
+  @keyframes bossCharge{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
+  /* KEYBOARD CHIP — every command shows its hotkey, mirroring the [1]/[2] chips on door buttons. */
+  .cmd .kbd{display:inline-block;font-size:7.5px;letter-spacing:1px;padding:1px 5px;margin-left:6px;
+    border:1px solid #4a4070;color:#bbb1d0;background:#0a0816;border-radius:1px;vertical-align:1px}
+  /* PROJECTED DAMAGE chip on skill buttons — shows what the strike will do to the current target
+     so the player picks by feel, not by re-reading the description every turn. */
+  .cmd .proj{display:inline-block;font-size:8.5px;color:#ffd57a;background:#1c1408;border:1px solid #6a4818;
+    padding:1px 6px;margin-left:6px;letter-spacing:0;vertical-align:1px}
+  .cmd .proj.aoe{color:#ffb8e0;border-color:#7a3a6a}
   /* EMBERS — pseudo-particle field that drifts up at heat tier 2+. Three layers so it looks alive. */
   body.world-hot::after,body.world-sear::after,body.world-furnace::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:141;opacity:.55;
     background-image:
@@ -604,7 +628,7 @@
   .ff-stage .enemy-cell .tgt.on{border-color:var(--amber);color:var(--amber);background:#1a1428}
   .ff-narrator{background:linear-gradient(180deg,#0c1024 0%,#080a18 100%);
     border:2px solid #3a4a7a;box-shadow:inset 0 0 0 1px #0a0e20,0 0 0 1px #000;
-    padding:7px 10px;min-height:44px;max-height:104px;overflow:hidden;
+    padding:6px 10px;min-height:30px;max-height:72px;overflow:hidden;
     display:flex;flex-direction:column;justify-content:flex-end;position:relative}
   .ff-narrator::before{content:'';position:absolute;top:4px;left:4px;right:4px;bottom:4px;
     border:1px solid #1a2244;pointer-events:none}
@@ -3895,10 +3919,89 @@ function planIntent(e,b){
   const dmg=willHeavy?Math.round(e.atk*1.6+rnd(4)):e.atk+rnd(5);
   e.intent={kind:willHeavy?'heavy':'attack', label:`${willHeavy?'HEAVY ':'ATK '}${dmg}`, value:dmg};
 }
+// Project what an enemy's announced raw atk will actually DO to the player after dodge expectation,
+// pdef, def, mana shield, barrier. Used by the intent badge to show "~14 to you" instead of "ATK 19"
+// so the player decides, not calculates. Mirrors applyEnemyHit's formula but at expected value.
+function projectIncomingDmg(e, b, p, baseDmg){
+  let dmg = baseDmg;
+  if(e.st && e.st.weakT>0) dmg = Math.round(dmg*(1-e.st.weak));
+  if(e._frostRamp) dmg = Math.round(dmg*(1+e._frostRamp));
+  dmg = Math.round(dmg*(G.mods.eDmg||1));
+  const mt = miasmaActive()?miasmaTier():0;
+  if(mt>=2) dmg = Math.round(dmg*(1+Math.min(0.25,mt*0.045)));
+  // Dodge expectation reduces expected damage by chance proportion
+  const dodge = Math.max(0,Math.min(55,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
+  let exp = dmg * (1 - dodge/100);
+  if(p.cls==='ranger' && b.evadeTurns>0) exp = Math.max(1, exp-(4+Math.floor(p.level/2)));
+  // Reduction: pdef factor + linear def cap
+  let red = b.pdefTurns>0?b.pdef:0;
+  exp = exp*(1-red); exp = exp - Math.min(p.def, exp*0.6);
+  // Barrier and mana shield expectations
+  let absorb = b.barrier||0;
+  if(p.cls==='mage' || p.flags.gearManaShield){
+    const frac = 0.52;
+    absorb += Math.min(p.mana||0, Math.ceil(Math.max(exp,1)*frac));
+  }
+  exp = Math.max(1, exp - absorb);
+  return Math.round(exp);
+}
 function intentBadgeHtml(e){
   if(!e||!e.intent||e.hp<=0)return '';
-  const d=INTENT_DISPLAY[e.intent.kind]||INTENT_DISPLAY.attack;
-  return `<div class="intent ${d.cls}" title="${escAttr('Next action: '+(e.intent.label.replace(/&[a-z]+;/g,'')))}"><span class="i-ico">${d.ico}</span> ${e.intent.label}</div>`;
+  let kind = e.intent.kind;
+  // HEAVY gets its own visual band (it was sharing with i-danger). Lethal HEAVY -> red.
+  if(kind==='heavy') kind='heavy';
+  const p=G.player, b=G.battle;
+  let label = e.intent.label;
+  let cls = (INTENT_DISPLAY[kind]||INTENT_DISPLAY.attack).cls;
+  let ico = (INTENT_DISPLAY[kind]||INTENT_DISPLAY.attack).ico;
+  // Project consequence for attack/heavy — the screen has the data; do the math FOR the player.
+  if((kind==='attack' || kind==='heavy') && b && p && e.intent.value){
+    const exp = projectIncomingDmg(e, b, p, e.intent.value);
+    const verb = kind==='heavy' ? 'HEAVY' : 'ATK';
+    label = `${verb} &mdash; ~${exp} to you`;
+    if(kind==='heavy') cls='i-heavy';
+    if(exp >= p.hp) cls='i-lethal';
+  }
+  return `<div class="intent ${cls}" title="${escAttr('Next action: '+(label.replace(/&[a-z]+;/g,'')))}"><span class="i-ico">${ico}</span> ${label}</div>`;
+}
+// Boss charge banner — a full-width countdown above the boss cell during charge/unleash. Replaces
+// the small chip with something the player CANNOT miss. Shown only when there's a turn count.
+function bossChargeBanner(e){
+  if(!e || !e.intent || e.hp<=0) return '';
+  const k=e.intent.kind; if(k!=='charge' && k!=='unleash') return '';
+  const imm = (k==='unleash') || /1 turn/i.test(e.intent.label||'');
+  const which = (k==='unleash') ? 'CATACLYSM UNLEASHED' : (/cataclysm/i.test(e.intent.label||'')?'CATACLYSM CHARGING':'A CHARGE IS COMING');
+  // Try to surface a count from the existing label ("CATACLYSM in 2 turns")
+  const m = (e.intent.label||'').match(/(\d+)\s*turns?/i);
+  const count = imm ? 'NOW' : (m?m[1]:'•');
+  return `<div class="boss-charge ${imm?'imm':''}">&#9888; ${which}<span class="bc-count">${count}</span></div>`;
+}
+// Project player damage on a skill against the current target (rough expected value, not a crit).
+// Honest approximation: uses the same base formulas as the cases inside playerSkill. Boss/elite
+// armor and slayer/affinity multipliers are NOT modeled here — would over-promise. The chip is a
+// FEELING ("hits hard / hits very hard / AOE"), not a guarantee.
+function projectSkillDmg(p, skillId, e){
+  if(!e||e.hp<=0) return null;
+  const mm = Math.min(180, p.maxMana);
+  const wdmg = p.weapon ? p.weapon.dmg : 0;
+  const atk = p.atk + wdmg;
+  switch(skillId){
+    case 'attack': return Math.round(atk + 2);   // basic strike expected (no crit)
+    case 'bolt':   return Math.round(16 + mm*0.30 + wdmg + p.level*2);
+    case 'fire':   return Math.round(14 + mm*0.14 + wdmg + p.level);   // per-foe AOE
+    case 'frost':  return Math.round(6  + mm*0.16 + Math.round(p.level*0.5));   // per-foe AOE
+    case 'power':  return Math.round(atk*1.95);
+    case 'reck':   return Math.round(atk*1.45);                          // per-foe AOE
+    case 'aim':    return Math.round(atk*1.70);
+    case 'volley': return Math.round((p.atk*0.6+wdmg)+Math.round(p.level*0.5));
+    case 'devour': { const d=p.memory; const dm=(d&&d.dmgMult)||1.5; return Math.round(atk*dm); }
+    default: return null;
+  }
+}
+function skillProjChip(p, s, isAOE){
+  const e=G.battle.enemies[G.battle.target]; const proj=projectSkillDmg(p, s.id, e);
+  if(proj==null) return '';
+  return `<span class="proj ${isAOE?'aoe':''}" title="Approximate hit (no crits, no slayer/affinity boosts modeled)">~${proj}${isAOE?' ea':''}</span>`;
 }
 function setTarget(i){ if(battleBusy())return; if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }   // retarget only on your turn (don't let it bypass the lock / wipe damage floats mid-enemy-turn)
 function stChips(st){ let c='';
@@ -3924,14 +4027,18 @@ function renderBattle(){
       :`<pre class="sprite red ${hitCls}">${e.sprite}</pre>`;
     const flo=(b.floats||[]).filter(f=>f.idx===i).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
     const efx=(b.fx||[]).filter(f=>f.idx===i).map(f=>fxHtml(f.kind)).join('');
+    // Boss charge banner sits ABOVE the cell so it cannot be missed. Replaces the polite chip for
+    // the single most readability-critical moment in the fight.
+    const charge = (!dead && e.boss) ? bossChargeBanner(e) : '';
     return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''}">
       ${efx}${flo?`<div class="fxlayer">${flo}</div>`:''}
+      ${charge}
       ${dead?'':intentBadgeHtml(e)}
       ${spriteHtml}
       <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
       <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.hunted?'<span class="chip c-burn" title="Hunted: bounty on death">&#127993; HUNTED</span>':'')+(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
-      ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})">${i===b.target?'&#9654; TARGET':'aim'}</button>`:''}</div>`;
+      ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})" title="Switch target to ${e.name}">${i===b.target?'&#9654; TARGET':'TARGET'}</button>`:''}</div>`;
   }).join('');
   const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
   const pFxHtml=(b.fx||[]).filter(f=>f.idx===-1).map(f=>fxHtml(f.kind)).join('');
@@ -3949,11 +4056,19 @@ function renderBattle(){
     +(p._saturated>0?`<span class="chip c-pois" title="SATURATED — recently harvested a fragment. Cannot harvest again until this fades. ${p._saturated} turn(s) left.">SATURATED ${p._saturated}</span>`:'')
     +(b.guardDown>0?`<span class="chip c-vuln">EXPOSED</span>`:'')+stChips(b.pst);
   const cm=G.mods.skillCost;
-  const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm));
-    return `<button class="cmd" ${p.mana<cost?'disabled':''} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber">AOE</span>':''}<small>${s.desc}</small></span></button>`;}).join('')
+  // Hotkey counter — increments only over ENABLED buttons (matches the keyboard handler which
+  // selects .cmd:not([disabled])). So the player can press the number they SEE on each button.
+  let _hk=0; const kbd=(enabled)=>enabled?`<span class="kbd">${++_hk}</span>`:'';
+  const ultReady=b.charge>=100;
+  const ultKb=kbd(ultReady);
+  const atkKb=kbd(true);
+  const potKb=kbd(!!p.potions);
+  const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm)); const enabled=p.mana>=cost; const k=kbd(enabled);
+    return `<button class="cmd" ${enabled?'':'disabled'} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name}${k} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,s,!!s.aoe):''}<small>${s.desc}</small></span></button>`;}).join('')
     +(p.memory
-      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm));return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${p.mana<cost?'disabled':''} onclick="playerSkill('${m.id}')"><span class="k purple">&#9763;</span><span class="lbl">${m.name} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber">AOE</span>':''}<small>MEMORY &middot; ${m.desc}</small></span></button>`;})()
+      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm)); const enabled=p.mana>=cost; const k=kbd(enabled); return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${enabled?'':'disabled'} onclick="playerSkill('${m.id}')"><span class="k purple">&#9763;</span><span class="lbl">${m.name}${k} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,m,!!m.aoe):''}<small>MEMORY &middot; ${m.desc}</small></span></button>`;})()
       :'<button class="cmd" disabled style="opacity:.45;border-style:dashed"><span class="k purple">&#9763;</span><span class="lbl">MEMORY (empty)<small>find an Echo, a king, a dragon, a priest... they remember things you do not.</small></span></button>');
+  const fleeEnabled=!b.hadBoss; const fleeKb=kbd(fleeEnabled);
   const pSprite=playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`;
   const um=ultMeta(p.cls);
   app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>${worldBar()}
@@ -3971,11 +4086,11 @@ function renderBattle(){
           <div class="center" style="margin-top:2px">${pStatus}</div>
         </div>
         ${b.over?'<div class="ff-cmd"><div class="muted center" style="grid-column:1/-1;padding:18px 4px">&#8212; battle over &#8212;</div></div>':b._lock?'<div class="ff-cmd"><div class="enemy-turn-banner" style="grid-column:1/-1">&#9876; the enemy answers&hellip;</div></div>':`<div class="ff-cmd">
-          <button class="cmd ult ${b.charge>=100?'ready':''}" ${b.charge>=100?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span><span class="lbl">${um.name}<small>${b.charge>=100?um.desc:'charge by fighting &middot; '+Math.floor(b.charge||0)+'/100'}</small></span></button>
-          <button class="cmd" onclick="playerAttack()"><span class="k">&#9876;</span><span class="lbl">ATTACK<small>${p.weapon.name} &middot; ${p.atk+p.weapon.dmg} pow</small></span></button>
-          <button class="cmd" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span><span class="lbl">POTION<small>${p.potions} left &middot; heal 30%</small></span></button>
+          <button class="cmd ult ${ultReady?'ready':''}" ${ultReady?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span><span class="lbl">${um.name}${ultKb}<small>${ultReady?um.desc:'charge by fighting &middot; '+Math.floor(b.charge||0)+'/100'}</small></span></button>
+          <button class="cmd" onclick="playerAttack()"><span class="k">&#9876;</span><span class="lbl">ATTACK${atkKb} ${skillProjChip(p,{id:'attack'},false)}<small>${p.weapon.name} &middot; ${p.atk+p.weapon.dmg} pow</small></span></button>
+          <button class="cmd" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span><span class="lbl">POTION${potKb}<small>${p.potions} left &middot; heal 30%</small></span></button>
           <hr>${skills}
-          <button class="cmd flee" onclick="fleeBattle()"><span class="k">&#10551;</span><span class="lbl">FLEE<small>${b.hadBoss?'cannot flee a boss!':'risky &middot; foes may strike'}</small></span></button>
+          <button class="cmd flee" ${fleeEnabled?'':'disabled'} onclick="fleeBattle()" title="${b.hadBoss?'There is no fleeing a boss.':'Risky — they may strike on the way out.'}"><span class="k">&#10551;</span><span class="lbl">FLEE${fleeKb}<small>${b.hadBoss?'no escape from a boss':'risky &middot; foes may strike'}</small></span></button>
         </div>`}
       </div>
     </div>`;
@@ -4917,7 +5032,10 @@ function playerBar(p,full){
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
   if((e.key==='i'||e.key==='I')&&G.player){ if(G.screen==='inventory')closeInventory(); else if(['corridor','room','event','reward','triumph'].includes(G.screen))openInventory(); return; }
-  const btns=[...document.querySelectorAll('.btn:not([disabled])')];
+  // On the battle screen, hotkeys target the .cmd grid so the player can fight by feel; everywhere
+  // else, .btn (doors / rewards / events).
+  const selector = (G.screen==='battle') ? '.cmd:not([disabled])' : '.btn:not([disabled])';
+  const btns=[...document.querySelectorAll(selector)];
   const n=parseInt(e.key,10); if(!isNaN(n)&&n>=1&&n<=btns.length){btns[n-1].click();return;}
   if(e.key==='Enter'&&btns.length)btns[0].click(); });
 
