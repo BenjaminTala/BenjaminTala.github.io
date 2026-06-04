@@ -18,8 +18,13 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
+  /* Center the app in the viewport. On a tall desktop monitor the content used to pin to the very top
+     and float in a huge void; column-flex + `safe center` sits it in the middle when it's shorter than
+     the screen, and falls back to top-anchored scrolling the moment it's taller (combat / inventory),
+     so nothing is ever clipped above the fold. */
   body{background:var(--bg);color:var(--ink);font-family:'Press Start 2P',monospace;font-size:12px;line-height:1.55;
-    display:flex;justify-content:center;align-items:flex-start;padding:8px 8px 24px;image-rendering:pixelated;-webkit-font-smoothing:none;}
+    display:flex;flex-direction:column;justify-content:safe center;align-items:center;min-height:100vh;
+    padding:16px 8px 24px;image-rendering:pixelated;-webkit-font-smoothing:none;}
   #app{width:100%;max-width:780px}
   @media (min-width:1024px){ #app{max-width:860px} }
   h1,h2,h3{margin:0;font-weight:400}
@@ -86,6 +91,14 @@
   .hud-btn.hud-saga:hover{border-color:#c0a0ff;color:#fff;box-shadow:0 0 0 1px #000, 0 0 14px rgba(160,100,220,.5)}
   .hud-btn.hud-skills{color:#6cb8ff;border-color:#2a4a7a}
   .hud-btn.hud-skills:hover{border-color:#9bd0ff;color:#fff;box-shadow:0 0 0 1px #000, 0 0 14px rgba(108,184,255,.5)}
+  /* ACTIVE view — the strip doubles as the tab bar, so the open view reads as pressed-in. */
+  .hud-btn.on{color:#fff;border-color:#fff;background:linear-gradient(180deg,#3a3020,#241c12);box-shadow:0 0 0 1px #000, inset 0 0 10px rgba(255,255,255,.12)}
+  .hud-btn.hud-skills.on{border-color:#9bd0ff;background:linear-gradient(180deg,#15304a,#0c1a2a)}
+  .hud-btn.hud-saga.on{border-color:#c0a0ff;background:linear-gradient(180deg,#241540,#140c24)}
+  /* SAGA split — bestiary beside the cross-run saga; stacks on narrow screens. */
+  .saga-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .saga-col{min-width:0}
+  @media (max-width:640px){ .saga-split{grid-template-columns:1fr;gap:4px} }
   /* AFFINITY ROW — one compact line beneath the stats showing the three paths and their tier
      progress at a glance ("WRATH II 5/6 · GUILE 2/3 · VEIL —"). Eye scans it the same way it
      scans the stats, and never needs to open SKILLS just to check how close the next tier is. */
@@ -263,26 +276,39 @@
   #vignette{position:fixed;inset:0;pointer-events:none;z-index:150;opacity:0;transition:opacity .3s;box-shadow:inset 0 0 110px 36px rgba(255,30,50,.55)}
   #vignette.on{opacity:1;animation:vigpulse 1.1s ease-in-out infinite}
   @keyframes vigpulse{0%,100%{opacity:.5}50%{opacity:.95}}
-  /* WORLD FEEL — Heat and Miasma tint the whole interface. They should never be invisible. */
-  body.world-warm  #app{filter:hue-rotate(-5deg) saturate(1.08); box-shadow:inset 0 0 60px rgba(255,140,60,.08)}
-  body.world-hot   #app{filter:hue-rotate(-10deg) saturate(1.22) brightness(1.04); box-shadow:inset 0 0 120px rgba(255,90,30,.22)}
+  /* WORLD FEEL — Heat and Miasma tint the whole interface. They should never be invisible.
+     PERF: the tint used to be a `filter:hue-rotate() saturate() ...` chain on #app. A filter on a
+     container forces the browser to re-rasterize the ENTIRE app subtree every time anything inside it
+     animates — and combat is wall-to-wall animation (sprite bob, damage floats, charge/intent pulses).
+     At tier 3+ that re-raster tanked the framerate and starved the music scheduler (the "slowmo" the
+     player felt near a boss at high Heat, which cleared the instant a fountain dropped Heat). The grade
+     now lives on a single fixed overlay (#worldtint): one cheap composited color wash, never a per-frame
+     subtree filter. The inset box-shadow on #app is a one-time cached paint, so it's safe to keep. */
+  #worldtint{position:fixed;inset:0;pointer-events:none;z-index:142;opacity:0;transition:background .6s,opacity .6s;mix-blend-mode:soft-light}
+  body.world-warm    #worldtint{opacity:1;background:rgba(255,150,70,.30)}
+  body.world-hot     #worldtint{opacity:1;background:rgba(255,110,40,.55)}
+  body.world-sear    #worldtint{opacity:1;background:rgba(255,70,25,.80)}
+  body.world-furnace #worldtint{opacity:1;background:rgba(255,45,15,1)}
+  body.world-cold    #worldtint{opacity:1;background:rgba(120,150,220,.45);mix-blend-mode:multiply}
+  body.world-rot     #worldtint{opacity:1;background:rgba(150,95,205,.55);mix-blend-mode:multiply}
+  body.world-undone  #worldtint{opacity:1;background:rgba(175,85,225,.70);mix-blend-mode:multiply}
+  body.world-warm  #app{box-shadow:inset 0 0 60px rgba(255,140,60,.08)}
+  body.world-hot   #app{box-shadow:inset 0 0 120px rgba(255,90,30,.22)}
   body.world-hot::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;
     background:radial-gradient(ellipse at 50% 110%,rgba(255,110,40,.22) 0%,transparent 55%),
                radial-gradient(circle at 18% 30%,rgba(255,180,80,.08) 0%,transparent 18%),
                radial-gradient(circle at 82% 70%,rgba(255,180,80,.08) 0%,transparent 18%);
     animation:hotShimmer 2.6s ease-in-out infinite alternate}
-  body.world-sear  #app{filter:hue-rotate(-16deg) saturate(1.55) brightness(1.08) contrast(1.05); box-shadow:inset 0 0 180px rgba(255,40,20,.34)}
+  body.world-sear  #app{box-shadow:inset 0 0 180px rgba(255,40,20,.34)}
   body.world-sear::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,50,20,.38) 0%,transparent 65%),
                radial-gradient(circle at 20% 40%,rgba(255,160,80,.18) 0%,transparent 22%),
                radial-gradient(circle at 80% 60%,rgba(255,160,80,.18) 0%,transparent 22%);
     animation:hotShimmer 1.4s ease-in-out infinite alternate}
-  /* PERF: the filter animation here used to be applied to #app itself ("filter: ... ; animation:
-     furnaceFlicker 0.16s steps(2) infinite"). That re-rasterized the ENTIRE app subtree at 6 Hz on
-     every furnace-tier chamber, which jammed the main thread and made the music scheduler drift
-     (audible slowdown near a boss at high Heat). The static filter stays for the look; the flicker
-     is delegated to a pseudo-element overlay (::after, below) so the GPU layer can animate without
-     forcing a full repaint of every reward card / corridor / battle DOM node. */
-  body.world-furnace #app{filter:hue-rotate(-22deg) saturate(1.8) brightness(1.10) contrast(1.10); box-shadow:inset 0 0 240px rgba(255,30,10,.45)}
+  /* PERF: furnace flicker used to be a `filter:...;animation:furnaceFlicker` on #app, re-rasterizing
+     the whole subtree at 6 Hz. It now rides a pseudo-element overlay (::after, below) so the GPU layer
+     animates without repainting every reward card / corridor / battle DOM node. The colour grade lives
+     on #worldtint (above). */
+  body.world-furnace #app{box-shadow:inset 0 0 240px rgba(255,30,10,.45)}
   body.world-furnace::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,40,10,.55) 0%,transparent 70%);animation:hotShimmer 0.9s ease-in-out infinite alternate}
   @keyframes hotShimmer{from{opacity:.55}to{opacity:1}}
   /* Flicker that used to live on #app's filter — now on an isolated overlay. Same readable feel
@@ -362,11 +388,11 @@
   /* MIASMA meter pulses at high tiers so the player can never forget what is in their blood */
   .wmeter.pulse-mia{animation:pulseMia 1.6s ease-in-out infinite}
   @keyframes pulseMia{0%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}50%{filter:brightness(1.3) drop-shadow(0 0 6px rgba(192,108,255,.8))}}
-  body.world-cold  #app{filter:hue-rotate(12deg) saturate(.85) brightness(.96); box-shadow:inset 0 0 80px rgba(120,140,200,.10)}
+  body.world-cold  #app{box-shadow:inset 0 0 80px rgba(120,140,200,.10)}
   body.world-cold::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:140;background:radial-gradient(ellipse at 50% -10%,rgba(160,180,220,.10) 0%,transparent 60%)}
-  body.world-rot   #app{filter:hue-rotate(24deg) saturate(.7) brightness(.92) contrast(1.06); box-shadow:inset 0 0 120px rgba(140,90,200,.18)}
+  body.world-rot   #app{box-shadow:inset 0 0 120px rgba(140,90,200,.18)}
   body.world-rot::after{background:radial-gradient(ellipse at 50% -10%,rgba(180,120,220,.18) 0%,transparent 70%);animation:rotPulse 5s ease-in-out infinite}
-  body.world-undone #app{filter:hue-rotate(36deg) saturate(.55) brightness(.86) contrast(1.12); box-shadow:inset 0 0 160px rgba(160,80,220,.30); animation:undoneSway 6s ease-in-out infinite alternate}
+  body.world-undone #app{box-shadow:inset 0 0 160px rgba(160,80,220,.30); animation:undoneSway 6s ease-in-out infinite alternate}
   body.world-undone::after{background:radial-gradient(ellipse at 50% -10%,rgba(200,140,240,.28) 0%,transparent 80%);animation:rotPulse 3.2s ease-in-out infinite}
   @keyframes rotPulse{0%,100%{opacity:.4}50%{opacity:.9}}
   @keyframes undoneSway{from{transform:translateX(-1px)}to{transform:translateX(1px)}}
@@ -776,6 +802,7 @@
 <div id="crt"></div>
 <div id="transition"></div>
 <div id="vignette"></div>
+<div id="worldtint"></div>
 <div id="app"></div>
 <div id="info-modal" class="hidden" onclick="closeInfo(event)">
   <div class="info-card" onclick="event.stopPropagation()">
@@ -3344,9 +3371,20 @@ function renderCorridor(){
       ${(G._whisper && !banners)?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}</div>${statusFooter()}`;
 }
 let _invReturn='corridor';
-function openInventory(){ _invReturn=G.screen; G.screen='inventory'; render(); }
-function closeInventory(){ G.screen=_invReturn; render(); }
-function setInvTab(t){ G._invTab=t; SFX.play('click'); render(); }
+// view is 'gear' | 'powers' | 'saga'. A HUD button TOGGLES: tapping the view you're already in closes
+// back to the game; tapping a different one switches in place. _invReturn is captured ONLY when we
+// enter from a real game screen — never when we're already inside the inventory. (The old code set
+// _invReturn=G.screen unconditionally, so spamming INVENTORY/SKILLS overwrote it with 'inventory' and
+// BACK trapped you on the inventory screen forever.)
+function openInventory(view){ view=view||'gear';
+  if(G.screen==='inventory'){
+    if((G._invView||'gear')===view){ closeInventory(); return; }
+    G._invView=view; SFX.play('click'); render(); return;
+  }
+  _invReturn=(G.screen&&G.screen!=='inventory')?G.screen:'corridor';
+  G._invView=view; G.screen='inventory'; SFX.play('click'); render();
+}
+function closeInventory(){ if(G.screen!=='inventory')return; G.screen=_invReturn; render(); }
 // =====================================================================================
 // THE SAGA TAB — surfaces the cross-run history that already exists in localStorage so the player
 // can FEEL the accumulation. No new state; just visualization. Sections:
@@ -3469,16 +3507,30 @@ function renderSagaBody(){ const p=G.player; const r=loadRecords();
     <h3 class="green ivh">DISCOVERIES</h3>${discRows}
     <h3 class="purple ivh">RUMORS YOU HAVE HEARD</h3>${rumorRows}`;
 }
-function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
-  const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
-  // Tab labels name their contents — players were missing skills / sets / relics because "POWERS"
-  // didn't say what was inside. GEAR holds armor sets; SKILLS holds skills, paths, relics, synergies.
-  // SKILLS & BUILD tab still exists (the SKILLS HUD button targets it via setInvTab('powers'))
-  // but no longer ships its own tab chip — the player reaches it from the HUD strip directly.
-  const tabs=`<div class="invtabs">${tb('gear','&#9876; GEAR &amp; SETS')}${tb('best','&#128050; BEASTS')}${tb('lore','&#128220; LORE')}${tb('saga','&#9774; SAGA')}</div>`;
+// Bestiary / Codex bodies are their own helpers now so the combined SAGA view can place the Bestiary
+// and the Saga side by side (the player asked for one button that shows both, not a tab strip).
+function bestiaryBody(){ const p=G.player;
+  const fams=Object.keys(p.slayer).sort((a,b)=>p.slayer[b]-p.slayer[a]);
+  const rows=fams.length?fams.map(f=>{const c=p.slayer[f],t=slayerTier(c),nx=t<3?slThreshArr()[t]:null,pct=nx?Math.min(100,c/nx*100):100;
+    return `<div class="best-row"><span>${f} <span class="muted">&times;${c}</span>${t>0?` &middot; <span class="amber">SLAYER ${['','I','II','III'][t]} +${Math.round(SLAYER_BONUS[t]*100)}%</span>`:''}<br><span class="muted" style="font-size:8px">${nx?`${c}/${nx} to next tier`:'mastered'}</span></span><span class="best-bar"><i style="width:${pct}%"></i></span></div>`;}).join('')
+    :'<div class="slot muted">No kills recorded yet. Hunt to grow your Slayer power.</div>';
+  return `<h3 class="red ivh">BESTIARY &mdash; SLAYER</h3><p class="muted" style="font-size:8px;line-height:1.8">Every kill of a family permanently boosts your damage against it. Tiers at 5 / 12 / 22 kills.</p>${rows}`;
+}
+function loreBody(){
+  const known=loadLore(); const found=LORE.filter(l=>known.includes(l.id)).length;
+  const rows=LORE.map(l=>known.includes(l.id)
+    ?`<div class="slot" style="border-left-color:var(--amber)"><span class="amber">&#128220; ${l.t}</span><br><span style="font-size:8px;line-height:1.8;color:#cfcbef">${l.x}</span></div>`
+    :`<div class="slot muted">&#128274; ??? &mdash; undiscovered</div>`).join('');
+  return `<h3 class="amber ivh">THE CODEX &mdash; ${found}/${LORE.length}</h3><p class="muted" style="font-size:8px;line-height:1.8">Fragments uncovered at story beats — descending, felling bosses, meeting the dead. They persist across every run.</p>${rows}`;
+}
+// THREE distinct views, no tabs. INVENTORY = your gear + sets. SKILLS = skills/ultimate/paths/relics/
+// synergies. SAGA = bestiary and the cross-run saga (+ codex) shown side by side. The HUD buttons
+// switch between them and toggle closed; there is no in-panel tab strip anymore.
+function renderInventory(){ const p=G.player; const view=G._invView||'gear';
   const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
-  let body='';
-  if(tab==='gear'){
+  let body='', heading='INVENTORY';
+  if(view==='gear'){
+    heading='INVENTORY';
     // Equipped slots get a full row; empty slots collapse to ONE muted line so the inventory isn't
     // half "empty" rows.
     const equipped=SLOTS.filter(s=>p.equip[s]);
@@ -3490,7 +3542,8 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       const on=have>=set.pieces; return `<div class="slot" style="border-color:${on?'var(--teal)':'var(--line)'}"><span class="${on?'teal':'muted'}">${sn} ${have}/${set.pieces}${on?' &#10003;':''}</span><br><span class="muted" style="font-size:8px">${set.desc}</span></div>`; }).join('');
     body=`<h3 class="amber ivh">EQUIPMENT</h3>${gearRows}
       <h3 class="teal ivh">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}`;
-  } else if(tab==='powers'){
+  } else if(view==='powers'){
+    heading='SKILLS';
     const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
       return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
     const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
@@ -3502,23 +3555,12 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
       <h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
       <h3 class="ivh">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
       <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
-  } else if(tab==='best'){
-    const fams=Object.keys(p.slayer).sort((a,b)=>p.slayer[b]-p.slayer[a]);
-    const rows=fams.length?fams.map(f=>{const c=p.slayer[f],t=slayerTier(c),nx=t<3?slThreshArr()[t]:null,pct=nx?Math.min(100,c/nx*100):100;
-      return `<div class="best-row"><span>${f} <span class="muted">&times;${c}</span>${t>0?` &middot; <span class="amber">SLAYER ${['','I','II','III'][t]} +${Math.round(SLAYER_BONUS[t]*100)}%</span>`:''}<br><span class="muted" style="font-size:8px">${nx?`${c}/${nx} to next tier`:'mastered'}</span></span><span class="best-bar"><i style="width:${pct}%"></i></span></div>`;}).join('')
-      :'<div class="slot muted">No kills recorded yet. Hunt to grow your Slayer power.</div>';
-    body=`<h3 class="red ivh">BESTIARY &mdash; SLAYER</h3><p class="muted" style="font-size:8px;line-height:1.8">Every kill of a family permanently boosts your damage against it. Tiers at 5 / 12 / 22 kills.</p>${rows}`;
-  } else if(tab==='lore'){
-    const known=loadLore(); const found=LORE.filter(l=>known.includes(l.id)).length;
-    const rows=LORE.map(l=>known.includes(l.id)
-      ?`<div class="slot" style="border-left-color:var(--amber)"><span class="amber">&#128220; ${l.t}</span><br><span style="font-size:8px;line-height:1.8;color:#cfcbef">${l.x}</span></div>`
-      :`<div class="slot muted">&#128274; ??? &mdash; undiscovered</div>`).join('');
-    body=`<h3 class="amber ivh">THE CODEX &mdash; ${found}/${LORE.length}</h3><p class="muted" style="font-size:8px;line-height:1.8">Fragments uncovered at story beats — descending, felling bosses, meeting the dead. They persist across every run.</p>${rows}`;
-  } else if(tab==='saga'){
-    body = renderSagaBody();
+  } else { // 'saga' — bestiary and the saga (+ codex) side by side
+    heading='SAGA';
+    body=`<div class="saga-split"><div class="saga-col">${bestiaryBody()}</div><div class="saga-col">${renderSagaBody()}${loreBody()}</div></div>`;
   }
-  app.innerHTML=`<div class="floortag">INVENTORY &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
-    <div class="panel fade room-in">${cur}${tabs}${body}
+  app.innerHTML=`<div class="floortag">${heading} &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
+    <div class="panel fade room-in">${cur}${body}
       <button class="btn center" onclick="closeInventory()"><span class="k">&#9654;</span>BACK</button></div>`;
 }
 function statusFooter(){ const p=G.player; return `<div class="footer">LV ${p.level} &middot; HP ${p.hp}/${p.maxHp} &middot; MP ${p.mana}/${p.maxMana} &middot; ${p.potions} potion(s) &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span> &middot; ${p.relics.length} relic(s)</div>`; }
@@ -5188,10 +5230,14 @@ function playerBar(p,full){
     const prog = next!=null ? `<span class="muted">${pts}/${next}</span>` : `<span class="amber">MAX</span>`;
     return `<span class="aff-pill aff-${meta.color}"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
   const affRow = `<div class="pstrip-aff">${['w','g','v'].map(affEntry).join('')}</div>`;
+  // Each button TOGGLES its own view (tap again to close). The active view is highlighted so the strip
+  // doubles as the tab bar — no in-panel tabs needed.
+  const onInv=G.screen==='inventory'; const cv=G._invView||'gear';
+  const act=v=>onInv&&cv===v?' on':'';
   const invBtns = `<div class="hud-actions">
-    <button class="hud-btn" onclick="openInventory()" title="Open inventory (i)"><span>&#9776;</span> INVENTORY <span class="hud-k">i</span></button>
-    <button class="hud-btn hud-skills" onclick="openInventory();setInvTab('powers')" title="Open your skills, paths, relics &amp; synergies"><span>&#10022;</span> SKILLS</button>
-    <button class="hud-btn hud-saga" onclick="openInventory();setInvTab('saga')" title="Open your Saga"><span>&#9774;</span> SAGA</button>
+    <button class="hud-btn${act('gear')}" onclick="openInventory('gear')" title="Your gear &amp; sets (i)"><span>&#9776;</span> INVENTORY <span class="hud-k">i</span></button>
+    <button class="hud-btn hud-skills${act('powers')}" onclick="openInventory('powers')" title="Your skills, paths, relics &amp; synergies"><span>&#10022;</span> SKILLS</button>
+    <button class="hud-btn hud-saga${act('saga')}" onclick="openInventory('saga')" title="Bestiary &amp; your Saga"><span>&#9774;</span> SAGA</button>
   </div>`;
   return `<div class="panel tight pstrip">
     <div class="bar mini" style="margin:0 0 4px"><div class="lbl"><span class="green">${CLASSES[p.cls].name} &middot; LV${p.level}</span><span>${p.hp}/${p.maxHp} HP${ultTag}</span></div>
