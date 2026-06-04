@@ -18,16 +18,16 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
-  body{background:var(--bg);color:var(--ink);font-family:'Press Start 2P',monospace;font-size:12px;line-height:1.8;
-    display:flex;justify-content:center;align-items:flex-start;padding:18px 10px 64px;image-rendering:pixelated;-webkit-font-smoothing:none;}
+  body{background:var(--bg);color:var(--ink);font-family:'Press Start 2P',monospace;font-size:12px;line-height:1.55;
+    display:flex;justify-content:center;align-items:flex-start;padding:8px 8px 24px;image-rendering:pixelated;-webkit-font-smoothing:none;}
   #app{width:100%;max-width:780px}
   @media (min-width:1024px){ #app{max-width:860px} }
   h1,h2,h3{margin:0;font-weight:400}
   .title{text-align:center;color:var(--amber);font-size:22px;line-height:1.5;text-shadow:3px 3px 0 #000,0 0 14px rgba(255,207,77,.35);margin:14px 0 6px;}
   .subtitle{text-align:center;color:var(--dim);font-size:9px;margin-bottom:22px}
   .blink{animation:blink 1s steps(2,start) infinite}@keyframes blink{to{visibility:hidden}}
-  .panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5);padding:12px;margin-bottom:10px;}
-  .panel.tight{padding:9px 12px;margin-bottom:8px}
+  .panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5);padding:8px 10px;margin-bottom:6px;}
+  .panel.tight{padding:6px 10px;margin-bottom:5px}
   /* Merchant "shop shelf" — consumables in a 2-col grid so the stall feels transactional and fits. */
   .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
   .shop-grid .btn{margin:0;height:100%}
@@ -67,15 +67,15 @@
   .collector-panel .cp-w{display:block;font-size:8.5px;line-height:1.55;color:#bba888;font-style:italic;margin:3px 0 4px}
   .collector-panel .cp-cost{display:block;font-size:8px;color:#9a8b60;letter-spacing:.5px}
   .shrine-panel{border-color:#5a3a8a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(160,90,220,.10)}
-  .pstrip .track.xpline{height:5px;margin-top:3px;border-width:1px}
-  .pstrip .stats.pstats{font-size:8.5px;line-height:1.7;margin-top:4px;color:var(--dim);flex:1;min-width:0}
+  .pstrip .track.xpline{height:4px;margin-top:2px;border-width:1px}
+  .pstrip .stats.pstats{font-size:8.5px;line-height:1.45;margin-top:2px;color:var(--dim);flex:1;min-width:0}
   /* INTEGRATED HUD ACTIONS — INVENTORY + SAGA inline on the right of the stats row. Same row as
      the player's numbers, so the eye that just read the stats lands on them naturally. */
-  .pstrip-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .hud-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+  .pstrip-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .hud-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
   .hud-btn{font-family:inherit;font-size:8.5px;letter-spacing:1px;color:var(--amber);
     background:linear-gradient(180deg,#2a1c10,#1a1408);border:1px solid #6a4818;
-    padding:5px 9px 5px 8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+    padding:3px 7px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;
     transition:background .15s,border-color .15s,color .15s,box-shadow .2s}
   .hud-btn:hover{border-color:var(--amber);color:#fff;background:linear-gradient(180deg,#3a2818,#2a1c10);
     box-shadow:0 0 0 1px #000, 0 0 14px rgba(255,207,77,.45)}
@@ -89,8 +89,8 @@
   /* AFFINITY ROW — one compact line beneath the stats showing the three paths and their tier
      progress at a glance ("WRATH II 5/6 · GUILE 2/3 · VEIL —"). Eye scans it the same way it
      scans the stats, and never needs to open SKILLS just to check how close the next tier is. */
-  .pstrip-aff{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;font-size:8.5px;line-height:1.7}
-  .aff-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border:1px solid var(--line);
+  .pstrip-aff{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;font-size:8.5px;line-height:1.45}
+  .aff-pill{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border:1px solid var(--line);
     background:#0a0916;letter-spacing:.5px;border-radius:1px}
   .aff-pill b{font-weight:normal}
   .aff-pill.aff-red  {border-color:#7a2030;color:#ffb0b8}
@@ -211,20 +211,20 @@
   .center{text-align:center}.muted{color:var(--dim)}
   .green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}.purple{color:var(--purple)}.teal{color:var(--teal)}
   pre.sprite{margin:0;font-family:'Press Start 2P',monospace;line-height:1.25;font-size:11px;white-space:pre;text-align:center;color:var(--green);text-shadow:0 0 6px rgba(92,255,143,.4);}
-  .btn{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-size:11px;color:var(--ink);background:var(--panel2);border:3px solid var(--line);padding:9px 13px;margin:6px 0;line-height:1.45;transition:transform .05s,background .1s,border-color .1s;}
+  .btn{display:block;width:100%;text-align:left;cursor:pointer;font-family:inherit;font-size:11px;color:var(--ink);background:var(--panel2);border:3px solid var(--line);padding:6px 11px;margin:4px 0;line-height:1.35;transition:transform .05s,background .1s,border-color .1s;}
   .btn:hover{background:#2a265080;border-color:var(--amber);color:#fff}
   .btn:active{transform:translate(2px,2px)}
   .btn:disabled{opacity:.4;cursor:not-allowed}
   .btn .k{color:var(--amber);margin-right:8px}
-  .btn small{display:block;color:var(--dim);font-size:9px;margin-top:3px;line-height:1.5}
+  .btn small{display:block;color:var(--dim);font-size:9px;margin-top:2px;line-height:1.4}
   .btn:hover small{color:#b9b4e6}
   .row{display:flex;gap:10px;flex-wrap:wrap}.row .btn{flex:1;min-width:120px}
   .grid3{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
   .grid3>*{flex:1 1 220px;min-width:0;display:flex;flex-direction:column}
   .grid3>*>button:last-child{margin-top:auto}
   .grid3 .card{flex:1 1 220px;min-width:0}
-  .bar{margin:6px 0}
-  .bar .lbl{font-size:9px;display:flex;justify-content:space-between;margin-bottom:3px}
+  .bar{margin:3px 0}
+  .bar .lbl{font-size:9px;display:flex;justify-content:space-between;margin-bottom:2px}
   .bar .track{background:#000;border:2px solid var(--line);height:14px;padding:1px}
   .bar.mini .track{height:9px}.bar.xp .track{height:7px}
   .bar .fill{height:100%;transition:width .35s ease}
@@ -241,9 +241,9 @@
   .chip{display:inline-block;background:#000;border:2px solid var(--line);padding:3px 7px;margin:3px 3px 3px 0;font-size:8px}
   .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
   .r-com{color:#cfcbef}.r-unc{color:var(--green)}.r-rare{color:var(--blue)}.r-epic{color:var(--purple)}.r-leg{color:var(--amber)}
-  .slot{border:2px solid var(--line);background:#00000055;padding:8px 10px;margin:6px 0;font-size:10px;text-align:left;line-height:1.7}
-  .invtabs{display:flex;gap:5px;margin:4px 0 12px;flex-wrap:wrap}
-  .invtabs button{flex:1 1 0;min-width:88px;font-family:inherit;font-size:8.5px;padding:9px 3px;background:var(--panel2);color:var(--muted);border:2px solid var(--line);cursor:pointer;touch-action:manipulation;letter-spacing:.5px;line-height:1.4}
+  .slot{border:2px solid var(--line);background:#00000055;padding:5px 9px;margin:3px 0;font-size:10px;text-align:left;line-height:1.45}
+  .invtabs{display:flex;gap:4px;margin:2px 0 8px;flex-wrap:wrap}
+  .invtabs button{flex:1 1 0;min-width:88px;font-family:inherit;font-size:8.5px;padding:6px 3px;background:var(--panel2);color:var(--muted);border:2px solid var(--line);cursor:pointer;touch-action:manipulation;letter-spacing:.5px;line-height:1.3}
   .invtabs button.on{color:var(--amber);border-color:var(--amber);background:#2a1c1a40;box-shadow:0 0 12px rgba(255,207,77,.25)}
   .invtabs button:hover{border-color:var(--amber);color:#fff}
   .cur-row{text-align:center;font-size:10px;margin:2px 0 10px;letter-spacing:1px}
@@ -387,7 +387,7 @@
   .enemy-turn-banner{display:flex;align-items:center;justify-content:center;min-height:120px;text-align:center;font-size:10px;letter-spacing:1px;color:#ff9b9b;padding:18px 4px;animation:etbPulse .9s ease-in-out infinite}
   @keyframes etbPulse{0%,100%{opacity:.5}50%{opacity:1}}
   .fade{animation:fade .4s}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  .floortag{text-align:center;font-size:9px;letter-spacing:1px;margin-bottom:10px}
+  .floortag{text-align:center;font-size:9px;letter-spacing:1px;margin-bottom:5px}
   .omentag{text-align:center;font-size:8px;color:var(--teal);margin-bottom:8px}
   .hr{border:none;border-top:2px dashed var(--line);margin:14px 0}
   .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.menu-grid .btn{margin:0}
