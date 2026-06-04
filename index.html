@@ -3960,7 +3960,7 @@ function startBattle(intro){
   const r=G.room; const enemies=r._enemies?r._enemies:buildEnemies(r);
   // Reset per-combat affinity rhythm counters so a build's beat starts fresh each fight (a Rending
   // Edge shouldn't carry over from a fight three chambers ago).
-  if(G.player){ G.player._wrathStrikes=0; G.player._feintPrimed=0; G.player._veilHits=0; }
+  if(G.player){ G.player._wrathStrikes=0; G.player._feintPrimed=0; G.player._veilHits=0; G.player._heatHits=0; }
   // Ultimate charge persists across fights — saving up matters.
   const carriedCharge=(G.player&&G.player._charge!=null)?G.player._charge:0;
   G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:carriedCharge,
@@ -4660,6 +4660,12 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
     SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
   else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');}
     if(p.hp<=0){ G._killingBlow='enemy'; G._killingBlowName=e.name; }
+    // FURNACE — taking hits stokes the fire. Every TWO landed hits in the Furnace pushes the Heat
+    // meter up by 1. Dodges and blocks (dmg=0) don't count; lethal hits don't count (the player has
+    // bigger problems). Builds that mitigate well (Veil tanking, Guile dodging) bleed less Heat —
+    // glass-cannon builds run hotter, which thematically fits.
+    if(dmg>0 && p.hp>0 && heatActive()){ p._heatHits=(p._heatHits||0)+1;
+      if(p._heatHits>=2){ p._heatHits=0; addHeat(1); } }
     // VEIL I — STEADY HEART: every 3rd hit you absorb folds back into you (dominant-path only).
     if(dmg>0 && p.hp>0 && dominantAff(p)==='v'){ p._veilHits=(p._veilHits||0)+1;
       if(p._veilHits>=3){ p._veilHits=0; const h=Math.max(2,Math.round(p.maxHp*0.06)); heal(p,h); blog(`&#9774; STEADY HEART — the wound seals (+${h} HP).`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); } } }   // enemy/boss landed the final blow — remember WHO
