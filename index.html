@@ -2575,6 +2575,10 @@ function makeItem(slot,cls,depth,opts){ opts=opts||{};
   return item;
 }
 const STAT_LBL={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT',dodge:'DODGE',lifesteal:'LS',regen:'RGN'};
+// Percentage stats — crit/dodge/lifesteal are chances/ratios, so their VALUE always carries a % no
+// matter where it's shown. (gearCompareHtml and itemStatsText used to disagree: "DODGE 7" here vs
+// "+7 DODGE%" there. Now both read "7%", consistent with the HUD and class-select.)
+const PCT_STAT={crit:1,dodge:1,lifesteal:1};
 function itemExtraText(it){ let s=''; if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`;
   if(it.trait&&WEAPON_TRAITS[it.trait]){ const t=WEAPON_TRAITS[it.trait]; s+=` &middot; <span class="${t.color}">&#10070; ${t.name}</span><small class="muted" style="display:block">${t.desc}</small>`; }
   if(it.set)s+=` &middot; <span class="teal">${it.set} set</span>`; return s; }
@@ -2583,9 +2587,9 @@ function gearScore(it){ if(!it||!it.stats)return 0; const s=it.stats;
   return (s.dmg||0)*2.0 + (s.atk||0)*2.2 + (s.def||0)*1.4 + (s.maxHp||0)*0.12 + (s.maxMana||0)*0.18
        + (s.crit||0)*0.9 + (s.dodge||0)*0.8 + (s.lifesteal||0)*0.7 + (s.regen||0)*0.4; }
 function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stats||{}),...(cur?Object.keys(cur.stats||{}):[])])];
-  const parts=keys.map(k=>{ const nv=it.stats[k]||0, ov=(cur&&cur.stats[k])||0, d=nv-ov;
-    const dt=!cur?'':d>0?` <span class="green">&#9650;${d}</span>`:d<0?` <span class="red">&#9660;${-d}</span>`:'';
-    return `${STAT_LBL[k]||k} <b>${nv}</b>${dt}`; });
+  const parts=keys.map(k=>{ const nv=it.stats[k]||0, ov=(cur&&cur.stats[k])||0, d=nv-ov; const pc=PCT_STAT[k]?'%':'';
+    const dt=!cur?'':d>0?` <span class="green">&#9650;${d}${pc}</span>`:d<0?` <span class="red">&#9660;${-d}${pc}</span>`:'';
+    return `${STAT_LBL[k]||k} <b>${nv}${pc}</b>${dt}`; });
   // Net verdict — answers "is this an upgrade?" so players don't have to do the math.
   let verdict=''; if(cur){ const ds=gearScore(it)-gearScore(cur);
     verdict = ds>1.5 ? ' &middot; <span class="green">UPGRADE</span>'
@@ -2593,8 +2597,8 @@ function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stat
             : ' &middot; <span class="muted">SIDEGRADE</span>'; }
   return parts.join(' &middot; ')+verdict+itemExtraText(it); }
 function itemLabel(it){ return `<span class="${RARITY[it.rarity].cls}">${it.name}</span> <span class="muted">Lv${it.ilvl}</span>`; }
-function itemStatsText(it){ const parts=[]; const lbl={dmg:'DMG',atk:'ATK',def:'DEF',maxHp:'HP',maxMana:'MP',crit:'CRIT%',dodge:'DODGE%',lifesteal:'LS%',regen:'RGN'};
-  for(const k in it.stats){ parts.push(`+${it.stats[k]} ${lbl[k]||k}`); }
+function itemStatsText(it){ const parts=[];
+  for(const k in it.stats){ parts.push(`+${it.stats[k]}${PCT_STAT[k]?'%':''} ${STAT_LBL[k]||k}`); }
   let s=parts.join(', ');
   if(it.passiveDesc)s+=` &middot; <span class="amber">${it.passiveDesc}</span>`;
   if(it.trait&&WEAPON_TRAITS[it.trait]){ const t=WEAPON_TRAITS[it.trait]; s+=` &middot; <span class="${t.color}">&#10070; ${t.name}</span>`; }
@@ -3968,10 +3972,26 @@ const FORGE_LINES={
 };
 function forgeFlash(kind){ const sc=document.getElementById('app'); if(sc){ sc.classList.remove('forge-clang'); void sc.offsetWidth; sc.classList.add('forge-clang'); }
   G._forgeFlash = (FORGE_LINES[kind]||FORGE_LINES.upgrade)[Math.floor(Math.random()*((FORGE_LINES[kind]||FORGE_LINES.upgrade).length))]; }
+// Snapshot an item's salient state so a forge action can show EXACTLY what it changed.
+function forgeSnap(it){ return it?{name:it.name,rarity:it.rarity,ilvl:it.ilvl,proc:!!it.proc,passiveDesc:it.passiveDesc||'',stats:Object.assign({},it.stats)}:null; }
+// "What the forge changed" popup — per-stat before -> after with deltas, plus rarity / new passive.
+// The player asked to SEE how much a buff increased, not just a flavour line.
+function forgeResultPopup(it,snap,kind){ if(!it||!snap)return;
+  const keys=[...new Set([...Object.keys(snap.stats||{}),...Object.keys(it.stats||{})])];
+  const rows=keys.map(k=>{ const ov=snap.stats[k]||0,nv=it.stats[k]||0,d=nv-ov; const pc=PCT_STAT[k]?'%':''; if(!ov&&!nv)return'';
+    const dt=d>0?` <span class="green">&#9650;${d}${pc}</span>`:d<0?` <span class="red">&#9660;${-d}${pc}</span>`:'';
+    return `<div style="display:flex;justify-content:space-between;font-size:10px;line-height:2"><span class="muted">${STAT_LBL[k]||k}</span><span>${ov}${pc} &rarr; <b>${nv}${pc}</b>${dt}</span></div>`; }).filter(Boolean).join('');
+  let extra='';
+  if(snap.rarity!==it.rarity) extra+=`<p style="font-size:10px;margin-top:6px;text-align:center"><span class="${RARITY[snap.rarity].cls}">${RARITY[snap.rarity].name}</span> &rarr; <span class="${RARITY[it.rarity].cls}">${RARITY[it.rarity].name}</span></p>`;
+  if((it.passiveDesc&&it.passiveDesc!==snap.passiveDesc) || (it.proc&&!snap.proc)) extra+=`<p style="font-size:10px;margin-top:4px;text-align:center"><span class="amber">&#10022; New: ${it.passiveDesc||'enchanted edge'}</span></p>`;
+  const titles={upgrade:'TEMPERED',reforge:'REFORGED',imbue:'IMBUED'};
+  showInfo({title:`${titles[kind]||'FORGED'} &mdash; ${it.name}`,
+    body:`${rows}${extra}${(rows||extra)?'':'<p class="muted" style="font-size:10px">The forge does its work.</p>'}`});
+}
 function fAttune(path){ const ok=forgeAttune(path); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'attune':'fail'); renderForge(); }
-function fUpgrade(s){ const ok=forgeUpgrade(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'upgrade':'fail'); renderForge(); }
-function fReforge(s){ const ok=forgeReforge(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'reforge':'fail'); renderForge(); }
-function fImbue(){ const ok=forgeImbue(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'imbue':'fail'); renderForge(); }
+function fUpgrade(s){ const p=G.player; const snap=forgeSnap(p.equip[s]); const ok=forgeUpgrade(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'upgrade':'fail'); renderForge(); if(ok)forgeResultPopup(p.equip[s],snap,'upgrade'); }
+function fReforge(s){ const p=G.player; const snap=forgeSnap(p.equip[s]); const ok=forgeReforge(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'reforge':'fail'); renderForge(); if(ok)forgeResultPopup(p.equip[s],snap,'reforge'); }
+function fImbue(){ const p=G.player; const snap=forgeSnap(p.weapon); const ok=forgeImbue(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'imbue':'fail'); renderForge(); if(ok)forgeResultPopup(p.weapon,snap,'imbue'); }
 function leaveForge(){ leaveRoom(); }
 function renderForge(){ const p=G.player; discoverLore('l11');
   const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${sub}</small></button>`;
@@ -4348,7 +4368,10 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   // pipeline via devourKillFragment), and a 35% roll. Bosses always trigger this too.
   if(p.memory && p.memory.devour && DEVOUR_FAMILIES[fam] && !p._saturated){
     const b=G.battle;
-    const fromDevour = b && b._castKills && b._castKills.some(k=>k.name===e.name);
+    // A Devour cast handles ALL its kills (boss + chosen non-boss) via processDevourCast at the end of
+    // the cast. onEnemyDeath runs mid-cast (inside dealToEnemy), so _castKills isn't populated yet —
+    // _devourActive tells us a cast is in flight so we don't ALSO queue here and double the fragment.
+    const fromDevour = (b && b._devourActive) || (b && b._castKills && b._castKills.some(k=>k.name===e.name));
     if(!fromDevour){
       const path=p.memory.path||[];
       const newFamily = !path.includes(fam);
@@ -4511,6 +4534,11 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
     case 'devour':{
       // The 4th-slot DEVOUR — every champion starts with this. Mutates by killing.
       const d=p.memory; const dmgMult=(d&&d.dmgMult)||1.5; const aoe=d&&d.aoe;
+      // Mark the whole cast: kills resolved during it route their fragment through processDevourCast
+      // (one per cast, one per boss). Without this, onEnemyDeath fires INSIDE dealToEnemy — before
+      // devourKillFragment records the kill — so a boss got its fragment queued twice (once here,
+      // once in processDevourCast). The flag makes onEnemyDeath defer to the cast's own pipeline.
+      b._devourActive=1;
       // 'multi' (Vermin) trait grants an extra strike even on the no-combo bind path.
       const strikes=Math.max(1,(d&&d.strikes)||1) + ((d&&(d.effects||[]).includes('multi'))?1:0);
       SFX.play('crit');
@@ -4571,6 +4599,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       if(d && /Soul Winter/.test(d.name)) addMiasma(4);
       // SATURATED RULE — at most one fragment per cast (bosses excepted). Multi-kills offer a choice.
       processDevourCast(p, b);
+      b._devourActive=0;
       break;
     }
     case 'hollow':{SFX.play('frost'); b.hollowSkip=1; blog('HOLLOW STEP — the world pauses. You step outside the next moment.','crit'); break;}
@@ -4611,7 +4640,7 @@ function fleeBattle(){ const p=G.player,b=G.battle; if(battleBusy())return;
     addMiasma(2);
     // Fleeing abandons any unresolved Devour queue from this fight so the modal
     // doesn't surface mid-corridor next room.
-    G._multiEssenceFams=null; G._fragQueue=[]; if(b){b._castKills=[]; if(b._cycloneAtk){p.atk-=b._cycloneAtk; b._cycloneAtk=0;}}
+    G._multiEssenceFams=null; G._fragQueue=[]; if(b){b._castKills=[]; b._devourActive=0; if(b._cycloneAtk){p.atk-=b._cycloneAtk; b._cycloneAtk=0;}}
     blog(`You break away — claws and cold take ${tax} HP from your back.`,'info');
     showInfo({title:'FLED &mdash; WOUNDED',body:`<p class="shout-red" style="font-size:11px">You turned your back to the dark. Claws and cold took <b>${tax} HP</b> from you on the way out, and the cold has thickened around you (+2 Miasma).</p>`});
     b.over=true; render(); setTimeout(()=>proceed('You escaped — wounded.'),700);
@@ -5244,7 +5273,7 @@ function playerBar(p,full){
       <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div>
       <div class="track xpline"><div class="fill mp" style="width:${mpPct}%"></div></div></div>
     <div class="pstrip-row">
-      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple">&#9670;${p.relics.length}</span>`:''}</div>
+      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple">&#9670;${p.relics.length}</span>`:''}</div>
       ${invBtns}
     </div>
     ${affRow}
