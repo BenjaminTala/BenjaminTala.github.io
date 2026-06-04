@@ -84,6 +84,21 @@
     border:1px solid #6a5a30;color:#bba888;background:#0a0805;border-radius:1px;opacity:.85}
   .hud-btn.hud-saga{color:#9b8cd8;border-color:#3a2a60}
   .hud-btn.hud-saga:hover{border-color:#c0a0ff;color:#fff;box-shadow:0 0 0 1px #000, 0 0 14px rgba(160,100,220,.5)}
+  .hud-btn.hud-skills{color:#6cb8ff;border-color:#2a4a7a}
+  .hud-btn.hud-skills:hover{border-color:#9bd0ff;color:#fff;box-shadow:0 0 0 1px #000, 0 0 14px rgba(108,184,255,.5)}
+  /* AFFINITY ROW — one compact line beneath the stats showing the three paths and their tier
+     progress at a glance ("WRATH II 5/6 · GUILE 2/3 · VEIL —"). Eye scans it the same way it
+     scans the stats, and never needs to open SKILLS just to check how close the next tier is. */
+  .pstrip-aff{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;font-size:8.5px;line-height:1.7}
+  .aff-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border:1px solid var(--line);
+    background:#0a0916;letter-spacing:.5px;border-radius:1px}
+  .aff-pill b{font-weight:normal}
+  .aff-pill.aff-red  {border-color:#7a2030;color:#ffb0b8}
+  .aff-pill.aff-red b{color:var(--red)}
+  .aff-pill.aff-teal {border-color:#1a6a60;color:#9bf0e0}
+  .aff-pill.aff-teal b{color:var(--teal)}
+  .aff-pill.aff-blue {border-color:#2a4a7a;color:#a8c8f0}
+  .aff-pill.aff-blue b{color:var(--blue)}
   @media (max-width:560px){
     .pstrip-row{flex-direction:column;align-items:stretch;gap:6px}
     .hud-actions{justify-content:center}
@@ -3449,7 +3464,9 @@ function renderInventory(){ const p=G.player; const tab=G._invTab||'gear';
   const tb=(id,l)=>`<button class="${tab===id?'on':''}" onclick="setInvTab('${id}')">${l}</button>`;
   // Tab labels name their contents — players were missing skills / sets / relics because "POWERS"
   // didn't say what was inside. GEAR holds armor sets; SKILLS holds skills, paths, relics, synergies.
-  const tabs=`<div class="invtabs">${tb('gear','&#9876; GEAR &amp; SETS')}${tb('powers','&#10022; SKILLS &amp; BUILD')}${tb('best','&#128050; BEASTS')}${tb('lore','&#128220; LORE')}${tb('saga','&#9774; SAGA')}</div>`;
+  // SKILLS & BUILD tab still exists (the SKILLS HUD button targets it via setInvTab('powers'))
+  // but no longer ships its own tab chip — the player reaches it from the HUD strip directly.
+  const tabs=`<div class="invtabs">${tb('gear','&#9876; GEAR &amp; SETS')}${tb('best','&#128050; BEASTS')}${tb('lore','&#128220; LORE')}${tb('saga','&#9774; SAGA')}</div>`;
   const cur=`<div class="cur-row"><span class="amber">${p.gold}g</span> &nbsp;&middot;&nbsp; <span class="teal">${p.essence} ${ESS}</span> &nbsp;&middot;&nbsp; <span class="muted">${p.potions} potion(s)</span></div>`;
   let body='';
   if(tab==='gear'){
@@ -5122,15 +5139,24 @@ function affinityBar(p){
 }
 function playerBar(p,full){
   // COMPACT out-of-combat strip. HP gets the visible bar; MP/ATK/DEF/etc. become inline text.
-  // INVENTORY now lives INSIDE this strip, on the same row as the stats — so it sits inside the
-  // player's natural eye path (chamber title -> HP bar -> stats + INVENTORY -> doors) instead of
-  // floating in the empty bottom-right corner where players stop scanning after a few minutes.
+  // INVENTORY / SKILLS / SAGA live INSIDE this strip, on the same row as the stats — so they sit
+  // inside the player's natural eye path (chamber title -> HP bar -> stats + actions -> doors)
+  // instead of floating in the empty bottom-right corner where players stop scanning.
   const ec=effCrit(p),ed=effDodge(p); const ch=p._charge||0;
   const xpPct=clamp(p.xp/xpNeeded(p.level)*100,0,100);
   const mpPct=p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0;
   const ultTag = ch>=100?' &middot; <span class="purple">&#10022; ULT READY</span>':'';
+  // Affinity row — one compact line showing the three paths and progress at a glance, so the
+  // player never needs to dig into the SKILLS tab just to check "how close to Wrath II am I."
+  const tierRoman=['','I','II','III'];
+  const affEntry=k=>{ const meta=AFF_META[k]; const t=p.affTier[k]; const pts=p.aff[k]; const next=t<3?AFF_THRESH[t]:null;
+    const lbl = t>0?` <span class="muted">${tierRoman[t]}</span>`:'';
+    const prog = next!=null ? `<span class="muted">${pts}/${next}</span>` : `<span class="amber">MAX</span>`;
+    return `<span class="aff-pill aff-${meta.color}"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
+  const affRow = `<div class="pstrip-aff">${['w','g','v'].map(affEntry).join('')}</div>`;
   const invBtns = `<div class="hud-actions">
     <button class="hud-btn" onclick="openInventory()" title="Open inventory (i)"><span>&#9776;</span> INVENTORY <span class="hud-k">i</span></button>
+    <button class="hud-btn hud-skills" onclick="openInventory();setInvTab('powers')" title="Open your skills, paths, relics &amp; synergies"><span>&#10022;</span> SKILLS</button>
     <button class="hud-btn hud-saga" onclick="openInventory();setInvTab('saga')" title="Open your Saga"><span>&#9774;</span> SAGA</button>
   </div>`;
   return `<div class="panel tight pstrip">
@@ -5141,6 +5167,7 @@ function playerBar(p,full){
       <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="teal">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple">&#9670;${p.relics.length}</span>`:''}</div>
       ${invBtns}
     </div>
+    ${affRow}
   </div>`;
 }
 /* ---------- keyboard ---------- */
