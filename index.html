@@ -511,6 +511,15 @@
   .sprite-enemy.spr-frostbite   {max-height:88px}
   .sprite-enemy.spr-thousandth  {max-height:120px}
   .sprite-enemy.spr-paledevourer{max-height:124px}
+  /* third batch: dedicated art for previously-mismatched enemies */
+  .sprite-enemy.spr-imp         {max-height:84px}
+  .sprite-enemy.spr-hellhound   {max-height:88px}
+  .sprite-enemy.spr-orcbrute    {max-height:104px}
+  .sprite-enemy.spr-darkacolyte {max-height:96px}
+  .sprite-enemy.spr-cultist     {max-height:96px}
+  .sprite-enemy.spr-flameknight {max-height:104px}
+  .sprite-enemy.spr-ogrewarlord {max-height:128px}
+  .sprite-enemy.spr-broodmother {max-height:130px;max-width:180px}
   /* Bosses are 1.5x and override per-key for those that need extra mass */
   .sprite-enemy.boss              {max-height:150px;max-width:200px}
   .sprite-enemy.boss.spr-golem    {max-height:160px}
@@ -597,6 +606,11 @@
   /* for hand-authored event sprites whose colors are already correct — adds a soft glow only,
      no hue shift.  Use this instead of tint-gold/tint-red when the source PNG is the final look. */
   .ev-sprite.tint-natural{filter:drop-shadow(0 0 8px rgba(255,220,140,.55))}
+  /* Room sprites (chest/pedestal/fountain) — replace the old <pre class="sprite ..."> ASCII art */
+  .room-sprite{display:block;margin:6px auto;image-rendering:pixelated;
+    width:auto;height:auto;max-width:108px;max-height:108px;
+    animation:idleBob 2.8s ease-in-out infinite;
+    filter:drop-shadow(0 0 10px rgba(200,180,255,.4))}
   /* ==== item icons from 16x16 sheets ==== */
   .iicon{box-sizing:content-box;display:inline-block;vertical-align:middle;image-rendering:pixelated;background-repeat:no-repeat;
     background-origin:content-box;background-clip:content-box;
@@ -604,8 +618,10 @@
   .iicon.lg{width:32px;height:32px;padding:6px}
   .iicon.wpn{background-image:url('assets/items/wpns.png');background-size:288px 240px}
   .iicon.arm{background-image:url('assets/items/armr.png');background-size:240px 96px}
+  .iicon.trk{background-image:url('assets/items/trinkets.png');background-size:72px 24px}
   .iicon.lg.wpn{background-size:384px 320px}
   .iicon.lg.arm{background-size:320px 128px}
+  .iicon.lg.trk{background-size:96px 32px}
   /* weapon cells: 12 cols x 10 rows, picks per type */
   .iicon.wpn.melee {background-position:0 0}
   .iicon.wpn.melee2{background-position:-24px -24px}
@@ -617,19 +633,39 @@
   .iicon.lg.wpn.magic {background-position:-96px -32px}
   .iicon.lg.wpn.magic2{background-position:-128px -32px}
   .iicon.lg.wpn.ranged{background-position:-160px 0}
-  /* armor cells: 10 cols x 4 rows */
-  .iicon.arm.light{background-position:0 0}
-  .iicon.arm.heavy{background-position:-48px 0}
-  .iicon.arm.robe {background-position:-24px -48px}
-  .iicon.arm.ring {background-position:-168px 0}
-  .iicon.arm.amulet{background-position:-192px 0}
-  .iicon.arm.cloak{background-position:-72px -24px}
-  .iicon.lg.arm.light{background-position:0 0}
-  .iicon.lg.arm.heavy{background-position:-64px 0}
-  .iicon.lg.arm.robe {background-position:-32px -64px}
-  .iicon.lg.arm.ring {background-position:-224px 0}
-  .iicon.lg.arm.amulet{background-position:-256px 0}
-  .iicon.lg.arm.cloak{background-position:-96px -32px}
+  /* armor cells: 10 cols x 4 rows. SLOT picks the row (head=0, chest=1, boots=2,
+     legs=3); MATERIAL picks the column (light=col0, heavy=col2, robe=col6). */
+  .iicon.arm.a-head-light {background-position:0 0}
+  .iicon.arm.a-head-heavy {background-position:-48px 0}
+  .iicon.arm.a-head-robe  {background-position:-144px 0}
+  .iicon.arm.a-chest-light{background-position:0 -24px}
+  .iicon.arm.a-chest-heavy{background-position:-48px -24px}
+  .iicon.arm.a-chest-robe {background-position:-144px -24px}
+  .iicon.arm.a-boots-light{background-position:0 -48px}
+  .iicon.arm.a-boots-heavy{background-position:-48px -48px}
+  .iicon.arm.a-boots-robe {background-position:-144px -48px}
+  .iicon.arm.a-legs-light {background-position:0 -72px}
+  .iicon.arm.a-legs-heavy {background-position:-48px -72px}
+  .iicon.arm.a-legs-robe  {background-position:-144px -72px}
+  .iicon.lg.arm.a-head-light {background-position:0 0}
+  .iicon.lg.arm.a-head-heavy {background-position:-64px 0}
+  .iicon.lg.arm.a-head-robe  {background-position:-192px 0}
+  .iicon.lg.arm.a-chest-light{background-position:0 -32px}
+  .iicon.lg.arm.a-chest-heavy{background-position:-64px -32px}
+  .iicon.lg.arm.a-chest-robe {background-position:-192px -32px}
+  .iicon.lg.arm.a-boots-light{background-position:0 -64px}
+  .iicon.lg.arm.a-boots-heavy{background-position:-64px -64px}
+  .iicon.lg.arm.a-boots-robe {background-position:-192px -64px}
+  .iicon.lg.arm.a-legs-light {background-position:0 -96px}
+  .iicon.lg.arm.a-legs-heavy {background-position:-64px -96px}
+  .iicon.lg.arm.a-legs-robe  {background-position:-192px -96px}
+  /* trinkets: 3 cols x 1 row (ring / amulet / charm) */
+  .iicon.trk.t-ring  {background-position:0 0}
+  .iicon.trk.t-amulet{background-position:-24px 0}
+  .iicon.trk.t-charm {background-position:-48px 0}
+  .iicon.lg.trk.t-ring  {background-position:0 0}
+  .iicon.lg.trk.t-amulet{background-position:-32px 0}
+  .iicon.lg.trk.t-charm {background-position:-64px 0}
   /* rarity-tinted icon outline */
   .iicon.r-com{border-color:#cfcbef}.iicon.r-unc{border-color:var(--green)}
   .iicon.r-rare{border-color:var(--blue)}.iicon.r-epic{border-color:var(--purple)}
@@ -643,13 +679,15 @@
     .sprite-player{width:108px;height:108px}
     .title-art{max-width:160px;max-height:130px}
     .iicon{width:20px;height:20px}
-    .iicon.wpn{background-size:240px 200px}.iicon.arm{background-size:200px 80px}
+    .iicon.wpn{background-size:240px 200px}.iicon.arm{background-size:200px 80px}.iicon.trk{background-size:60px 20px}
     .iicon.wpn.melee {background-position:0 0}.iicon.wpn.melee2{background-position:-20px -20px}
     .iicon.wpn.magic {background-position:-60px -20px}.iicon.wpn.magic2{background-position:-80px -20px}
     .iicon.wpn.ranged{background-position:-100px 0}
-    .iicon.arm.light{background-position:0 0}.iicon.arm.heavy{background-position:-40px 0}
-    .iicon.arm.robe {background-position:-20px -40px}.iicon.arm.ring{background-position:-140px 0}
-    .iicon.arm.amulet{background-position:-160px 0}.iicon.arm.cloak{background-position:-60px -20px}
+    .iicon.arm.a-head-light {background-position:0 0}.iicon.arm.a-head-heavy {background-position:-40px 0}.iicon.arm.a-head-robe {background-position:-120px 0}
+    .iicon.arm.a-chest-light{background-position:0 -20px}.iicon.arm.a-chest-heavy{background-position:-40px -20px}.iicon.arm.a-chest-robe{background-position:-120px -20px}
+    .iicon.arm.a-boots-light{background-position:0 -40px}.iicon.arm.a-boots-heavy{background-position:-40px -40px}.iicon.arm.a-boots-robe{background-position:-120px -40px}
+    .iicon.arm.a-legs-light {background-position:0 -60px}.iicon.arm.a-legs-heavy {background-position:-40px -60px}.iicon.arm.a-legs-robe {background-position:-120px -60px}
+    .iicon.trk.t-ring{background-position:0 0}.iicon.trk.t-amulet{background-position:-20px 0}.iicon.trk.t-charm{background-position:-40px 0}
   }
   /* ===================== VISUAL REFRESH ===================== */
   body{background:radial-gradient(circle at 50% 16%, #181534 0%, #0d0c1d 58%, #070611 100%);transition:background 1.4s ease}
@@ -1127,24 +1165,50 @@ function setMusicForScreen(){
    ============================================================ */
 const ENEMY_SPRITE={
   'Giant Rat':'slime','Goblin':'goblin','Cave Bat':'condor','Slime':'slime',
-  'Skeleton':'zombie','Imp':'demon','Ghoul':'zombie',
-  'Venomspitter':'sahagin','Orc Brute':'golem','Dark Acolyte':'demon',
-  'Wraith':'ghost','Stone Golem':'golem','Hellhound':'demon','Cultist':'demon',
+  'Skeleton':'zombie','Ghoul':'zombie',
+  'Venomspitter':'sahagin','Stone Golem':'golem',
+  'Wraith':'ghost',
   'MIMIC':'slime','Treasure Goblin':'goblin',
-  // hand-authored pixel-art sprites added to replace ASCII placeholders
+  // hand-authored pixel-art sprites added in the sprite revamp
   'Bloodbat':'bloodbat','Will-o-Wisp':'wisp','Plague Bearer':'plaguebearer',
   'Sand Wurm':'sandwurm','Gargoyle':'gargoyle','Frostbite':'frostbite',
+  // re-mapped wrong placeholders — each now has dedicated art that actually
+  // depicts the creature (orc isn't a golem, hellhound isn't a generic demon).
+  'Imp':'imp','Hellhound':'hellhound','Orc Brute':'orcbrute',
+  'Dark Acolyte':'darkacolyte','Cultist':'cultist',
 };
 const BOSS_SPRITE={
-  'OGRE WARLORD':'golem','GOBLIN KING':'goblin','BROODMOTHER':'sahagin',
+  'GOBLIN KING':'goblin',
   'THE NECROMANCER':'demonlord','STONE TITAN':'golem','CAVE TYRANT':'golem',
-  'DEMON LORD':'demonlord','THE LICH':'demonlord','FLAME KNIGHT':'demon',
+  'DEMON LORD':'demonlord','THE LICH':'demonlord',
   'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'demonlord','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
   'THE THOUSANDTH CHAMPION':'thousandth','THE PALE DEVOURER':'paledevourer',
+  // re-mapped wrong placeholders
+  'OGRE WARLORD':'ogrewarlord','BROODMOTHER':'broodmother','FLAME KNIGHT':'flameknight',
 };
 const AFFIX_TAGS=['Armored','Frenzied','Vampiric','Toxic','Brutal'];
+// Every way an enemy name can be PREFIXED at spawn — elite affixes (AFFIXES),
+// counter-affixes (COUNTERS), Heat-tier threat words, and the metal-room tag.
+// Prefixes stack (e.g. "Iron-Clad Relentless Gargoyle"), so stripAffix loops.
+// Built lazily + cached because COUNTERS is defined further down the file.
+let _affixPrefixes=null;
+function affixPrefixes(){
+  if(_affixPrefixes) return _affixPrefixes;
+  const list=[];
+  for(const t of AFFIX_TAGS) list.push(t+' ');
+  try{ for(const k in COUNTERS) list.push(COUNTERS[k].prefix); }catch(e){}
+  // Heat-tier + metal-room words (hardcoded at their apply-sites, no table to read)
+  ['Ashen ','Molten ','Blazing ','Living Furnace ','Iron-Clad '].forEach(p=>list.push(p));
+  // longest-first so multi-word prefixes strip before any shorter prefix of them
+  _affixPrefixes = list.sort((a,b)=>b.length-a.length);
+  return _affixPrefixes;
+}
 function stripAffix(name){
-  for(const t of AFFIX_TAGS) if(name.startsWith(t+' ')) return name.slice(t.length+1);
+  const pre=affixPrefixes();
+  let changed=true;
+  while(changed){ changed=false;
+    for(const p of pre){ if(name.startsWith(p)){ name=name.slice(p.length); changed=true; break; } }
+  }
   return name;
 }
 function spriteKeyFor(name){
@@ -1176,18 +1240,20 @@ function iconClassesFor(item){
   }
   if(item.slot==='ring'){
     const n=(item.name||'').toLowerCase();
-    let key='ring';
-    if(n.includes('amulet')||n.includes('pendant')||n.includes('orb')) key='amulet';
-    else if(n.includes('cloak')) key='cloak';
-    return `iicon arm ${key} ${r}`;
+    let key='ring';   // dedicated trinkets sheet (ring / amulet / charm)
+    if(n.includes('amulet')||n.includes('pendant')||n.includes('orb')||n.includes('locket')) key='amulet';
+    else if(n.includes('cloak')||n.includes('charm')||n.includes('idol')||n.includes('talisman')||n.includes('sigil')) key='charm';
+    return `iicon trk t-${key} ${r}`;
   }
   if(item.slot==='head'||item.slot==='chest'||item.slot==='legs'||item.slot==='boots'){
+    // Row is chosen by SLOT (head/chest/boots/legs each get their own row in
+    // armr.png); the material keyword picks the column within that row so an
+    // iron helm and a cloth hood look different but both still read as helmets.
     const n=(item.name||'').toLowerCase();
-    let key='light';
-    if(item.slot==='boots') key='cloak';
-    else if(n.includes('robe')||n.includes('archmage')||n.includes('mage')||n.includes('cloth')||n.includes('wizard')||n.includes('hood')) key='robe';
-    else if(n.includes('plate')||n.includes('chain')||n.includes('iron')||n.includes('bloodforged')||n.includes('breast')) key='heavy';
-    return `iicon arm ${key} ${r}`;
+    let mat='light';
+    if(/robe|archmage|\bmage\b|cloth|wizard|hood|silk|veil|shadowweave|weave/.test(n)) mat='robe';
+    else if(/plate|chain|iron|bloodforged|breast|steel|greave|sabaton|plated|bulwark|brigandine/.test(n)) mat='heavy';
+    return `iicon arm a-${item.slot}-${mat} ${r}`;
   }
   return null;
 }
@@ -3747,7 +3813,7 @@ function renderRoom(){
         <button class="btn center red" onclick="startBattle()"><span class="k">&#9876;</span>FIGHT</button>
         ${r.boss?'':`<button class="btn center" onclick="avoidRoom()"><span class="k">&#10551;</span>SNEAK PAST</button>`}</div>`;
   } else if(r.type==='chest'){
-    body=`<pre class="sprite amber">  ______\n /      \\\n |[]##[]|\n |  __  |\n \\______/</pre>
+    body=`<img class="room-sprite" src="assets/rooms/chest.png" alt="Chest" draggable="false">
       <h3 class="center amber" style="margin:8px 0">A CHEST</h3><p class="muted center" style="font-size:9px">${r.peek}</p>
       <div class="row" style="margin-top:12px">
         <button class="btn center amber" onclick="openChest()"><span class="k">&#128273;</span>OPEN IT</button>
@@ -3757,7 +3823,7 @@ function renderRoom(){
     const owned=new Set(p.relics);
     const cards=r.options.map((rl,i)=>{const have=owned.has(rl.name);
       return `<button class="btn" ${have?'disabled':''} onclick="takeRelic(${i})"><span class="k purple">&#9670;</span>${rl.name}${have?' (owned)':''}<small>${rl.note}<br><span class="teal">&#10022; ${affTagText(rl.aff)}</span></small></button>`;}).join('');
-    body=`<pre class="sprite purple">  __||__\n |[####]|\n |[ &#9670; ]|\n |[####]|\n  \\____/</pre>
+    body=`<img class="room-sprite" src="assets/rooms/pedestal.png" alt="Pedestal" draggable="false">
       <h3 class="center purple" style="margin:8px 0">PEDESTAL OF POWER</h3>
       <p class="muted center" style="font-size:9px">Claim ONE relic. It will reshape how you fight.</p>${cards}
       <button class="btn muted center" onclick="leaveRoom()">Touch nothing, move on</button>`;
@@ -3784,7 +3850,7 @@ function renderRoom(){
         <div class="pact-w">"Lay your hand flat. Take what kept the previous champion warm a little longer."</div>
         <div class="pact-cost">&plus;3 DEF, +8 max HP permanent</div></button>`;
   } else if(r.type==='fountain'){
-    body=`<pre class="sprite blue">  .-~~~-.\n (~ ~ ~ ~)\n  \\~~~~~/\n   |   |\n  /_____\\</pre>
+    body=`<img class="room-sprite" src="assets/rooms/fountain.png" alt="Fountain" draggable="false">
       <h3 class="center blue" style="margin:8px 0">SHIMMERING FOUNTAIN</h3>
       <p class="muted center" style="font-size:9px">The water glows. It could heal you greatly... or curse you. A gamble.</p>
       <div class="row" style="margin-top:12px">
