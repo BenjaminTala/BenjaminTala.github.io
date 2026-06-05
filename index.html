@@ -502,6 +502,15 @@
   .sprite-enemy.spr-golem    {max-height:104px}
   .sprite-enemy.spr-dragon   {max-height:108px;max-width:170px}
   .sprite-enemy.spr-demonlord{max-height:110px}
+  /* hand-authored sprites: roughly grouped by size — small flyers ≈ bat, mid-size enemies ≈ goblin, bosses larger */
+  .sprite-enemy.spr-wisp        {max-height:78px}
+  .sprite-enemy.spr-bloodbat    {max-height:80px}
+  .sprite-enemy.spr-plaguebearer{max-height:96px}
+  .sprite-enemy.spr-sandwurm    {max-height:94px}
+  .sprite-enemy.spr-gargoyle    {max-height:96px}
+  .sprite-enemy.spr-frostbite   {max-height:88px}
+  .sprite-enemy.spr-thousandth  {max-height:120px}
+  .sprite-enemy.spr-paledevourer{max-height:124px}
   /* Bosses are 1.5x and override per-key for those that need extra mass */
   .sprite-enemy.boss              {max-height:150px;max-width:200px}
   .sprite-enemy.boss.spr-golem    {max-height:160px}
@@ -585,6 +594,9 @@
   .ev-sprite.tint-red   {filter:hue-rotate(330deg) saturate(1.3) drop-shadow(0 0 8px rgba(255,92,106,.6))}
   .ev-sprite.tint-amber {filter:sepia(.6) saturate(1.4) hue-rotate(-15deg) drop-shadow(0 0 8px rgba(255,207,77,.55))}
   .ev-sprite.tint-shadow{filter:brightness(.35) contrast(1.2) drop-shadow(0 0 8px rgba(50,40,80,.8))}
+  /* for hand-authored event sprites whose colors are already correct — adds a soft glow only,
+     no hue shift.  Use this instead of tint-gold/tint-red when the source PNG is the final look. */
+  .ev-sprite.tint-natural{filter:drop-shadow(0 0 8px rgba(255,220,140,.55))}
   /* ==== item icons from 16x16 sheets ==== */
   .iicon{box-sizing:content-box;display:inline-block;vertical-align:middle;image-rendering:pixelated;background-repeat:no-repeat;
     background-origin:content-box;background-clip:content-box;
@@ -1119,13 +1131,16 @@ const ENEMY_SPRITE={
   'Venomspitter':'sahagin','Orc Brute':'golem','Dark Acolyte':'demon',
   'Wraith':'ghost','Stone Golem':'golem','Hellhound':'demon','Cultist':'demon',
   'MIMIC':'slime','Treasure Goblin':'goblin',
+  // hand-authored pixel-art sprites added to replace ASCII placeholders
+  'Bloodbat':'bloodbat','Will-o-Wisp':'wisp','Plague Bearer':'plaguebearer',
+  'Sand Wurm':'sandwurm','Gargoyle':'gargoyle','Frostbite':'frostbite',
 };
 const BOSS_SPRITE={
   'OGRE WARLORD':'golem','GOBLIN KING':'goblin','BROODMOTHER':'sahagin',
   'THE NECROMANCER':'demonlord','STONE TITAN':'golem','CAVE TYRANT':'golem',
   'DEMON LORD':'demonlord','THE LICH':'demonlord','FLAME KNIGHT':'demon',
   'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'demonlord','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
-  'THE THOUSANDTH CHAMPION':'ghost','THE PALE DEVOURER':'ghost',
+  'THE THOUSANDTH CHAMPION':'thousandth','THE PALE DEVOURER':'paledevourer',
 };
 const AFFIX_TAGS=['Armored','Frenzied','Vampiric','Toxic','Brutal'];
 function stripAffix(name){
@@ -1601,21 +1616,21 @@ const EVENTS=[
        npcSet('cartog',{bought:(n.bought||0)+1}); return `"You buy these every time." He hands you a fresh sheet. "I do not know if they are different. They feel different to draw."`;}},
    ]},
   // === FURNACE EVENTS — stoke the Heat meter through chamber events too ===
-  {id:'valve',title:'THE VALVE BURSTS',zone:1,art:"  ###    \n  )()(   \n  )()(   \n  ###    ",
+  {id:'valve',title:'THE VALVE BURSTS',zone:1,sprite:{src:'assets/events/valve.png',tint:'tint-natural'},art:"  ###    \n  )()(   \n  )()(   \n  ###    ",
    text:'A copper valve embedded in the wall coughs once, then explodes. A wave of dry heat washes over the chamber.',
    options:[
      {label:'Push through fast',desc:'+10 Heat, get out clean',run:p=>{addHeat(10);return 'You sprint past the wound in the wall. Your skin tightens. The Furnace stirs (+10 Heat).';}},
      {label:'Try to seal it',desc:'-12 HP, +4 Heat, find scrap',run:p=>{const c=12;selfHurt(p,c,'hazard');addHeat(4);p.gold+=18;return `You jam your cloak in the breach. It works long enough to gather ${18} loose scrap — but you are scorched (-${c} HP, +4 Heat).`;}},
      {label:'Back out',desc:'No reward, no cost',run:p=>'You back away. The valve keeps coughing behind you. Whatever was in there stays there.'},
    ]},
-  {id:'forge_run',title:'THE FORGE OPERATES',zone:1,art:"   /-\\   \n  |fffi   \n  |[##]| \n   |  |  ",
+  {id:'forge_run',title:'THE FORGE OPERATES',zone:1,sprite:{src:'assets/events/forge_run.png',tint:'tint-amber'},art:"   /-\\   \n  |fffi   \n  |[##]| \n   |  |  ",
    text:'You find a working forge — bellows wheezing, sparks falling, no smith in sight. The fire is doing the work alone.',
    options:[
      {label:'Temper a piece of armor',desc:'+3 DEF, +5 Heat',run:p=>{p.def+=3;addHeat(5);return 'You hold a plate into the flame until your palms blister. Your armor drinks the fire (+3 DEF, +5 Heat).';}},
      {label:'Pour your essence in',desc:'-15 essence, +5 ATK, +6 Heat',run:p=>{if(p.essence<15)return 'The forge waits. Your essence does not.';p.essence-=15;p.atk+=5;addHeat(6);return `The forge accepts ${15} essence and turns it back as fire (+5 ATK, +6 Heat).`;}},
      {label:'Pour water on it',desc:'-15 Heat, lose 1 potion',run:p=>{if(!p.potions)return 'You have nothing to pour.';p.potions--;coolHeat(15);return 'The forge goes dark with a long animal sound. Your skin loosens (-15 Heat, -1 potion).';}},
    ]},
-  {id:'magma',title:'THE MAGMA CHANNEL',zone:1,art:"  ~~~~   \n ~~~~~   \n  ~~~    \n   ~     ",
+  {id:'magma',title:'THE MAGMA CHANNEL',zone:1,sprite:{src:'assets/events/magma.png',tint:'tint-red'},art:"  ~~~~   \n ~~~~~   \n  ~~~    \n   ~     ",
    text:'A trench in the floor is full of slow-moving fire. Something glints at the bottom — gold, or a relic, or a face.',
    options:[
      {label:'Reach in for it',desc:'-22 HP, +12 Heat, big loot',run:p=>{const c=22;selfHurt(p,c,'hazard');addHeat(12);const g=40+rnd(40);p.gold+=g;return `You plunge your arm in. You take it. Whatever it was, it weighs less than you expected (-${c} HP, +12 Heat, +${g} gold).`;}},
@@ -1724,7 +1739,7 @@ const EVENTS=[
      {label:'Challenge it',desc:'Fight a doppelganger; victory grants a random relic',run:p=>{const hp=Math.round(p.maxHp*1.05);const ene=freshEnemy({name:'Mirror Self',sprite:p.sprite||"  (??)\n /||\\\n  d b",hp,maxHp:hp,atk:Math.max(8,p.atk+2),def:Math.max(2,(p.def||0)+1),xp:38,_mirrorBoon:true});G.room={type:'enemy',_enemies:[ene]};startBattle('The mirror steps out — fight your own ghost!');return false;}},
      {label:'Shatter it',desc:'+14 essence, but the cold thickens',run:p=>{p.essence+=14;addMiasma(8);return `Glass rains down — +14 ${ESS}. The air sours where your reflection stood.`;}},
    ]},
-  {id:'falseexit',title:'THE FALSE EXIT',art:"  /========\\\n  ||  ()  ||\n  || EXIT ||\n  || ____ ||\n  \\========/",
+  {id:'falseexit',title:'THE FALSE EXIT',sprite:{src:'assets/events/falseexit.png',tint:'tint-natural'},art:"  /========\\\n  ||  ()  ||\n  || EXIT ||\n  || ____ ||\n  \\========/",
    text:'A door of warm gold light bars the corridor. It promises a way out — every coin you have, every kill you have made, safe and remembered.',
    options:[
      {label:'Step through &mdash; end the run now',desc:'Claim victory at current depth. The crypt forgets the rest.',run:p=>{G._falseExit=1;claimVictory();return false;}},
@@ -1745,7 +1760,7 @@ const EVENTS=[
      {label:'Offer gold (40)',desc:'Permanent +4 ATK',run:p=>{if(p.gold<40)return 'Not enough gold to satisfy the altar.';p.gold-=40;p.atk+=4;return 'Coins sizzle away. Strength floods your arms — +4 ATK.';}},
      {label:'Pray quietly',desc:'Small heal, leave',run:p=>{heal(p,Math.round(p.maxHp*0.2));return 'You pray. A faint warmth mends you a little.';}},
    ]},
-  {id:'campfire',title:'A DYING CAMPFIRE',art:"   (~)\n  ( ~ )\n  /\\_/\\\n  |fire|",
+  {id:'campfire',title:'A DYING CAMPFIRE',sprite:{src:'assets/events/campfire.png',tint:'tint-amber'},art:"   (~)\n  ( ~ )\n  /\\_/\\\n  |fire|",
    text:'Embers glow in an abandoned camp. You could rest, or pick through the gear.',
    options:[
      {label:'Rest by the fire',desc:'Heal 35% HP & mana',run:p=>{heal(p,Math.round(p.maxHp*0.35));p.mana=clamp(p.mana+Math.round(p.maxMana*0.35),0,p.maxMana);return 'You warm yourself and recover. (HP & mana restored)';}},
@@ -1780,28 +1795,28 @@ const EVENTS=[
      {label:'Give everything',desc:'A true sacrifice',run:p=>{if(p.gold<=0)return 'You have nothing to give.';const g=p.gold;p.gold=0;p.maxHp+=Math.min(40,Math.round(g/2));heal(p,99);return `You give all ${g} gold. The beggar weeps — and your vitality blooms (+max HP, full heal).`;}},
      {label:'Ignore',desc:'Move along',run:p=>'You step around the beggar without a word.'},
    ]},
-  {id:'fork',title:'THE FORKING PATH',art:"  /   \\\n |  Y  |\n  \\   /",
+  {id:'fork',title:'THE FORKING PATH',sprite:{src:'assets/events/fork.png',tint:'tint-natural'},art:"  /   \\\n |  Y  |\n  \\   /",
    text:'The passage splits. Scratched runes hint at what lies down each way.',
    options:[
      {label:'Left: "riches"',desc:'Likely gold',run:p=>{const g=30+rnd(35);p.gold+=g;return `The left path opens onto a coin-strewn alcove — ${g} gold!`;}},
      {label:'Right: "power"',desc:'A stat boost',run:p=>{const r=rnd(3);if(r===0){p.atk+=3;return 'A weapon rack — you take the best piece. +3 ATK.';}if(r===1){p.def+=3;return 'Discarded armor plates — +3 DEF.';}p.maxMana+=14;p.mana+=14;return 'A humming font of mana — +14 max mana.';}},
      {label:'Straight: "safety"',desc:'Heal & move on',run:p=>{heal(p,Math.round(p.maxHp*0.3));return 'The middle road is quiet. You rest and recover.';}},
    ]},
-  {id:'shrine2',title:'THE TWIN STATUES',art:" [o]  [o]\n  |    |\n /_\\  /_\\",
+  {id:'shrine2',title:'THE TWIN STATUES',sprite:{src:'assets/events/shrine2.png',tint:'tint-natural'},art:" [o]  [o]\n  |    |\n /_\\  /_\\",
    text:'Two statues face each other — one of a warrior, one of a mage.',
    options:[
      {label:'Honor the Warrior',desc:'+3 ATK, +2 DEF',run:p=>{p.atk+=3;p.def+=2;return 'The warrior statue glows. +3 ATK, +2 DEF.';}},
      {label:'Honor the Mage',desc:'+16 max mana, +4 regen',run:p=>{p.maxMana+=16;p.mana+=16;p.regen+=4;return 'The mage statue glows. +16 max mana, +4 regen.';}},
      {label:'Topple both',desc:'Gold beneath them',run:p=>{const g=22+rnd(28);p.gold+=g;return `You shove the statues aside — ${g} gold hidden beneath.`;}},
    ]},
-  {id:'trap',title:'THE TRAPPED CORRIDOR',art:"  /|||||\\\n  X X X X\n  \\|||||/",
+  {id:'trap',title:'THE TRAPPED CORRIDOR',sprite:{src:'assets/events/trap.png',tint:'tint-natural'},art:"  /|||||\\\n  X X X X\n  \\|||||/",
    text:'Blades and tripwires bristle across a narrow corridor.',
    options:[
      {label:'Disarm carefully',desc:'Dodge-based; reward if clean',run:p=>{const ok=chance(40+p.dodge);if(ok){const g=20+rnd(20);p.gold+=g;return `Nimble hands! You disarm it and loot ${g} gold from the mechanism.`;}const c=10+rnd(12);selfHurt(p,c,'hazard');return `A wire snaps — blades graze you for ${c} damage.`;}},
      {label:'Sprint through',desc:'Take a hit, save time',run:p=>{const c=6+rnd(8);selfHurt(p,c,'hazard');return `You barrel through, taking ${c} damage but losing nothing.`;}},
      {label:'Find another way',desc:'Safe, no reward',run:p=>'You backtrack and find a safer route around.'},
    ]},
-  {id:'pit',title:'THE PIT OF COINS',art:"  \\_____/\n  |$ $ $|\n  |$ $ $|",
+  {id:'pit',title:'THE PIT OF COINS',sprite:{src:'assets/events/pit.png',tint:'tint-natural'},art:"  \\_____/\n  |$ $ $|\n  |$ $ $|",
    text:'A deep pit glitters with centuries of fallen coins.',
    options:[
      {label:'Dive in!',desc:'Lots of gold, some damage',run:p=>{const g=40+rnd(45);p.gold+=g;const c=8+rnd(10);selfHurt(p,c,'hazard');return `You scoop ${g} gold but bruise yourself badly (${c} damage).`;}},
@@ -1822,7 +1837,7 @@ const EVENTS=[
      {label:'Plunge your arm in',desc:'More essence, but it bites',run:p=>{const e=42+rnd(34);p.essence+=e;const c=Math.round(p.maxHp*0.12);selfHurt(p,c,'hazard');return `Souls swarm your arm — +${e} ${ESS} essence, but they tear ${c} HP away.`;}},
      {label:'Leave it',desc:'Souls are not toys',run:p=>'You back away from the whispering dark.'},
    ]},
-  {id:'oldforge',title:'AN ABANDONED FORGE',art:"  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|",
+  {id:'oldforge',title:'AN ABANDONED FORGE',sprite:{src:'assets/events/oldforge.png',tint:'tint-natural'},art:"  ( ) ( )\n  )_____(\n  |[#=#]|\n  |_____|",
    text:'A cold forge, embers long dead — yet one last working still hums in the bellows.',
    options:[
      {label:'Reforge your weapon',desc:'+2 weapon levels, free',run:p=>{upgradeGear(p,'weapon');return `You stoke the bellows; your ${p.weapon.name} comes out keener than ever (Lv${p.weapon.ilvl}).`;}},
