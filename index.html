@@ -338,6 +338,27 @@
   .build-flash.k-level  {border-color:#7cff6b;box-shadow:0 0 0 1px #000,0 0 22px rgba(124,255,107,.6)}
   @keyframes buildFlashIn{0%{transform:translateY(-16px) scale(.82);opacity:0}60%{opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
   /* ENEMY INTENT BADGE — telegraphs the next action so the player can think. */
+  /* Ascension — picker on the class screen, persistent HUD badge, unlock banner. */
+  .asc-badge{display:inline-block;margin-left:8px;font-size:8px;letter-spacing:1px;padding:1px 6px;
+    border:1px solid #a8482a;border-radius:9px;color:#ff9a3c;background:rgba(60,16,8,.5);vertical-align:middle}
+  .asc-picker{max-width:440px;margin:8px auto 4px;text-align:center;border-color:#a8482a;
+    background:linear-gradient(180deg,rgba(60,20,12,.5),rgba(20,12,16,.4))}
+  .asc-head{font-size:10px;letter-spacing:2px;color:#ff9a3c;margin-bottom:6px;text-shadow:0 0 8px rgba(255,120,60,.5)}
+  .asc-ctl{display:flex;align-items:center;gap:10px;justify-content:center}
+  .asc-ctl .hud-btn{flex:0 0 auto;font-size:14px;padding:4px 12px}
+  .asc-desc{flex:1;font-size:9px;line-height:1.6;min-height:30px;display:flex;flex-direction:column;justify-content:center}
+  .asc-unlock{max-width:440px;margin:10px auto;text-align:center;border-color:#a8482a;
+    background:linear-gradient(180deg,rgba(70,24,12,.6),rgba(20,12,16,.45));
+    box-shadow:0 0 22px rgba(255,120,40,.3);animation:synPulse 1.6s ease-in-out infinite}
+  /* Synergy flags on reward cards — "this completes your set / tiers up your
+     path".  A small pill row under the reward's stat line; tier-ups and set
+     completions get a brighter, glowing variant so they pop. */
+  .syn-row{display:block;margin-top:4px;line-height:1.8}
+  .syn{display:inline-block;font-size:7.5px;letter-spacing:.5px;padding:1px 6px;margin:1px 3px 1px 0;
+    border:1px solid currentColor;border-radius:9px;background:rgba(0,0,0,.25);white-space:nowrap}
+  .syn.syn-tier,.syn.syn-set{font-weight:bold;background:rgba(255,255,255,.06);
+    box-shadow:0 0 8px currentColor;animation:synPulse 1.4s ease-in-out infinite}
+  @keyframes synPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}
   /* Potion pips — StS-style discrete slot icons in the persistent HUD strip.
      Filled = ready to drink, hollow/dim = consumed.  Replaces the older
      "X potion(s)" text so a glance gives the count without reading. */
@@ -1411,7 +1432,10 @@ function pickCounter(p){ if(!p)return {key:null,score:0};
     warded:(p.flags.toxic?3:0)+(p.flags.frostbrand?2:0)+(p.flags.sunder?2:0)+((p.weapon&&p.weapon.proc)?3:0)+(p.affTier.g>=2?2:0) };
   let best=null,bv=0; for(const k in s){ if(s[k]>bv){bv=s[k];best=k;} } return {key:best,score:bv}; }
 function maybeCounter(e,bossier){ const c=pickCounter(G.player); if(!c.key)return;
-  const ch=clamp((c.score-3)*(bossier?4.5:3.5),0,bossier?38:25); if(!chance(ch))return;
+  let ch=clamp((c.score-3)*(bossier?4.5:3.5),0,bossier?38:25);
+  // Ascension 3 (The Crypt Sharpens): elites ALWAYS carry a counter to your build.
+  if(G.mods&&G.mods.eliteCounter && e.elite) ch=100;
+  if(!chance(ch))return;
   COUNTERS[c.key].apply(e); e.name=COUNTERS[c.key].prefix+e.name; e.counter=c.key; e.xp=(e.xp||6)+8; e.goldBonus=(e.goldBonus||0)+6; }
 
 /* ============================================================
@@ -2128,7 +2152,42 @@ function noteBossDeath(key){ if(!key)return; const r=loadRecords(); r.bossDeaths
 function showBossDeath(key){ if(!BOSS_DEATHCRY[key]||!BOSSES[key])return;
   showInfo({title:BOSSES[key].name+' — falls',body:`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_DEATHCRY[key]}</p>`}); }
 let G=null;
-function defaultMods(){ return {eDmg:1.06,eHp:1.06,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.22,packBonus:0,roamRegen:0,slayFast:0,ultFast:0}; }
+function defaultMods(){ return {eDmg:1.06,eHp:1.06,pDmg:1.00,goldMul:1,skillCost:1,essMul:1,greedy:0,luck:0,eliteMul:1.22,packBonus:0,roamRegen:0,slayFast:0,ultFast:0,
+  // Ascension-driven knobs (default = neutral; ASCENSION tiers ramp these)
+  priceMul:1, eliteCounter:0, potionPenalty:0}; }
+
+/* ============================================================
+   ASCENSION — stratified post-victory difficulty (Slay the Spire's
+   Ascension / Hades' Heat / Monster Train's Covenant).  Per the design
+   research this is the single highest-leverage "one more run" hook we were
+   missing.  Each tier adds ONE stacking rule; a run at ascension N applies
+   tiers 1..N.  The max tier the player has UNLOCKED persists in localStorage
+   (crypt_ascension), and unlocks one step per Triumph.  Tiers are tuned to
+   change WHICH strategies work (more elites, forced counters, leaner economy)
+   rather than only inflating HP — the lazy version the research warns against.
+   ============================================================ */
+const ASCENSION=[
+  null, // index 0 = no ascension
+  {n:1, name:'Restless Dead',     desc:'+1 enemy in every pack.',                       apply:m=>{ m.packBonus+=1; }},
+  {n:2, name:'Tougher Hide',      desc:'Enemies have +12% HP.',                          apply:m=>{ m.eHp*=1.12; }},
+  {n:3, name:'The Crypt Sharpens',desc:'Elites always carry a Counter to your build.',   apply:m=>{ m.eliteCounter=1; }},
+  {n:4, name:'Lean Provisions',   desc:'Start each run with 1 fewer potion.',            apply:m=>{ m.potionPenalty+=1; }},
+  {n:5, name:'Greedy Stone',      desc:'Merchant prices +30%.',                          apply:m=>{ m.priceMul*=1.3; }},
+  {n:6, name:'Crueler Blows',     desc:'Enemies deal +12% damage.',                      apply:m=>{ m.eDmg*=1.12; }},
+  {n:7, name:'Teeming Halls',     desc:'Far more elites prowl the crypt.',               apply:m=>{ m.eliteMul*=1.55; }},
+  {n:8, name:'Thin Veins',        desc:'15% less gold from every source.',               apply:m=>{ m.goldMul*=0.85; }},
+  {n:9, name:'Tougher Still',     desc:'Enemies have another +12% HP.',                  apply:m=>{ m.eHp*=1.12; }},
+  {n:10,name:'The Hungering Crypt',desc:'Enemies gain +12% HP and +12% damage.',         apply:m=>{ m.eHp*=1.12; m.eDmg*=1.12; }},
+];
+const ASC_MAX = ASCENSION.length-1;   // 10
+function loadAscension(){ try{ return Math.max(0, Math.min(ASC_MAX, parseInt(localStorage.getItem('crypt_ascension')||'0',10)||0)); }catch(e){ return 0; } }
+function saveAscension(n){ try{ localStorage.setItem('crypt_ascension', String(Math.max(0,Math.min(ASC_MAX,n)))); }catch(e){} }
+// Bump the unlocked ceiling by one (called on Triumph).  Returns the new ceiling.
+function unlockNextAscension(){ const cur=loadAscension(); if(cur<ASC_MAX){ saveAscension(cur+1); return cur+1; } return cur; }
+// Apply tiers 1..n onto the current G.mods.  Called from chooseClass AFTER defaultMods().
+function applyAscension(n){ for(let i=1;i<=n && i<=ASC_MAX;i++){ try{ ASCENSION[i].apply(G.mods); }catch(e){} } }
+function ascBadge(){ const n=G.ascension||0; if(!n) return '';
+  return `<span class="asc-badge" title="Ascension ${n}: ${ASCENSION[n]?ASCENSION[n].name:''} — the crypt is harder, and it remembers why">&#9650; ASC ${n}</span>`; }
 function newGame(){ try{clearTimeout(G&&G._navTimer);}catch(e){}   // don't orphan the prior run's nav-lock timer
   G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
   heat:0,miasma:0,collapsed:0,dmgBy:{},debt:0,collectorEta:0,_forceCollector:0}; }
@@ -2718,6 +2777,53 @@ function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stat
             : ds<-1.5 ? ' &middot; <span class="red">DOWNGRADE</span>'
             : ' &middot; <span class="muted">SIDEGRADE</span>'; }
   return parts.join(' &middot; ')+verdict+itemExtraText(it); }
+// SYNERGY FLAGS — the Balatro/Spire "show the player the half-built combo" move.
+// Given a reward option, returns a short coloured banner that fires ONLY when the
+// reward would advance something the player has already started: complete an armor
+// set, cross an affinity tier, or push a path toward its next capstone.  The whole
+// point is that a reward stops being "+3 ATK" and starts being "this finishes my
+// Shadowdancer build" — making the choice feel like a build commitment.
+function rewardSynergyFlags(o,p){
+  if(!o||!p) return '';
+  const flags=[];
+  const data=o.data||{};
+  // ----- affinity tier progress (gear / relic / upgrade all carry `aff`) -----
+  const aff=data.aff||{};
+  for(const k in aff){
+    const add=aff[k]||0; if(!add) continue;
+    // For gear, the slot's current item's affinity would be replaced — net it out.
+    let net=add;
+    if(o.kind==='gear' && data.slot){ const cur=p.equip[data.slot]; if(cur&&cur.aff&&cur.aff[k]) net-=cur.aff[k]; }
+    if(net===0) continue;
+    const before=p.aff[k]||0, after=before+net;
+    const tBefore=affTierOf(before), tAfter=affTierOf(after);
+    const nm=AFF_META[k].name, col=AFF_META[k].color;
+    if(tAfter>tBefore){
+      flags.push(`<span class="syn syn-tier ${col}">&#10022; ${nm} ${['I','II','III'][tAfter-1]} &mdash; TIER UP!</span>`);
+    } else {
+      const nextThresh = tAfter<3 ? AFF_THRESH[tAfter] : null;
+      if(nextThresh!=null && after>before){
+        flags.push(`<span class="syn ${col}">&#10022; ${nm} ${after}/${nextThresh}</span>`);
+      }
+    }
+  }
+  // ----- armor set completion / progress -----
+  if(o.kind==='gear' && data.set){
+    const set=SETS[data.set];
+    if(set){
+      // count pieces AFTER hypothetically equipping into this slot
+      let cnt=0; SLOTS.forEach(s=>{ const it = s===data.slot ? data : p.equip[s]; if(it&&it.set===data.set) cnt++; });
+      const have = p.sets&&p.sets.indexOf(data.set)>=0;
+      if(cnt>=set.pieces && !have){
+        flags.push(`<span class="syn syn-set teal">&#9670; COMPLETES ${data.set.toUpperCase()} (${set.pieces}pc)</span>`);
+      } else if(cnt<set.pieces){
+        flags.push(`<span class="syn teal">&#9670; ${data.set} ${cnt}/${set.pieces}</span>`);
+      }
+    }
+  }
+  return flags.length ? `<span class="syn-row">${flags.join(' ')}</span>` : '';
+}
+function affTierOf(pts){ let t=0; while(t<3 && pts>=AFF_THRESH[t]) t++; return t; }
 function itemLabel(it){ return `<span class="${RARITY[it.rarity].cls}">${it.name}</span> <span class="muted">Lv${it.ilvl}</span>`; }
 function itemStatsText(it){ const parts=[];
   for(const k in it.stats){ parts.push(`+${it.stats[k]}${PCT_STAT[k]?'%':''} ${STAT_LBL[k]||k}`); }
@@ -2796,11 +2902,34 @@ function renderClassSelect(){
     <div class="chip ${c.color}">${c.affinity}</div>
     <div class="muted" style="font-size:8px;line-height:1.8">${c.affinityText}</div>
     <button class="btn center" onclick="chooseClass('${key}')">CHOOSE</button></div>`;};
+  // ASCENSION PICKER — only shown once the player has unlocked at least tier 1
+  // (i.e. has reached the throne once).  Defaults to the highest unlocked tier;
+  // a stepper lets them dial it down.  G._ascSel is the selected level for this run.
+  const unlocked=loadAscension();
+  if(G._ascSel==null) G._ascSel=unlocked;   // default to hardest unlocked
+  G._ascSel=clamp(G._ascSel,0,unlocked);
+  const ascPicker = unlocked>0 ? (()=>{
+    const n=G._ascSel; const t=ASCENSION[n];
+    const desc = n>0 ? `<b class="red">${t.name}</b> &mdash; ${t.desc}<br><span class="muted" style="font-size:7.5px">All lower tiers also apply.</span>` : '<span class="muted">No modifiers — the base crypt.</span>';
+    return `<div class="panel tight asc-picker fade">
+      <div class="asc-head">&#9650; ASCENSION <span class="amber">${n}</span> <span class="muted">/ ${unlocked} unlocked</span></div>
+      <div class="asc-ctl">
+        <button class="hud-btn" ${n<=0?'disabled':''} onclick="stepAsc(-1)">&#9664;</button>
+        <div class="asc-desc">${desc}</div>
+        <button class="hud-btn" ${n>=unlocked?'disabled':''} onclick="stepAsc(1)">&#9654;</button>
+      </div>
+    </div>`;})() : '';
   app.innerHTML=`<h1 class="title" style="font-size:16px">CHOOSE YOUR CHAMPION</h1>
     <div class="subtitle">All wield mana &amp; health — each in their own way</div>
+    ${ascPicker}
     <div class="grid3 fade">${card('mage')}${card('warrior')}${card('ranger')}</div>`;
 }
+function stepAsc(d){ const unlocked=loadAscension(); G._ascSel=clamp((G._ascSel||0)+d,0,unlocked); renderClassSelect(); }
 function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes(); G._memoir=null; memoir();   // fresh per-run page for the death-screen epitaph
+  // Lock in the selected Ascension for this run and stack its modifiers onto G.mods.
+  G.ascension = clamp(G._ascSel!=null?G._ascSel:loadAscension(), 0, loadAscension());
+  applyAscension(G.ascension);
+  if(G.mods.potionPenalty){ G.player.potions=Math.max(0,(G.player.potions||0)-G.mods.potionPenalty); }
   // Every champion begins with DEVOUR in the 4th slot. The skill mutates by killing.
   G.player.memory=makeDevourBase();
   // FIRST-RUN PATH: skip Omen selection (one fewer screen of choice-with-no-context) and route into
@@ -2897,7 +3026,7 @@ function depthFactor(){ const d=Math.max(0,G.depth-1);
     return 1 + d*0.10 + dd*dd*0.0065 + extra*extra*0.0028 + extra*0.04; }
   return 1+d*0.10+d*d*0.0065; }
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
-function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
+function depthLabel(){ const asc=ascBadge(); if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}${asc}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}${asc}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 // Slay-the-Spire-style mid-act boss preview: shows the player which chamber the
 // next boss arrives in and (when the pool is unambiguous) the boss's name and
@@ -4013,7 +4142,8 @@ function renderRoom(){
     if(!r.options) r.options=shuffle(RELICS.filter(rl=>!rl.cls||rl.cls===p.cls)).slice(0,3);
     const owned=new Set(p.relics);
     const cards=r.options.map((rl,i)=>{const have=owned.has(rl.name);
-      return `<button class="btn" ${have?'disabled':''} onclick="takeRelic(${i})"><span class="k purple">&#9670;</span>${rl.name}${have?' (owned)':''}<small>${rl.note}<br><span class="teal">&#10022; ${affTagText(rl.aff)}</span></small></button>`;}).join('');
+      const syn=have?'':rewardSynergyFlags({kind:'relic',data:rl},p);
+      return `<button class="btn" ${have?'disabled':''} onclick="takeRelic(${i})"><span class="k purple">&#9670;</span>${rl.name}${have?' (owned)':''}<small>${rl.note}<br><span class="teal">&#10022; ${affTagText(rl.aff)}</span></small>${syn}</button>`;}).join('');
     body=`<img class="room-sprite" src="assets/rooms/pedestal.png" alt="Pedestal" draggable="false">
       <h3 class="center purple" style="margin:8px 0">PEDESTAL OF POWER</h3>
       <p class="muted center" style="font-size:9px">Claim ONE relic. It will reshape how you fight.</p>${cards}
@@ -4137,7 +4267,7 @@ function renderMerchant(){
   // First visit to this stall THIS run — bump the meet counter once. The merchant is now an anchor
   // NPC with persistent state in crypt_npc, same pattern as the Lantern Keeper / Cardinal / Scholar.
   if(!G.room._merchMet){ npcMeet('merchant'); G.room._merchMet=1; }
-  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(SLOTS); let pm=(heatActive()&&heatTier()>=2)?1.3:1; if(G.room.discount)pm*=0.75;
+  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(SLOTS); let pm=(heatActive()&&heatTier()>=2)?1.3:1; if(G.room.discount)pm*=0.75; pm*=(G.mods.priceMul||1);   // Ascension 5: Greedy Stone
     G.room.stock={relic:rp.length?pick(rp):null, gear:makeItem(gslot,p.cls,G.depth+1), pm}; }
   const st=G.room.stock; const mc=b=>Math.round(b*(st.pm||1));
   // === THE MERCHANT'S VOICE — state-aware flavor that makes the stall feel like a person ===
@@ -5220,14 +5350,15 @@ function renderReward(){ const p=G.player,pd=G.pending;
   const tag=a=>a?` &middot; <span class="teal">&#10022; ${affTagText(a)}</span>`:'';
   const icon={weapon:'&#9876;',head:'&#9651;',chest:'&#128737;',legs:'&#9646;',boots:'&#128094;',ring:'&#9883;'};
   const cards=pd.options.map((o,i)=>{
+    const syn=rewardSynergyFlags(o,p);
     if(o.kind==='gear'){ const it=o.data; const cur=p.equip[it.slot];
       // Essential line stays visible (stats + affinity); the "replaces X" detail moves to hover so
       // the card is one line shorter. The whole point is fitting the choices on screen at once.
       const slotTxt=cur?`<span class="muted">swap</span>`:'<span class="green">empty slot</span>';
       const hover=escAttr(cur?`Replaces ${cur.name} Lv${cur.ilvl}`:'Fills an empty slot');
-      return `<button class="btn" onclick="takeReward(${i})" title="${hover}">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)} &middot; ${slotTxt}</small></button>`; }
-    if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small></button>`;
-    return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small></button>`;}).join('');
+      return `<button class="btn" onclick="takeReward(${i})" title="${hover}">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)} &middot; ${slotTxt}</small>${syn}</button>`; }
+    if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small>${syn}</button>`;
+    return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small>${syn}</button>`;}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:4px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px;margin-bottom:4px">Choose one reward:</p>${cards}
@@ -5288,8 +5419,21 @@ function renderTriumph(){
     </div>`;
     return;
   }
+  // Unlock the next Ascension tier — once per Triumph, the run AFTER this one can
+  // be dialled harder.  Guarded so re-rendering the screen doesn't unlock twice.
+  if(!G._ascUnlocked){ G._ascUnlocked=1;
+    const before=loadAscension(); const after=unlockNextAscension();
+    if(after>before){ G._ascJustUnlocked={n:after, name:ASCENSION[after].name, desc:ASCENSION[after].desc}; }
+  }
+  const ju=G._ascJustUnlocked;
+  const ascBanner = ju ? `<div class="panel tight asc-unlock fade">
+      <div class="asc-head">&#9650; ASCENSION ${ju.n} UNLOCKED</div>
+      <div class="asc-desc"><b class="red">${ju.name}</b> &mdash; ${ju.desc}<br>
+        <span class="muted" style="font-size:8px">Choose it at the next run's champion screen. The crypt grows teeth as you do.</span></div>
+    </div>` : '';
   app.innerHTML=`<h1 class="title" style="color:var(--amber)">THE THRONE FALLS</h1>
-    <div class="subtitle">YOU WON &middot; Chamber ${G.depth}/${RUN_LENGTH}</div>
+    <div class="subtitle">YOU WON &middot; Chamber ${G.depth}/${RUN_LENGTH}${G.ascension?` &middot; <span class="red">ASC ${G.ascension}</span>`:''}</div>
+    ${ascBanner}
     <div class="panel center fade">
       <pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>
       <p class="evtext center"><b class="amber">The crypt's last guardian lies broken at your feet.</b> Your run is over &mdash; you can retire as a legend, with everything you carry.<br><br>
