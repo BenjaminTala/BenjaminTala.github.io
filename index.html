@@ -338,6 +338,39 @@
   .build-flash.k-level  {border-color:#7cff6b;box-shadow:0 0 0 1px #000,0 0 22px rgba(124,255,107,.6)}
   @keyframes buildFlashIn{0%{transform:translateY(-16px) scale(.82);opacity:0}60%{opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
   /* ENEMY INTENT BADGE — telegraphs the next action so the player can think. */
+  /* Potion pips — StS-style discrete slot icons in the persistent HUD strip.
+     Filled = ready to drink, hollow/dim = consumed.  Replaces the older
+     "X potion(s)" text so a glance gives the count without reading. */
+  .pot-row{display:inline-flex;gap:3px;align-items:center;margin-right:6px}
+  .pot-pip{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;
+    border:2px solid var(--line);border-radius:50%;font-size:11px;background:#0a0a16}
+  .pot-pip.on{color:#5cff8f;border-color:#3aa860;box-shadow:0 0 6px rgba(92,255,143,.35), inset 0 0 4px rgba(92,255,143,.18)}
+  .pot-pip.off{color:#3a3a4a;border-color:#2a2a38;opacity:.55}
+  .pot-pip.more{width:auto;padding:0 5px;border-radius:9px;font-size:8px;letter-spacing:1px;
+    color:#5cff8f;border-color:#3aa860}
+  /* Boss preview chip (StS-style) — mid-corridor look-ahead.  Sits between the
+     player strip and the door list so it's part of the decision context, not
+     buried in the header. */
+  .boss-preview{display:flex;align-items:center;gap:10px;margin:6px auto 0;padding:6px 12px;
+    max-width:380px;border:2px solid #6c2a3a;background:linear-gradient(180deg,#1a0a14,#0e0610);
+    border-radius:3px;box-shadow:0 0 14px rgba(180,40,80,.20)}
+  .boss-preview .bp-port{width:36px;height:36px;image-rendering:pixelated;flex:0 0 36px;
+    filter:drop-shadow(0 0 6px rgba(255,80,80,.55))}
+  .boss-preview .bp-port.bp-mystery{display:flex;align-items:center;justify-content:center;
+    background:#1a0a14;border:2px dashed #6c2a3a;color:#cbb6e6;font-size:18px;font-weight:bold}
+  .boss-preview .bp-text{font-size:9px;line-height:1.5;letter-spacing:1px}
+  .boss-preview .bp-name{font-size:9.5px}
+  .boss-preview .bp-sub{font-size:7.5px;letter-spacing:1px;opacity:.85}
+  /* "THE CRYPT REMEMBERS" — Neow/Hades return banner shown on the title screen
+     the run after a death.  Two visual states: amber-bordered when the previous
+     run was a win-and-retirement, purple-bordered when it was a death.  Italic
+     body line is the actual narrator quote. */
+  .death-return{max-width:520px;margin:8px auto 16px;padding:14px 18px;border:2px solid #4a3260;
+    background:linear-gradient(180deg, rgba(40,20,60,.6) 0%, rgba(20,12,30,.4) 100%);
+    border-radius:4px;text-align:center;box-shadow:0 0 24px rgba(120,80,180,.25), inset 0 0 18px rgba(80,40,120,.15)}
+  .death-return .dr-head{font-size:9px;letter-spacing:2px;margin-bottom:4px;text-shadow:0 0 8px rgba(192,108,255,.55)}
+  .death-return .dr-where{font-size:8px;letter-spacing:1px;opacity:.7;margin-bottom:10px}
+  .death-return .dr-line{font-size:10px;line-height:1.7;color:#e8dbff;font-style:italic;padding:0 10px}
   .intent{display:inline-block;font-size:8px;letter-spacing:1px;padding:2px 6px;margin:2px auto 4px;border:1px solid #4a3260;background:#1a1424;color:#cbb6e6;border-radius:2px;line-height:1.4;text-align:center;max-width:200px}
   .intent .i-ico{margin-right:3px}
   .intent.i-danger {color:#ff9a3c;border-color:#a8482a;background:#2a1410}
@@ -2735,8 +2768,10 @@ function navLock(ms){ G._navLock=true; clearTimeout(G._navTimer); G._navTimer=se
 
 /* ---------- TITLE ---------- */
 function renderTitle(){
+  const deathBanner = deathReturnHtml();   // Hades/Neow beat — fires once per actual death record.
   app.innerHTML=`<h1 class="title fade">CRYPT OF<br>THE CHAMPION</h1>
     <div class="subtitle">an 8-bit text roguelike</div>
+    ${deathBanner}
     <div class="panel center fade">
       <img class="title-art" src="assets/monsters/dragon.png" alt="Crypt Dragon" draggable="false">
       <p class="evtext center" style="font-size:9px;line-height:2;color:#cfcbef">
@@ -2864,6 +2899,35 @@ function depthFactor(){ const d=Math.max(0,G.depth-1);
 function scaleHpVal(base){ return Math.round(base*depthFactor()*G.mods.eHp); }
 function depthLabel(){ if(G.abyss){ return `<span class="purple">THE ABYSS</span> &middot; DEPTH ${G.depth-RUN_LENGTH}`; } const z=ZONES[zoneOf(G.depth)]; return `<span class="${z.color}">${z.name}</span> &middot; CHAMBER ${G.depth}/${RUN_LENGTH}`; }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
+// Slay-the-Spire-style mid-act boss preview: shows the player which chamber the
+// next boss arrives in and (when the pool is unambiguous) the boss's name and
+// portrait.  When there are multiple candidates in the pool, we show "Something
+// stirs at chamber N" — preserves a small mystery while still warning the player.
+function nextBossChamber(){
+  if(G.abyss) return null;   // abyss has its own pacing
+  for(let d = G.depth+1; d<=RUN_LENGTH; d++){ if(BOSS_CHAMBERS[d]!==undefined) return d; }
+  return null;
+}
+function bossPreviewHtml(){
+  const d = nextBossChamber(); if(!d) return '';
+  const pool = BOSS_POOL[BOSS_CHAMBERS[d]] || [];
+  const turns = d - G.depth;
+  const single = pool.length===1 ? BOSSES[pool[0]] : null;
+  const sprKey = single ? (BOSS_SPRITE[single.name] || 'demonlord') : 'demonlord';
+  const portrait = single
+    ? `<img class="bp-port" src="assets/monsters/${sprKey}.png" alt="${single.name}" draggable="false">`
+    : `<span class="bp-port bp-mystery">?</span>`;
+  const label = single
+    ? `<span class="bp-name red">${single.name}</span>`
+    : `<span class="bp-name muted">Something stirs</span>`;
+  const subtitle = turns<=1
+    ? `<span class="amber">NEXT CHAMBER</span>`
+    : `at chamber ${d} <span class="muted">&middot; ${turns} away</span>`;
+  return `<div class="boss-preview" title="Boss arrives at chamber ${d}${single?': '+single.name:''}">
+    ${portrait}
+    <div class="bp-text">${label}<br><span class="bp-sub">${subtitle}</span></div>
+  </div>`;
+}
 function worldBar(){ const parts=[];
   if(heatActive()&&G.heat>0){ const t=heatTier(); const lbl=['',' WARM',' ASHEN',' MOLTEN',' BLAZING',' OVERHEAT'][t]; const c=['#ffcf4d','#ffcf4d','#ff9a3c','#ff5c6a','#ff2a2a','#ff0028'][t];
     const hp=t>=3?' pulse-heat':'';   // the Furnace turns hostile — the meter throbs from MOLTEN up
@@ -3215,12 +3279,135 @@ const ECHO_KNOWING=[
   'One of us reached the very end. I cannot tell you what they found. There is no them left to have found it.',
 ];
 function echoLine(cause){ return pick(ECHO_LINE[cause]||ECHO_LINE.null); }
+
+// ============================================================
+// THE CRYPT REMEMBERS — Hades/Neow-style line shown on the TITLE screen the
+// run after a death.  Per the design research, this is the cheapest possible
+// implementation of "death triggers new content": ~40 templated lines keyed
+// to (cause, depth, class, won, abyss).  Loaded from crypt_last_death which
+// saveEcho() writes; cleared on read so a single line fires per actual death.
+// ============================================================
+const POST_DEATH_LINES = {
+  // ---- generic causes (shown if no more specific key applies) ----
+  enemy:[
+    "Somewhere in the dark, a thing learned the shape of your blade. Try not to teach it twice.",
+    "The crypt closed its hand on you. It opens again — only because something below is hungrier.",
+    "You bled out fast. The walls drank it before the floor did. Begin.",
+  ],
+  burn:[
+    "You came out of the Furnace as smoke. Smoke makes a poor champion. Try cooler iron.",
+    "The fire was honest about what it was. You were not honest about what you could carry.",
+  ],
+  poison:[
+    "The green stayed in you longer than you stayed in the world.",
+    "You forgot venom is patient. It will be patient again — with someone else now wearing your face.",
+  ],
+  miasma:[
+    "The cold did not kill you. The cold made room for what did.",
+    "You rotted standing. The crypt counted it as standing. The crypt counts loosely down here.",
+  ],
+  heat:[
+    "You pushed the furnace. The furnace pushed back. The score is one-all and you only get one body.",
+  ],
+  hazard:[
+    "Not every glow is a gift. You found one of the other kind.",
+  ],
+  null:[
+    "Something took you so cleanly you did not notice. Notice now.",
+    "You ended between footsteps. The crypt does not always announce.",
+  ],
+  // ---- boss-specific (key = boss key from BOSSES table) ----
+  boss_devourer:[
+    "It tasted you. It says you were thin. It says — and this is its word — disappointing.",
+  ],
+  boss_paledevourer:[
+    "You went into a place that does not have a name in any language a mouth can carry. It learned yours.",
+  ],
+  boss_dragon:[
+    "The dragon does not eat champions. It tells the next one what the last one screamed. You screamed something foolish.",
+  ],
+  boss_king:[
+    "The King counted you among the thousand. The thousand-and-first is being summoned right now.",
+  ],
+  boss_remembered:[
+    "You met the one who came before. You did not last as long as they did. They are amused.",
+  ],
+  // ---- abyss-specific (you chose to FALL after the throne) ----
+  abyss:[
+    "You stood in front of the throne and chose the longer road. The longer road chose you back.",
+    "The Abyss has no opinion of you. That is the worst part.",
+  ],
+  // ---- if the previous run was a WIN (no death — fired only when player retired) ----
+  victory:[
+    "You retired a legend. The next one will not have your name. The next one will not need it.",
+  ],
+  // ---- shallow death (depth ≤ 5) — gentler tone ----
+  shallow:[
+    "Down again. The first chambers are practice. Don't make a habit of dying in practice.",
+    "You barely got dust on your boots. The dust is patient.",
+  ],
+  // ---- class flavor (rare; only fires when other keys produced nothing strong) ----
+  cls_warrior:[
+    "A warrior who dies face-down has at least made a point. You made one. The crypt nods.",
+  ],
+  cls_mage:[
+    "The Mage's body was found three chambers from the spellbook. The spellbook misses you.",
+  ],
+  cls_ranger:[
+    "The Ranger died with arrows still in the quiver. The arrows have opinions.",
+  ],
+};
+function loadLastDeath(){ try{ return JSON.parse(localStorage.getItem('crypt_last_death')||'null'); }catch(e){ return null; } }
+function clearLastDeath(){ try{ localStorage.removeItem('crypt_last_death'); }catch(e){} }
+function postDeathLine(d){
+  if(!d) return null;
+  // priority order: boss > abyss > victory > deep cause > shallow > class > generic
+  const cands = [];
+  if(d.boss && POST_DEATH_LINES['boss_'+d.boss]) cands.push(POST_DEATH_LINES['boss_'+d.boss]);
+  if(d.abyss && POST_DEATH_LINES.abyss) cands.push(POST_DEATH_LINES.abyss);
+  if(d.won && POST_DEATH_LINES.victory) cands.push(POST_DEATH_LINES.victory);
+  if(d.depth <= 5 && POST_DEATH_LINES.shallow) cands.push(POST_DEATH_LINES.shallow);
+  if(d.cause && POST_DEATH_LINES[d.cause]) cands.push(POST_DEATH_LINES[d.cause]);
+  if(d.cls && POST_DEATH_LINES['cls_'+d.cls]) cands.push(POST_DEATH_LINES['cls_'+d.cls]);
+  if(!cands.length) cands.push(POST_DEATH_LINES.null);
+  // weight toward the most specific (first added)
+  const idx = Math.min(cands.length-1, Math.floor(Math.random()*Math.random()*cands.length));
+  return pick(cands[idx]);
+}
+function deathReturnHtml(){
+  const d = loadLastDeath(); if(!d) return '';
+  const line = postDeathLine(d); if(!line) return '';
+  // The greeting header changes if the player WON the previous run vs DIED.
+  const heading = d.won
+    ? '<span class="amber">&#9819; THE CRYPT REMEMBERS YOUR VICTORY.</span>'
+    : '<span class="purple">&#9763; THE CRYPT REMEMBERS YOUR DEATH.</span>';
+  const where = d.won
+    ? (d.abyss?`fell at depth ${d.depth}, beyond the throne`:`retired at chamber ${d.depth}`)
+    : `died at chamber ${d.depth}`;
+  // Mark the line as consumed so it doesn't fire twice for the same death.
+  clearLastDeath();
+  return `<div class="death-return fade">
+    <div class="dr-head">${heading}</div>
+    <div class="dr-where muted">A ${CLASSES[d.cls]?CLASSES[d.cls].name:'champion'} ${where}.</div>
+    <div class="dr-line">&ldquo;${line}&rdquo;</div>
+  </div>`;
+}
 function saveEcho(){ const p=G.player; if(!p)return; const cause=topCause();
   const items=SLOTS.map(s=>p.equip[s]).filter(Boolean).sort((a,b)=>(b.rarity*100+b.ilvl)-(a.rarity*100+a.ilvl));
   let item=null; try{ item=items[0]?JSON.parse(JSON.stringify(items[0])):null; }catch(e){}
   const snap={depth:G.depth,cls:p.cls,level:p.level,item,relic:p.relics.length?pick(p.relics):null,cause:cause||'null',line:echoLine(cause),monster:chance(15),t:Date.now()};
   let arr=loadEchoes(); arr.push(snap); if(arr.length>12)arr=arr.slice(-12);
   try{ localStorage.setItem('crypt_echoes',JSON.stringify(arr)); }catch(e){}
+  // ALSO stash a single "last death" record so the title screen on the NEXT load can
+  // greet the player with a Hades/Neow-style line keyed to how they died.  Per the
+  // research report, "every death must fire at least one piece of content the player
+  // hasn't seen" — this is the smallest viable lift of that idea (~50 lines of text,
+  // no character system, no per-NPC tree).
+  try{
+    const last={ cause:cause||'null', depth:G.depth, cls:p.cls, won:!!p.won, abyss:!!G.abyss,
+                 boss:G._pendingBossDeath||G._lastBossKilled||null, t:Date.now() };
+    localStorage.setItem('crypt_last_death', JSON.stringify(last));
+  }catch(e){}
 }
 function pickEcho(depth){ const pool=G._echoPool||[]; if(!pool.length)return null;
   // weight toward echoes that died near this depth
@@ -3462,7 +3649,11 @@ function renderCorridor(){
   // At most 2 prioritized banners; the generic whisper is suppressed when anything more important
   // is already showing, so a major beat never arrives wrapped in ambient flavor.
   const banners=drainBanners(2);
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(G.player,true)}
+  // Slay-the-Spire-style boss preview chip — most useful at the corridor screen
+  // where the player is choosing their next room.  Hidden during the boss corridor
+  // itself (you're already there) and in the abyss (different pacing).
+  const bossPrev = isBoss ? '' : bossPreviewHtml();
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${banners}${playerBar(G.player,true)}${bossPrev}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       ${(G._whisper && !banners)?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}</div>${statusFooter()}`;
 }
@@ -4335,7 +4526,11 @@ function renderBattle(){
     const hitCls=b.animIdx===i?('hitpop spr-flash'+(b.animWasCrit?' crit-hold':'')):(justDied?'dying':'');
     const spriteHtml=sp?sp.replace('class="sprite-enemy',`class="sprite-enemy ${hitCls}`)
       :`<pre class="sprite red ${hitCls}">${e.sprite}</pre>`;
-    const flo=(b.floats||[]).filter(f=>f.idx===i).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
+    // Sequential float juice: stagger animation-delay so multi-source hits
+    // (basic + lifesteal + relic proc + crit refund) appear one after another
+    // instead of overlapping into a single illegible blob.  Per the Balatro
+    // research note — "stagger trigger resolution visually so players see causality."
+    const flo=(b.floats||[]).filter(f=>f.idx===i).map((f,fi)=>`<span class="dmgfloat ${f.cls}" style="animation-delay:${fi*0.11}s">${f.text}</span>`).join('');
     const efx=(b.fx||[]).filter(f=>f.idx===i).map(f=>fxHtml(f.kind)).join('');
     // Boss charge banner sits ABOVE the cell so it cannot be missed. Replaces the polite chip for
     // the single most readability-critical moment in the fight.
@@ -4350,7 +4545,7 @@ function renderBattle(){
       <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.hunted?'<span class="chip c-burn" title="Hunted: bounty on death">&#127993; HUNTED</span>':'')+(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
       ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})" title="Switch target to ${e.name}">${i===b.target?'&#9654; TARGET':'TARGET'}</button>`:''}</div>`;
   }).join('');
-  const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map(f=>`<span class="dmgfloat ${f.cls}">${f.text}</span>`).join('');
+  const pFloHtml=(b.floats||[]).filter(f=>f.idx===-1).map((f,fi)=>`<span class="dmgfloat ${f.cls}" style="animation-delay:${fi*0.11}s">${f.text}</span>`).join('');
   const pFxHtml=(b.fx||[]).filter(f=>f.idx===-1).map(f=>fxHtml(f.kind)).join('');
   // In-combat build-flash banners — celebrate progression the moment it happens.
   const flashHtml=(b._buildFlash&&b._buildFlash.length)
@@ -5362,12 +5557,24 @@ function playerBar(p,full){
     <button class="hud-btn hud-skills${act('powers')}" onclick="openInventory('powers')" title="Your skills, paths, relics &amp; synergies"><span>&#10022;</span> SKILLS</button>
     <button class="hud-btn hud-saga${act('saga')}" onclick="openInventory('saga')" title="Bestiary &amp; your Saga"><span>&#9774;</span> SAGA</button>
   </div>`;
+  // Potion pips — Slay-the-Spire-style explicit slot view.  Show up to 5 pips;
+  // anything past that condenses to "+N".  Filled = available, empty = consumed
+  // (visualises max-potions-this-run progression from relics/events).
+  const potShown = Math.max(p.potions||0, 1);
+  const potCap = Math.min(5, Math.max(3, potShown));
+  let potPips = '';
+  for(let i=0;i<potCap;i++){
+    const filled = i < (p.potions||0);
+    potPips += `<span class="pot-pip ${filled?'on':'off'}" title="${filled?'Potion ready — heals ~30% HP':'Empty potion slot'}">&#9763;</span>`;
+  }
+  if((p.potions||0) > potCap) potPips += `<span class="pot-pip on more" title="${p.potions} potions">+${(p.potions)-potCap}</span>`;
   return `<div class="panel tight pstrip">
     <div class="bar mini" style="margin:0 0 4px"><div class="lbl"><span class="green">${CLASSES[p.cls].name} &middot; LV${p.level}</span><span>${p.hp}/${p.maxHp} HP${ultTag}</span></div>
       <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div>
       <div class="track xpline"><div class="fill mp" style="width:${mpPct}%"></div></div></div>
     <div class="pstrip-row">
-      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="amber">${p.gold}g</span> &middot; <span class="teal">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple">&#9670;${p.relics.length}</span>`:''}</div>
+      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="amber" title="Gold — spend at merchants">${p.gold}g</span> &middot; <span class="teal" title="Soul Essence — spent at the Forge">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple" title="${p.relics.length} relic${p.relics.length===1?'':'s'} carried">&#9670;${p.relics.length}</span>`:''}</div>
+      <div class="pot-row" title="Potions ready (heal ~30% HP each)">${potPips}</div>
       ${invBtns}
     </div>
     ${affRow}
