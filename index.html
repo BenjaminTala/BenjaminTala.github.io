@@ -338,6 +338,17 @@
   .build-flash.k-level  {border-color:#7cff6b;box-shadow:0 0 0 1px #000,0 0 22px rgba(124,255,107,.6)}
   @keyframes buildFlashIn{0%{transform:translateY(-16px) scale(.82);opacity:0}60%{opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
   /* ENEMY INTENT BADGE — telegraphs the next action so the player can think. */
+  /* Glossary — the "?" button opens an indexed card grid; each card opens its own info modal. */
+  .hud-btn.hud-help{padding:4px 9px;font-weight:bold;color:#9fbcff;border-color:#3a4a78}
+  .hud-btn.hud-help:hover{color:#fff;border-color:#9fbcff}
+  .gloss-group{margin:10px 0 6px}
+  .gloss-head{font-size:9px;letter-spacing:2px;color:var(--amber);margin-bottom:4px;border-bottom:1px solid #3a3a55;padding-bottom:2px}
+  .gloss-btn{display:flex;flex-direction:column;align-items:flex-start;
+    width:100%;text-align:left;padding:6px 9px;margin:3px 0;cursor:pointer;
+    background:linear-gradient(180deg,#1a1830,#13122a);border:2px solid var(--line);border-radius:3px;color:#cfcbef}
+  .gloss-btn:hover{border-color:#9fbcff;background:linear-gradient(180deg,#1f1d3a,#171535)}
+  .gloss-btn .gloss-name{font-size:9.5px;letter-spacing:1.5px;color:var(--amber)}
+  .gloss-btn .gloss-blurb{font-size:8px;letter-spacing:.4px;line-height:1.55;color:var(--dim);margin-top:2px}
   /* Ascension — picker on the class screen, persistent HUD badge, unlock banner. */
   .asc-badge{display:inline-block;margin-left:8px;font-size:8px;letter-spacing:1px;padding:1px 6px;
     border:1px solid #a8482a;border-radius:9px;color:#ff9a3c;background:rgba(60,16,8,.5);vertical-align:middle}
@@ -5671,6 +5682,33 @@ function restart(){ newGame(); render(); }
 
 /* ---------- shared UI ---------- */
 /* ---------- info popups (concept explanations + chip tooltips) ---------- */
+// GLOSSARY — the master index opened by the HUD "?" button.  Built as a
+// catch-all entry in INFO_TEXT so showInfo('glossary') just works.  Each
+// keyword links to its dedicated info-modal via data-info-concept so a
+// player can drill in from the index.  Adding this serves the
+// research-report principle "ruthlessly tooltip every keyword in-context"
+// — Monster Train shipped without it and paid the onboarding cost.
+const GLOSSARY_GROUPS=[
+  {title:'PRESSURE SYSTEMS', items:[
+    {k:'heat',     name:'HEAT',       blurb:'The Furnace meter — push for richer loot, get burned by overheat.'},
+    {k:'miasma',   name:'MIASMA',     blurb:'The cold below — corruption that halves healing and rots max HP. Cleanse, do not heal.'},
+    {k:'timedebt', name:'TIME DEBT',  blurb:'Borrowed power. Compounds; summons the Collector at 50.'},
+    {k:'deepcold', name:'DEEP COLD',  blurb:'The Abyss meter. Unremovable. It is what eventually ends an endless run.'},
+  ]},
+  {title:'BUILDING POWER', items:[
+    {k:'pathW',    name:'WRATH PATH', blurb:'Damage + crit cadence. Capstones at 3 / 6 / 9 points.'},
+    {k:'pathG',    name:'GUILE PATH', blurb:'Crit + dodge + status. Capstones at 3 / 6 / 9 points.'},
+    {k:'pathV',    name:'VEIL PATH',  blurb:'HP + regen + barrier. Capstones at 3 / 6 / 9 points.'},
+    {k:'synergies',name:'SYNERGIES',  blurb:'Named relic combos that fire automatically when both halves are owned.'},
+    {k:'devour',   name:'DEVOUR',     blurb:'Your 4th skill — mutates by killing different enemy families.'},
+    {k:'ascension',name:'ASCENSION',  blurb:'Post-throne difficulty ladder. Each win unlocks one more tier.'},
+  ]},
+  {title:'IN COMBAT', items:[
+    {k:'intent',   name:'INTENT',     blurb:'Every enemy telegraphs its next move + projected damage. Read it, then choose.'},
+    {k:'statuses', name:'STATUSES',   blurb:'BURN, POISON, WEAK, VULNERABLE, STUN — each ticks differently.'},
+    {k:'ultimate', name:'ULTIMATE',   blurb:'Charges as you fight. Per-class super attack at 100.'},
+  ]},
+];
 const INFO_TEXT={
   heat:{title:'HEAT — THE FURNACE',body:
     `In the Furnace, every door you open and every fight stokes the <b style="color:var(--red)">HEAT</b>. Heat answers <b>"how fast can I push?"</b><br><br>
@@ -5717,7 +5755,27 @@ const INFO_TEXT={
     `<b>Permanent run-defining artifacts</b> that change how you play. Most modify damage formulas, grant new effects on hit, or give powerful conditional bonuses.<br><br>
      Earned from <b>boss fights</b>, the <b>Pedestal of Power</b> room, the <b>merchant</b>, and certain <b>events</b>. Some pair up into <b>synergies</b> &mdash; collect the right combo to unlock extras. <b>Keystone</b> relics (one per class) transform a class skill.<br><br>
      Hover any owned relic to read its effect.`},
+  // Concepts referenced from the glossary that didn't have a dedicated entry yet.
+  pathW:{title:'WRATH PATH', body:`<b class="red">WRATH</b> rewards aggression.<br>&bull; <b>Tier I (3 pts):</b> +12% damage, every 3rd basic strike sinks deeper (+60% damage).<br>&bull; <b>Tier II (6 pts):</b> +12% damage, +8% crit.<br>&bull; <b>Tier III (9 pts):</b> Avatar of Wrath — +15% damage and your hits CLEAVE neighbouring foes.<br><br>Earn points by equipping WRATH-aff items, relics, and certain upgrades.`},
+  pathG:{title:'GUILE PATH', body:`<b class="teal">GUILE</b> rewards finesse.<br>&bull; <b>Tier I (3 pts):</b> +12% crit, +10% dodge. The strike right after Shield Wall is a guaranteed crit.<br>&bull; <b>Tier II (6 pts):</b> Status effects last longer, +8% crit.<br>&bull; <b>Tier III (9 pts):</b> Trickster — basic hits inflict random statuses, crits refund mana.`},
+  pathV:{title:'VEIL PATH', body:`<b class="blue">VEIL</b> rewards endurance.<br>&bull; <b>Tier I (3 pts):</b> +18 max HP, +12 mana. Every 3rd hit you take heals you (Steady Heart).<br>&bull; <b>Tier II (6 pts):</b> Regenerate HP each combat turn.<br>&bull; <b>Tier III (9 pts):</b> Warden — begin each battle with a damage barrier.`},
+  devour:{title:'DEVOUR (4TH SKILL)', body:`Every champion has a hidden fourth skill called <b>Harvest Essence</b>.<br><br>When you kill an enemy with this skill, you consume a <b>Fragment</b> of their family (Demon / Undead / Construct / Dragon / Humanoid / Beast). Fragments let you <b>Empower</b>, <b>Evolve</b>, or <b>Replace</b> the skill — building toward a unique ability nobody else has.<br><br>The skill renames itself to <b>DEVOUR</b> once you learn the truth about what it really does.`},
+  ascension:{title:'ASCENSION', body:`A post-victory difficulty ladder.<br><br>Beat the chamber-20 throne and you unlock <b>Ascension 1</b>. Beat it again at A1 to unlock A2, and so on (10 tiers total). Each tier adds <b>one stacking rule</b> — more enemies, harsher elites, leaner economy — that <i>changes which strategies work</i>, not just the numbers.<br><br>Pick your Ascension at the class-select screen. The crypt remembers what you have beaten.`},
+  intent:{title:'ENEMY INTENT', body:`Every enemy telegraphs its next move at the top of its cell:<br>&bull; <b class="red">ATK / HEAVY</b> with a projected damage number.<br>&bull; <b class="purple">CAST / STATUS</b> — burn, poison, weak, vulnerable.<br>&bull; <b class="amber">CHARGE / UNLEASH</b> — multi-turn windups.<br>&bull; <b class="amber">DOZING / ENRAGED</b> — your free turn or a cornered foe.<br><br>The intent shows the EXPECTED damage to you, accounting for your DEF and any buff/debuff active. Use it to decide who to focus, when to guard, when to potion.`},
+  statuses:{title:'STATUS EFFECTS', body:`&bull; <b class="red">BURN</b> — damage at end of every turn for N turns.<br>&bull; <b class="green">POISON</b> — damage at end of every turn for N turns.<br>&bull; <b>WEAK</b> — target deals reduced damage.<br>&bull; <b>VULNERABLE</b> — target takes +25% damage.<br>&bull; <b>STUN</b> — target skips its next turn.<br><br>Re-applying a status takes the MAX of the old and new durations — never the SUM. Guile II lengthens the statuses you apply.`},
+  ultimate:{title:'ULTIMATE', body:`Charge fills as you attack, get hit, cast, and kill. At <b>100</b> the ULT button glows.<br><br>Each class has its own ULT:<br>&bull; <b class="red">Warrior — Earthshatter</b>: massive AoE that stuns survivors.<br>&bull; <b class="purple">Mage — Mind Bolt</b>: a single nuclear bolt.<br>&bull; <b class="teal">Ranger — Death Volley</b>: hits every foe twice.<br><br>Charge carries between fights — saving up for a boss is real.`},
+  glossary:{title:'CRYPT GLOSSARY', body: buildGlossaryHtml() },
 };
+// Build the glossary card grid lazily (used in the GLOSSARY info card).
+function buildGlossaryHtml(){
+  return GLOSSARY_GROUPS.map(g=>{
+    const items = g.items.map(it=>
+      `<button class="gloss-btn" data-info-concept="${it.k}"><span class="gloss-name">${it.name}</span><span class="gloss-blurb">${it.blurb}</span></button>`
+    ).join('');
+    return `<div class="gloss-group"><div class="gloss-head">${g.title}</div>${items}</div>`;
+  }).join('');
+}
+function showGlossary(){ showInfo({title:INFO_TEXT.glossary.title, body: buildGlossaryHtml()}); }
 function showInfo(key){
   const i=typeof key==='object'?key:INFO_TEXT[key];
   if(!i)return;
@@ -5838,6 +5896,7 @@ function playerBar(p,full){
     <button class="hud-btn${act('gear')}" onclick="openInventory('gear')" title="Your gear &amp; sets (i)"><span>&#9776;</span> INVENTORY <span class="hud-k">i</span></button>
     <button class="hud-btn hud-skills${act('powers')}" onclick="openInventory('powers')" title="Your skills, paths, relics &amp; synergies"><span>&#10022;</span> SKILLS</button>
     <button class="hud-btn hud-saga${act('saga')}" onclick="openInventory('saga')" title="Bestiary &amp; your Saga"><span>&#9774;</span> SAGA</button>
+    <button class="hud-btn hud-help" onclick="showGlossary()" title="Glossary &mdash; learn every system">?</button>
   </div>`;
   // Potion pips — Slay-the-Spire-style explicit slot view.  Show up to 5 pips;
   // anything past that condenses to "+N".  Filled = available, empty = consumed
