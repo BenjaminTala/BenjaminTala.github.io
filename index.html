@@ -2194,16 +2194,21 @@ function defaultMods(){ return {eDmg:1.06,eHp:1.06,pDmg:1.00,goldMul:1,skillCost
    ============================================================ */
 const ASCENSION=[
   null, // index 0 = no ascension
-  {n:1, name:'Restless Dead',     desc:'+1 enemy in every pack.',                       apply:m=>{ m.packBonus+=1; }},
-  {n:2, name:'Tougher Hide',      desc:'Enemies have +12% HP.',                          apply:m=>{ m.eHp*=1.12; }},
-  {n:3, name:'The Crypt Sharpens',desc:'Elites always carry a Counter to your build.',   apply:m=>{ m.eliteCounter=1; }},
-  {n:4, name:'Lean Provisions',   desc:'Start each run with 1 fewer potion.',            apply:m=>{ m.potionPenalty+=1; }},
-  {n:5, name:'Greedy Stone',      desc:'Merchant prices +30%.',                          apply:m=>{ m.priceMul*=1.3; }},
-  {n:6, name:'Crueler Blows',     desc:'Enemies deal +12% damage.',                      apply:m=>{ m.eDmg*=1.12; }},
-  {n:7, name:'Teeming Halls',     desc:'Far more elites prowl the crypt.',               apply:m=>{ m.eliteMul*=1.55; }},
-  {n:8, name:'Thin Veins',        desc:'15% less gold from every source.',               apply:m=>{ m.goldMul*=0.85; }},
-  {n:9, name:'Tougher Still',     desc:'Enemies have another +12% HP.',                  apply:m=>{ m.eHp*=1.12; }},
-  {n:10,name:'The Hungering Crypt',desc:'Enemies gain +12% HP and +12% damage.',         apply:m=>{ m.eHp*=1.12; m.eDmg*=1.12; }},
+  // Tuned via /tmp/bal_sim.js BAL_MODE=asc sweeps.  Goal: A0-A3 stay in the
+  // 40-60% bot-win band; A6 onward is a meaningful step (the elite-counter
+  // tier).  Earliest tiers were too harsh in the first ladder ship — the
+  // bot lost ~20% win rate at A2-A3.  Order now: HP/pack bumps first,
+  // resource squeeze mid, counter and elite-density last.
+  {n:1, name:'Tougher Hide',      desc:'Enemies have +8% HP.',                            apply:m=>{ m.eHp*=1.08; }},
+  {n:2, name:'Restless Dead',     desc:'+1 enemy in every pack.',                         apply:m=>{ m.packBonus+=1; }},
+  {n:3, name:'Lean Provisions',   desc:'Start each run with 1 fewer potion.',             apply:m=>{ m.potionPenalty+=1; }},
+  {n:4, name:'Greedy Stone',      desc:'Merchant prices +25%.',                           apply:m=>{ m.priceMul*=1.25; }},
+  {n:5, name:'Crueler Blows',     desc:'Enemies deal +10% damage.',                       apply:m=>{ m.eDmg*=1.10; }},
+  {n:6, name:'The Crypt Sharpens',desc:'Elites always carry a Counter to your build.',    apply:m=>{ m.eliteCounter=1; }},
+  {n:7, name:'Tougher Still',     desc:'Enemies have another +10% HP.',                   apply:m=>{ m.eHp*=1.10; }},
+  {n:8, name:'Teeming Halls',     desc:'Far more elites prowl the crypt.',                apply:m=>{ m.eliteMul*=1.45; }},
+  {n:9, name:'Thin Veins',        desc:'15% less gold from every source.',                apply:m=>{ m.goldMul*=0.85; }},
+  {n:10,name:'The Hungering Crypt',desc:'Enemies gain +12% HP and +12% damage.',          apply:m=>{ m.eHp*=1.12; m.eDmg*=1.12; }},
 ];
 const ASC_MAX = ASCENSION.length-1;   // 10
 function loadAscension(){ try{ return Math.max(0, Math.min(ASC_MAX, parseInt(localStorage.getItem('crypt_ascension')||'0',10)||0)); }catch(e){ return 0; } }
