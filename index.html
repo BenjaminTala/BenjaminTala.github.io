@@ -1675,6 +1675,50 @@ const OMENS=[
    EVENTS  (narrative encounters — data driven)
    each option: {label, desc, run(p)-> outcome string | false(=battle started)}
    ============================================================ */
+function npcBuildTail(p, who){
+  if(!p) return '';
+  const tiers=(p.affTier&&((p.affTier.w|0)+(p.affTier.g|0)+(p.affTier.v|0)))||0;
+  const dom=dominantAff(p);
+  const sets=(p.sets&&p.sets.length)||0;
+  const dualOwned=(p.relics||[]).filter(rn=>(RELICS.find(r=>r.name===rn)||{}).dual).length;
+  // Each NPC gets its own voice for these tails.
+  if(who==='lantern'){
+    if(dualOwned) return ' "There is a green light on your belt that I did not light. Someone else did. I do not know them."';
+    if(tiers>=4) return ' "You are walking deeper into yourself this time. The lanterns recognise that posture."';
+    if(dom==='v') return ' He looks at the weight of you and nods. "Quiet champions last longer. The crypt is louder than them."';
+    if(dom==='w') return ' "The fast ones burn out first. You burn quickly." It is not a compliment.';
+    if(dom==='g') return ' "The clever ones come back the most. I am not sure that is a kindness."';
+    return '';
+  }
+  if(who==='cardinal'){
+    if(dualOwned>=2) return ' His unface registers your build. "Two opposed paths in one body. Which one are you wearing today?"';
+    if(sets>=1) return ' "You have armoured a story onto yourself. We will see if the crypt believes it."';
+    if(tiers>=5) return ' "You have committed. The gods that were going to notice already have."';
+    return '';
+  }
+  if(who==='wsmith'){
+    if(sets>=2) return ' He weeps over the bellows when he sees your gear. "Two of those came out of HIS forge. He was a kinder smith than I am."';
+    if(dom==='w') return ' "You bring the heat with you." A long pause. "Do not ask me to forge it cooler."';
+    if(dom==='v') return ' "Heavy gear suits heavy souls. Stand still — let me see the seams."';
+    if(p.weapon && p.weapon.trait) return ` "Your blade carries a trait the old smiths called <i>${p.weapon.trait}</i>. We do not forge those anymore. We are not allowed to."`;
+    return '';
+  }
+  if(who==='cartog'){
+    const r=loadRecords();
+    if((r.deepest||0)>=20) return ' "Most maps end at chamber twenty. I have a partial of yours."';
+    if(dom==='g') return ' She watches the way you stand. "You walk like someone who would rather dodge a fight than win it. Useful, down here."';
+    if(tiers>=3) return ' "You know what you ARE this time. Half of you do not." She makes a small mark on the parchment.';
+    return '';
+  }
+  if(who==='scholar'){
+    const path=(p.memory&&p.memory.path)||[];
+    if(path.length>=3) return ` "You have eaten three families. The ink remembers you as a <i>${path.slice(-1)[0]}-eater</i>."`;
+    if(dualOwned) return ' "That artifact in your pack — its description has two sentences. Only one is the truth. I have not figured out which."';
+    if(dom==='v') return ' "Veil-bound. Good. The cold does not finish you as fast. We can talk."';
+    return '';
+  }
+  return '';
+}
 const EVENTS=[
   // ===== MYSTERY DRIP =====
   // Each carries a 'zone' field so pickEvent biases by where you are. Side-effects are deliberately small;
@@ -1682,11 +1726,19 @@ const EVENTS=[
   // === LIVING INHABITANTS ===
   // These NPCs live in the crypt. Some are older than the descent. They have their own business
   // here, their own grief, their own gods. Most do not particularly care about you.
+  //
+  // Build-aware reactivity (research proposal #11): each NPC's greeter line can
+  // optionally append ONE sentence keyed to the player's current run state —
+  // dominant affinity, equipped sets, dual artifacts owned.  This is the "the
+  // dungeon notices what you ARE" moment that Hades does via NPC dialogue but
+  // we can do at one-line scale.  The helper is pure (just returns a string)
+  // so it can be templated into any NPC's text() function.
   {id:'lantern',title:'THE LANTERN KEEPER',zone:0,npc:'lantern',sprite:{src:'assets/players/mage.png',tint:'tint-amber'},art:"  .o.o.o.\n  | | | |\n  ( \" )\n  )===( \n  /| |\\",
    text:p=>{ const r=loadRecords(); const n=npcState('lantern'); const deaths=Math.max(0,(r.runs||0)-(r.wins||0));
-     if(n.met<=1) return 'An old man passes you, carrying an iron frame strung with hundreds of tiny lanterns. Each one burns a different colour. He stops to look at you the way one looks at weather.';
-     if(n.met===2) return 'The lantern keeper again. He nods like he expected the appointment. There is a new lantern on his frame, small and green, that he did not have last time.';
-     return `The lantern keeper sets down his frame. There are ${deaths===0?'no':deaths===1?'one':deaths} green lanterns on it that you are sure were not there the first time you met. He counts them under his breath as if he is checking against a list only he can read.`;
+     const tail=npcBuildTail(p,'lantern');
+     if(n.met<=1) return 'An old man passes you, carrying an iron frame strung with hundreds of tiny lanterns. Each one burns a different colour. He stops to look at you the way one looks at weather.'+tail;
+     if(n.met===2) return 'The lantern keeper again. He nods like he expected the appointment. There is a new lantern on his frame, small and green, that he did not have last time.'+tail;
+     return `The lantern keeper sets down his frame. There are ${deaths===0?'no':deaths===1?'one':deaths} green lanterns on it that you are sure were not there the first time you met. He counts them under his breath as if he is checking against a list only he can read.`+tail;
    },
    options:[
      {label:'"What are the lanterns?"',desc:'Listen',run:p=>{discoverLore('l17'); const r=loadRecords(); const deaths=Math.max(0,(r.runs||0)-(r.wins||0));
@@ -1704,10 +1756,10 @@ const EVENTS=[
        return `He turns the frame so you can see the bottom row. ${deaths} small green lights, in neat order. <span class="shout-red">"I do not light them for everyone. Only the ones the crypt keeps sending back."</span>`;}},
    ]},
   {id:'cardinal',title:'THE CARDINAL WITHOUT A FACE',zone:1,npc:'cardinal',sprite:{src:'assets/players/warrior.png',tint:'tint-gold'},art:"  ,---,\n  |   |\n  )...(\n  /|=|\\\n  d   b",
-   text:p=>{ const n=npcState('cardinal');
-     if(n.met<=1) return 'A priest in robes of beaten gold stands at a small stone altar. His hood is up. Where his face should be, there is nothing — not darkness, not skin. Nothing.';
-     if(n.met===2) return 'The faceless priest is still at his altar. He does not move when you enter, but the absence under his hood orients toward you with patience.';
-     return 'The cardinal turns the unface toward you as you arrive. "Again." He says it as a fact, the way one says a date. "Again."';
+   text:p=>{ const n=npcState('cardinal'); const tail=npcBuildTail(p,'cardinal');
+     if(n.met<=1) return 'A priest in robes of beaten gold stands at a small stone altar. His hood is up. Where his face should be, there is nothing — not darkness, not skin. Nothing.'+tail;
+     if(n.met===2) return 'The faceless priest is still at his altar. He does not move when you enter, but the absence under his hood orients toward you with patience.'+tail;
+     return 'The cardinal turns the unface toward you as you arrive. "Again." He says it as a fact, the way one says a date. "Again."'+tail;
    },
    options:[
      {label:'"Which god do you serve?"',desc:'Ask',run:p=>{discoverLore('l19'); const n=npcState('cardinal');
@@ -1734,10 +1786,10 @@ const EVENTS=[
      {label:'Step around him',desc:'No questions',run:p=>'He does not move. He does not turn. You walk past. The hairs on your neck do not settle for some time.'},
    ]},
   {id:'wsmith',title:'THE WEEPING SMITH',zone:2,npc:'wsmith',sprite:{src:'assets/monsters/golem.png',tint:'tint-amber'},art:"  ,---,\n  |( )|\n  )===( \n /|fire|\\\n  d   b",
-   text:p=>{ const n=npcState('wsmith');
-     if(n.met<=1) return 'A blacksmith sits at a cold anvil. He is not making anything. He is taking blade after blade from a stack at his feet and snapping each one with his bare hands. He is crying.';
-     if(n.met===2) return 'The weeping smith again. The stack of broken blades at his feet is taller than it was. He does not look up, but he slides a fresh sword off the pile as if he had been keeping it for you.';
-     return 'The smith has stopped crying. That is somehow worse. He breaks the blades now with the steady patience of a man doing a chore, and when he sees you he simply nods at the stack: there is always more.';
+   text:p=>{ const n=npcState('wsmith'); const tail=npcBuildTail(p,'wsmith');
+     if(n.met<=1) return 'A blacksmith sits at a cold anvil. He is not making anything. He is taking blade after blade from a stack at his feet and snapping each one with his bare hands. He is crying.'+tail;
+     if(n.met===2) return 'The weeping smith again. The stack of broken blades at his feet is taller than it was. He does not look up, but he slides a fresh sword off the pile as if he had been keeping it for you.'+tail;
+     return 'The smith has stopped crying. That is somehow worse. He breaks the blades now with the steady patience of a man doing a chore, and when he sees you he simply nods at the stack: there is always more.'+tail;
    },
    options:[
      {label:'"Why are you breaking them?"',desc:'Ask',run:p=>{discoverLore('l19');
@@ -1747,10 +1799,10 @@ const EVENTS=[
      {label:'Give him a piece to destroy',desc:'-1 armor piece, +random upgrade',run:p=>{const slots=['head','chest','legs','boots','ring'].filter(s=>p.equip[s]);if(!slots.length)return 'He shakes his head at your bare hands.';const slot=pick(slots);const it=p.equip[slot];unequip(p,slot);const up=pick(UPGRADES);gainUpgrade(p,up);return `He takes your ${it.name} and breaks it across his knee. Something old comes loose. (${up.note})`;}},
    ]},
   {id:'cartog',title:'THE LAST CARTOGRAPHER',zone:1,npc:'cartog',sprite:{src:'assets/players/ranger.png',tint:'tint-grey'},art:"  ,---,\n  |~~~|\n  ( o )\n  )===( \n  d   b",
-   text:p=>{ const r=loadRecords(); const n=npcState('cartog');
-     if(n.met<=1) return 'An old explorer sits with a map spread across his knees. The lines on the map move when you are not looking directly at them.';
-     if(r.deepest>=RUN_LENGTH) return `The cartographer looks up before you reach him. "You. The one who got to ${r.deepest}." He marks a small black cross at the bottom of his map. "I will add a line."`;
-     return 'The cartographer recognises you and does not bother greeting you. He just slides a new sheet of paper out and writes your name at the top, in handwriting you cannot read.';
+   text:p=>{ const r=loadRecords(); const n=npcState('cartog'); const tail=npcBuildTail(p,'cartog');
+     if(n.met<=1) return 'An old explorer sits with a map spread across his knees. The lines on the map move when you are not looking directly at them.'+tail;
+     if(r.deepest>=RUN_LENGTH) return `The cartographer looks up before you reach him. "You. The one who got to ${r.deepest}." He marks a small black cross at the bottom of his map. "I will add a line."`+tail;
+     return 'The cartographer recognises you and does not bother greeting you. He just slides a new sheet of paper out and writes your name at the top, in handwriting you cannot read.'+tail;
    },
    options:[
      {label:'"What are you mapping?"',desc:'Ask',run:p=>{discoverLore('l18'); const n=npcState('cartog');
@@ -1822,9 +1874,9 @@ const EVENTS=[
      {label:'Walk through them',desc:'They were never there',run:p=>{addMiasma(8);return 'There was no child. Of course there was no child. The Miasma is doing its work. (the cold thickens)';}},
    ]},
   {id:'scholar',title:'THE FROZEN SCHOLAR',zone:2,npc:'scholar',sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  [_=_]\n  ( o )\n  )===( \n  /| |\\",
-   text:p=>{ const r=loadRecords(); const n=npcState('scholar');
-     if(n.met<=1) return 'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.';
-     return `The scholar is on a new ledger. There are ${Math.max(0,(r.runs||1)-1)} closed ones stacked beside her, each one bound in pale leather. She does not look up. She is already writing your name.`;
+   text:p=>{ const r=loadRecords(); const n=npcState('scholar'); const tail=npcBuildTail(p,'scholar');
+     if(n.met<=1) return 'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.'+tail;
+     return `The scholar is on a new ledger. There are ${Math.max(0,(r.runs||1)-1)} closed ones stacked beside her, each one bound in pale leather. She does not look up. She is already writing your name.`+tail;
    },
    options:[
      {label:'"What are you writing?"',desc:'Read the page',run:p=>{p.maxMana+=8;p.mana=clamp(p.mana+8,0,p.maxMana);addMiasma(3); npcSet('scholar',{stage:Math.max(1,npcState('scholar').stage),read:1});
