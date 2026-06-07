@@ -1604,6 +1604,21 @@ const RELICS=[
   {id:'kbeam',name:'Singularity Lens',cls:'mage',keystone:true,aff:{v:2,w:1},note:'KEYSTONE: Fireball becomes a single-target CHANNELED BEAM (huge dmg + heavy burn)',apply:p=>{addFlag(p,'kBeam');}},
   {id:'kwhirl',name:'Eternal Cyclone',cls:'warrior',keystone:true,aff:{w:2,v:1},note:'KEYSTONE: Whirlwind hits all, no longer drops your guard, and heals you',apply:p=>{addFlag(p,'kWhirl');}},
   {id:'ksplit',name:'Thousand Arrows',cls:'ranger',keystone:true,aff:{g:2,w:1},note:'KEYSTONE: Aimed Shot strikes EVERY enemy',apply:p=>{addFlag(p,'kSplit');}},
+  // ---- DUAL ARTIFACTS (Hades' Duo Boons) — rare relics that appear in the
+  // pool ONLY when the player already has 2+ in two specific paths.  The
+  // payoff retroactively justifies investing across two axes instead of
+  // tunneling one.  Per the design research: "build identity comes from
+  // constraints (one slot per piece) plus rare payoff cards that retroactively
+  // justify earlier picks."  These do NOT add affinity themselves — they
+  // reward affinity already earned, and read as legendary in the UI.
+  {id:'duo_wg',name:"Mirror Veil",dual:{w:2,g:2},legendary:true,note:'DUAL · WRATH+GUILE: first hit each combat is a guaranteed crit and applies VULNERABLE',apply:p=>{addFlag(p,'mirrorVeil');}},
+  {id:'duo_wv',name:"Bone Crown",dual:{w:2,v:2},legendary:true,note:'DUAL · WRATH+VEIL: on every kill, gain +1 ATK for the rest of the battle',apply:p=>{addFlag(p,'boneCrown');}},
+  {id:'duo_gv',name:"Witch's Tongue",dual:{g:2,v:2},legendary:true,note:"DUAL · GUILE+VEIL: your crits apply a random extra status (BURN / POISON / WEAK / VULN)",apply:p=>{addFlag(p,'witchTongue');}},
+  {id:'duo_wg2',name:'Cinder Heart',dual:{w:2,g:2},legendary:true,note:'DUAL · WRATH+GUILE: kills refund 1 potion (max 5)',apply:p=>{addFlag(p,'cinderHeart');}},
+  {id:'duo_wv2',name:'Iron Memory',dual:{w:2,v:2},legendary:true,note:'DUAL · WRATH+VEIL: while above 70% HP, +20% damage; below 30%, +10 DEF',apply:p=>{addFlag(p,'ironMemory');}},
+  {id:'duo_gv2',name:'Pale Reading',dual:{g:2,v:2},legendary:true,note:'DUAL · GUILE+VEIL: dodging an attack restores 5 MP and 5% max HP',apply:p=>{addFlag(p,'paleReading');}},
+  {id:'duo_wgv',name:'Tri-Star Brand',dual:{w:1,g:1,v:1},legendary:true,note:'DUAL · ALL PATHS: each affinity tier you reach grants +2% damage and +2% damage reduction',apply:p=>{addFlag(p,'triStar');}},
+  {id:'duo_lock',name:'Sealed Compact',dual:{w:3,v:3},legendary:true,note:'DUAL · WRATH III+VEIL III: every 5th hit you take heals you AND your next strike crits',apply:p=>{addFlag(p,'sealedCompact');}},
 ];
 /* ---------- affinity paths (escalating build identities) ---------- */
 const AFF_THRESH=[3,6,9];
@@ -2388,7 +2403,18 @@ function levelUp(p,silent){ p.level++; p.maxHp+=11; p.atk+=2; p.maxMana+=5; p.ma
         'level');
     }
   } }
-function relicPool(p){ return RELICS.filter(r=>(!r.cls||r.cls===p.cls)&&!p.relics.includes(r.name)); }
+// Dual-axis artifacts (Hades-style duo boons) only appear in the offered pool
+// when the player has ALREADY invested in BOTH listed paths at the listed tiers.
+// This is what makes them feel earned — they cannot show up on run 1 turn 1.
+function dualUnlocked(p, dual){
+  for(const k in dual){ if((p.aff[k]||0) < dual[k]) return false; }
+  return true;
+}
+function relicPool(p){ return RELICS.filter(r=>
+  (!r.cls||r.cls===p.cls)
+  && !p.relics.includes(r.name)
+  && (!r.dual || dualUnlocked(p,r.dual))
+); }
 function grantRandomRelic(p){ const avail=relicPool(p); if(!avail.length)return null; const r=pick(avail); gainRelic(p,r); return r.name; }
 /* ---- equipment engine ---- */
 function applyItemStats(p,item,sign){ if(!item||!item.stats)return;
@@ -2655,6 +2681,12 @@ function showFragmentChoice(){
   if(!G._fragQueue||!G._fragQueue.length) return;
   const fam=G._fragQueue.shift();
   const fdef=DEVOUR_FAMILIES[fam]; if(!fdef){ showFragmentChoice(); return; }
+  // FIRST-RUN ONBOARDING — skip the fragment-choice modal on the very first run
+  // (Monster-Train onboarding lesson: don't pile choices on a new player who
+  //  doesn't yet have a mental model of the Devour skill).  Auto-pick "empower"
+  //  silently; the popup-build will still flash so the player notices SOMETHING
+  //  happened without having to read four paragraphs of choice text.
+  if(isFirstRun()){ pickFragment(fam,'empower'); return; }
   const d=G.player.memory;
   const revealed=d && d.revealed;
   // Honest vs hidden language. Pre-reveal: ESSENCE / harvest. Post-reveal: FRAGMENT / consume.
@@ -3503,6 +3535,27 @@ function postDeathLine(d){
   const idx = Math.min(cands.length-1, Math.floor(Math.random()*Math.random()*cands.length));
   return pick(cands[idx]);
 }
+// "THE DUNGEON REMEMBERS" — a single first-corridor line that surfaces a real
+// stat from the player's run history.  Picks one of 4-5 facts about them and
+// templates a whisper, so the very FIRST step into the crypt on run 2+ feels
+// like the world acknowledges the previous attempts.  Returns null if there's
+// nothing interesting to say (run 1) — caller checks.
+function dungeonMemoryLine(){
+  const r=loadRecords(); const runs=r.runs||0; if(runs<=0) return null;
+  const wins=r.wins||0, deepest=r.deepest||0, deaths=Math.max(0,runs-wins);
+  const bossKills=r.bossKills||{}, killedBosses=Object.keys(bossKills);
+  const cands=[];
+  if(wins>0) cands.push(`The crypt knows your face. It has watched you win before. <b class="amber">${wins}</b> time${wins===1?'':'s'}.`);
+  if(deaths>=3) cands.push(`You have died here <b class="red">${deaths}</b> times. The stone is no longer surprised when you arrive.`);
+  if(deaths===1) cands.push(`Last time, you did not climb back out. The crypt notices the difference.`);
+  if(deepest>=15) cands.push(`Something in the deeper dark is sharpening. You have been there before. It remembers.`);
+  if(deepest>0&&deepest<10) cands.push(`The first chambers know your weight. The deeper rooms have not met you yet.`);
+  if(killedBosses.length>=2) cands.push(`Two of the wardens you have killed are still being mourned somewhere. You will not be mourned in here.`);
+  if(killedBosses.includes('dragon')) cands.push(`The dragon-bones in the eighth chamber were once warm. You made them cold.`);
+  if(killedBosses.includes('king')) cands.push(`The King's chair is empty because of you. The chair will be filled again. It always is.`);
+  if(!cands.length) cands.push(`You have been here before. The walls have not.`);
+  return '&#9763; ' + pick(cands);
+}
 function deathReturnHtml(){
   const d = loadLastDeath(); if(!d) return '';
   const line = postDeathLine(d); if(!line) return '';
@@ -3734,6 +3787,10 @@ function nextCorridor(){ G.depth++;
     G._whisper = chance(24) ? whisperFor(G.depth) : null;
     return; }
   if(G.depth===1||G.depth===11||G.depth===21||G.depth===31){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]&&discoverLore(({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]); if(G.depth>1)stagePopup(G.depth); }
+  // ----- DUNGEON-MEMORY WHISPER (Hades-lite: the crypt notices the player's
+  //       past runs).  Fires only on the very first chamber of a non-first run.
+  //       Surfaces previous-run stats as in-fiction acknowledgement.
+  if(G.depth===1 && !G.abyss){ G._memoryMsg = dungeonMemoryLine(); }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
   else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); }
   // Whispers are ambient texture — measured at ~7.8/run (one every ~4 corridors), which read as
@@ -3763,7 +3820,7 @@ function drainBanners(max){
   if(G._zoneMsg){ push(100,'panel tight fade','font-size:9px;line-height:1.9','<span class="muted">&#9670; </span>'+G._zoneMsg); G._zoneMsg=null; }
   if(G._loreMsg){ push(90,'panel tight center amber fade','font-size:9px',G._loreMsg); G._loreMsg=null; }
   if(G._affMsg){ push(85,'panel tight center teal fade','font-size:9px','&#10022; '+G._affMsg); G._affMsg=null; }
-  if(G._memoryMsg){ push(82,'panel tight center purple fade','font-size:9px;letter-spacing:.6px;border-color:#6c3cbf','&#9763; '+G._memoryMsg); G._memoryMsg=null; }
+  if(G._memoryMsg){ push(95,'panel tight center purple fade','font-size:9.5px;letter-spacing:.6px;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(80,30,140,.18),rgba(40,16,80,.10))','&#9763; '+G._memoryMsg); G._memoryMsg=null; }
   if(G._flashbackMsg){ push(80,'panel tight center purple fade','font-size:9px;letter-spacing:.6px','&#9763; '+G._flashbackMsg); G._flashbackMsg=null; }
   if(G._worldMsg){ push(70,'panel tight center red fade','font-size:9px',G._worldMsg); G._worldMsg=null; }
   if(G._heatTickMsg){ push(60,'panel tight center fade','font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))',G._heatTickMsg); G._heatTickMsg=null; }
@@ -4267,7 +4324,34 @@ function renderMerchant(){
   // First visit to this stall THIS run — bump the meet counter once. The merchant is now an anchor
   // NPC with persistent state in crypt_npc, same pattern as the Lantern Keeper / Cardinal / Scholar.
   if(!G.room._merchMet){ npcMeet('merchant'); G.room._merchMet=1; }
-  if(!G.room.stock){ const rp=relicPool(p); const gslot=pick(SLOTS); let pm=(heatActive()&&heatTier()>=2)?1.3:1; if(G.room.discount)pm*=0.75; pm*=(G.mods.priceMul||1);   // Ascension 5: Greedy Stone
+  if(!G.room.stock){ const rp=relicPool(p);
+    // Build-biased merchant (Balatro/Spire anticipation principle): the slot the
+    // merchant offers is weighted toward what the player is BUILDING.  Slots
+    // that would complete a half-built armor set get a big bump; the player's
+    // weapon slot gets a small bump if no weapon-upgrade has appeared yet.
+    // Pure RNG is the fallback at ~30% so testers still get the occasional surprise.
+    let gslot=null;
+    if(chance(70)){
+      const slotW={};
+      // partial sets — for each set the player has 1/2 of, find the missing slot.
+      const setCount={}; SLOTS.forEach(s=>{ const it=p.equip[s]; if(it&&it.set) setCount[it.set]=(setCount[it.set]||0)+1; });
+      SET_ITEMS.forEach(si=>{
+        const c=setCount[si.set]||0;
+        if(c===1){ // we're 1 short of completing
+          const have = SLOTS.some(s=>{ const it=p.equip[s]; return it&&it.set===si.set&&it.slot===si.slot; });
+          if(!have) slotW[si.slot]=(slotW[si.slot]||0)+5;
+        }
+      });
+      // empty slots get a moderate bump (filling a hole > sidegrading)
+      SLOTS.forEach(s=>{ if(!p.equip[s]) slotW[s]=(slotW[s]||0)+2; });
+      // affinity-matching slot bias — every slot has a base 1
+      SLOTS.forEach(s=>{ slotW[s]=(slotW[s]||0)+1; });
+      // weighted pick
+      const keys=Object.keys(slotW); let tot=0; for(const k of keys)tot+=slotW[k];
+      let r=Math.random()*tot; for(const k of keys){ if(r<slotW[k]){gslot=k;break;} r-=slotW[k]; }
+    }
+    if(!gslot) gslot=pick(SLOTS);
+    let pm=(heatActive()&&heatTier()>=2)?1.3:1; if(G.room.discount)pm*=0.75; pm*=(G.mods.priceMul||1);   // Ascension 5: Greedy Stone
     G.room.stock={relic:rp.length?pick(rp):null, gear:makeItem(gslot,p.cls,G.depth+1), pm}; }
   const st=G.room.stock; const mc=b=>Math.round(b*(st.pm||1));
   // === THE MERCHANT'S VOICE — state-aware flavor that makes the stall feel like a person ===
@@ -4435,7 +4519,13 @@ function startBattle(intro){
   const r=G.room; const enemies=r._enemies?r._enemies:buildEnemies(r);
   // Reset per-combat affinity rhythm counters so a build's beat starts fresh each fight (a Rending
   // Edge shouldn't carry over from a fight three chambers ago).
-  if(G.player){ G.player._wrathStrikes=0; G.player._feintPrimed=0; G.player._veilHits=0; G.player._heatHits=0; }
+  if(G.player){ G.player._wrathStrikes=0; G.player._feintPrimed=0; G.player._veilHits=0; G.player._heatHits=0;
+    // Dual artifacts — per-battle resets
+    if(G.player._boneCrownStacks){ G.player.atk -= G.player._boneCrownStacks; G.player._boneCrownStacks=0; }   // strip last battle's stacks
+    if(G.player.flags.mirrorVeil) G.player._mirrorPrimed=1;   // first hit of this combat is guaranteed crit
+    G.player._sealedHits=0;   // Sealed Compact every-5th-hit counter
+    G.player._sealedNextCrit=0;
+  }
   // Ultimate charge persists across fights — saving up matters.
   const carriedCharge=(G.player&&G.player._charge!=null)?G.player._charge:0;
   G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:carriedCharge,
@@ -4743,6 +4833,13 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   m*=slayerMult(e);
   m*=weaponTraitMult(p);
   if(e.st.vulnT>0)m*=1.25;
+  // ---- DUAL ARTIFACTS ----
+  // Iron Memory (WRATH+VEIL): above 70% HP grants +20% damage; DEF half handled in playerDef().
+  if(f.ironMemory && p.hp >= p.maxHp*0.70) m*=1.20;
+  // Tri-Star Brand (all three paths): +2% damage per affinity tier reached.
+  if(f.triStar){ const t=(p.affTier.w|0)+(p.affTier.g|0)+(p.affTier.v|0); m *= (1 + t*0.02); }
+  // Bone Crown stacks: per-battle +1 ATK per kill is folded into p.atk in onEnemyDeath;
+  // this is a no-op here but documented so future edits don't add it twice.
   return m; }
 function rollCrit(){ return chance(effCrit(G.player)); }
 function critMult(){ return G.player.flags.bigCrit?2.1:1.8; }
@@ -4765,6 +4862,11 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   if(e.boss){ const sc=$('scene'); if(sc){ sc.classList.remove('bosskill-fx'); void sc.offsetWidth; sc.classList.add('bosskill-fx'); } }
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
+  // ---- DUAL ARTIFACTS — on-kill triggers ----
+  if(p.flags.boneCrown){ p._boneCrownStacks=(p._boneCrownStacks||0)+1; p.atk+=1;
+    blog(`&#9763; BONE CROWN &mdash; the kill makes you sharper (+1 ATK this battle).`,'crit'); }
+  if(p.flags.cinderHeart && (p.potions||0)<5 && chance(50)){
+    p.potions=(p.potions||0)+1; blog(`&#9763; CINDER HEART &mdash; the ember refills a vial (+1 potion).`,'heal'); }
   // First-kill Devour explainer — gated by localStorage so it shows once across all runs.
   // On the very first run we ADDITIONALLY hold it until chamber 8+, so it doesn't pile onto the
   // attack / potion / intent-reading teaching in the first few chambers.
@@ -4848,8 +4950,25 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
     if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); blog('&#10022; FEINT — the opening you waited for!','crit'); SFX.play('crit'); } }
   // Mob Rule consumes a one-shot +50% buff on next basic strike
   if(p._mobBuffNextHit){ d*=1.5; p._mobBuffNextHit=0; blog('Mob Rule strikes through you!','crit'); }
+  // ---- DUAL ARTIFACTS — basic-hit triggers ----
+  // Mirror Veil: first basic hit each combat is guaranteed crit + applies VULNERABLE.
+  if(p._mirrorPrimed && !isExtra){ p._mirrorPrimed=0;
+    if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); }
+    const e0=b.enemies[idx]; if(e0&&e0.hp>0){ addVuln(e0.st,2); blog('&#9763; MIRROR VEIL &mdash; the first strike rings true. VULNERABLE!','crit'); SFX.play('crit'); }
+  }
+  // Sealed Compact: every 5th hit YOU TAKE primes a free crit on your next strike.
+  if(p._sealedNextCrit && !isExtra){ p._sealedNextCrit=0;
+    if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); blog('&#9763; SEALED COMPACT &mdash; the answering strike CRITS.','crit'); SFX.play('crit'); }
+  }
   SFX.play(c?'crit':'hit');
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
+  // Witch's Tongue: crits apply a random status (handled here so it fires for basics; skills handle their own).
+  if(c && p.flags.witchTongue && !isExtra){ const e1=b.enemies[idx]; if(e1&&e1.hp>0){
+    const r=rnd(4); if(r===0){addBurn(e1.st,5,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit BURNS.','info');}
+    else if(r===1){addPoison(e1.st,5,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit POISONS.','info');}
+    else if(r===2){addWeak(e1.st,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit WEAKENS.','info');}
+    else {addVuln(e1.st,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit makes them VULNERABLE.','info');}
+  }}
   const e=b.enemies[idx];
   // WEAPON TRAITS — cursed pollutes, bleed cuts on crit
   if(p.weapon.trait==='cursed'){ if(miasmaActive()) addMiasma(1); else addHeat(1); }
@@ -5122,7 +5241,12 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
   // Dodge capped at 55% (was 50, was originally 60). The 50 cap nuked ranger too hard;
   // 55 keeps Evade meaningful without making physical hits no-ops.
   const dodgeChance=Math.max(0,Math.min(55,effDodge(p)+(b.evadeTurns>0?b.evade:0))-(e.pierceDodge||0));
-  if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1; return; }
+  if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1;
+    // Pale Reading (GUILE+VEIL): dodging restores 5 MP and 5% max HP.
+    if(p.flags.paleReading){ const hh=Math.max(2,Math.round(p.maxHp*0.05)); heal(p,hh); p.mana=clamp(p.mana+5,0,p.maxMana);
+      blog(`&#9763; PALE READING &mdash; the dodge feeds you (+${hh} HP, +5 MP).`,'heal');
+      (b.floats=b.floats||[]).push({idx:-1,text:'+'+hh,cls:'heal'}); }
+    return; }
   // RANGER SURVIVAL FLOOR — Wind Step (Evade) also grazes the blows that DO land. The fairness
   // review found ranger's only mitigation was the dodge coin-flip, so a defensively-played ranger
   // still rotted out to variance. A small guaranteed reduction while Evade is up gives skilled,
@@ -5132,7 +5256,12 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
   // Shield Wall is the deliberate answer to a telegraphed HEAVY/UNLEASH — guard blocks far more of
   // a big, announced blow than of a basic swing. Now seeing "UNLEASH" is a reason to raise guard.
   if(red>0 && (kind==='heavy'||kind==='unleash')){ red=Math.min(0.85, red+0.20); blog('Your guard catches the brunt of it!','info'); }
-  dmg=Math.round(dmg*(1-red)); dmg=Math.max(1, dmg-Math.min(p.def,Math.floor(dmg*0.6)));
+  dmg=Math.round(dmg*(1-red));
+  // Iron Memory (WRATH+VEIL): at low HP grants +10 effective DEF in addition to base def.
+  let defAdd = (p.flags.ironMemory && p.hp <= p.maxHp*0.30) ? 10 : 0;
+  dmg=Math.max(1, dmg-Math.min(p.def+defAdd,Math.floor(dmg*0.6)));
+  // Tri-Star Brand: 2% damage reduction per affinity tier reached (cap built into integer floor below).
+  if(p.flags.triStar){ const t=(p.affTier.w|0)+(p.affTier.g|0)+(p.affTier.v|0); if(t>0) dmg=Math.max(1, Math.round(dmg*(1 - t*0.02))); }
   if(b.guardDown>0)dmg=Math.round(dmg*1.3);
   if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
   if(b.barrier>0&&dmg>0){ const ab=Math.min(b.barrier,dmg); b.barrier-=ab; dmg-=ab; blog(`Barrier absorbs ${ab}.`,'info'); }
@@ -5146,7 +5275,16 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
     attrib('enemy', Math.max(0, p.hp));
     p.hp=Math.max(1,Math.round(p.maxHp*0.25));
     SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
-  else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');}
+  else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');
+      // Sealed Compact (WRATH III + VEIL III): every 5th hit you take heals you AND primes your next strike for a crit.
+      if(p.flags.sealedCompact && dmg>0){ p._sealedHits=(p._sealedHits||0)+1;
+        if(p._sealedHits>=5){ p._sealedHits=0; p._sealedNextCrit=1;
+          const hh=Math.max(3,Math.round(p.maxHp*0.08)); heal(p,hh);
+          blog(`&#9763; SEALED COMPACT &mdash; the fifth blow opens a door (+${hh} HP, next strike CRITS).`,'crit');
+          (b.floats=b.floats||[]).push({idx:-1,text:'+'+hh,cls:'heal'}); } }
+      // Tri-Star Brand: +2% damage reduction per affinity tier reached (caps softly via dmg=1 floor).
+      // Applied retroactively here so the floats already reflect the reduction below.
+    }
     if(p.hp<=0){ G._killingBlow='enemy'; G._killingBlowName=e.name; }
     // FURNACE — taking hits stokes the fire. Every TWO landed hits in the Furnace pushes the Heat
     // meter up by 1. Dodges and blocks (dmg=0) don't count; lethal hits don't count (the player has
