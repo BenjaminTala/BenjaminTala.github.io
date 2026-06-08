@@ -1541,7 +1541,7 @@ const FAMILY={
   'Imp':'Demon','Ghoul':'Undead','Venomspitter':'Beast','Orc Brute':'Humanoid','Dark Acolyte':'Humanoid',
   'Wraith':'Undead','Stone Golem':'Construct','Hellhound':'Demon','Cultist':'Humanoid',
   'MIMIC':'Construct','Treasure Goblin':'Humanoid','Sand Wurm':'Beast','Gargoyle':'Construct',
-  'Will-o-Wisp':'Undead','Plague Bearer':'Undead','Frostbite':'Beast','Bloodbat':'Beast',
+  'Will-o-Wisp':'Undead','Plague Bearer':'Undead','Frostbite':'Construct','Bloodbat':'Beast',
   'OGRE WARLORD':'Humanoid','GOBLIN KING':'Humanoid','BROODMOTHER':'Beast','THE NECROMANCER':'Undead',
   'STONE TITAN':'Construct','CAVE TYRANT':'Beast','DEMON LORD':'Demon','THE LICH':'Undead',
   'FLAME KNIGHT':'Undead','THE CRYPT DRAGON':'Dragon','THE DRAGON WARDEN':'Dragon','THE FORGOTTEN KING':'Undead','THE DEVOURER':'Demon',
@@ -2618,14 +2618,14 @@ const WEAPON_TRAIT_KEYS=Object.keys(WEAPON_TRAITS);
    something different. Nobody explains why this works.
    ============================================================ */
 const DEVOUR_FAMILIES={
-  Ooze:     {label:'Ooze',     trait:'poison', ico:'&#9763;', desc:'+POISON on hit'},
-  Demon:    {label:'Infernal', trait:'burn',   ico:'&#128293;', desc:'+BURN on hit'},
-  Beast:    {label:'Feral',    trait:'bleed',  ico:'&#129704;', desc:'+heavy POISON on hit (deep wounds, lasts longer)'},
-  Vermin:   {label:'Swarm',    trait:'multi',  ico:'&#128001;', desc:'second small hit'},
-  Construct:{label:'Stone',    trait:'stun',   ico:'&#128737;', desc:'chance to STUN'},
-  Undead:   {label:'Grave',    trait:'weaken', ico:'&#9760;',   desc:'WEAKEN on hit'},
-  Humanoid: {label:'Cult',     trait:'vuln',   ico:'&#9728;',   desc:'VULN on hit'},
-  Dragon:   {label:'Draconic', trait:'heat',   ico:'&#128293;', desc:'damage scales with HEAT'},
+  Ooze:     {label:'Ooze',     trait:'poison', ico:'&#9763;',   desc:'your blows leave them dripping with rot'},
+  Demon:    {label:'Infernal', trait:'burn',   ico:'&#128293;', desc:'your strikes catch them on fire'},
+  Beast:    {label:'Feral',    trait:'bleed',  ico:'&#129704;', desc:'you cut deeper — wounds that take longer to close'},
+  Vermin:   {label:'Swarm',    trait:'multi',  ico:'&#128001;', desc:'one strike becomes two'},
+  Construct:{label:'Stillness',trait:'stun',   ico:'&#128737;', desc:'your hits sometimes seize them in place'},
+  Undead:   {label:'Grave',    trait:'weaken', ico:'&#9760;',   desc:'you sap the strength out of them'},
+  Humanoid: {label:'Cult',     trait:'vuln',   ico:'&#9728;',   desc:'you mark them — the next blows land softer for the world, harder for them'},
+  Dragon:   {label:'Draconic', trait:'heat',   ico:'&#128293;', desc:'the hotter the room, the more it hurts'},
 };
 const DEVOUR_FAMILY_KEYS=Object.keys(DEVOUR_FAMILIES);
 // Named EVOLVE combinations — two paths merging. Order doesn't matter; sorted alphabetically.
@@ -5090,7 +5090,13 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
     // A Devour cast handles ALL its kills (boss + chosen non-boss) via processDevourCast at the end of
     // the cast. onEnemyDeath runs mid-cast (inside dealToEnemy), so _castKills isn't populated yet —
     // _devourActive tells us a cast is in flight so we don't ALSO queue here and double the fragment.
-    const fromDevour = (b && b._devourActive) || (b && b._castKills && b._castKills.some(k=>k.name===e.name));
+    // The bonus-engagement path is for BASIC kills that didn't cast Devour.  Block it whenever:
+    //   - we're mid-cast (_devourActive)
+    //   - this enemy was already in the cast's kill list (_castKills)
+    //   - or the player cast Devour this turn at all (_devourCastTurn) — covers post-cast DoT
+    //     deaths where the burn we applied is what actually kills the enemy on afterPlayer's tick.
+    //     Without that third guard, a Devour cast + a burn-tick kill stacked TWO fragments per turn.
+    const fromDevour = (b && b._devourActive) || (b && b._devourCastTurn) || (b && b._castKills && b._castKills.some(k=>k.name===e.name));
     if(!fromDevour){
       const path=p.memory.path||[];
       const newFamily = !path.includes(fam);
@@ -5214,6 +5220,10 @@ function ultMeta(cls){ return {mage:{name:'ARCANE SUPERNOVA',desc:'Blast ALL foe
 function battleBusy(){ const b=G.battle; return !b || b.over || b._lock; }
 function lockBattle(){ const b=G.battle; if(b)b._lock=true; }
 function returnControl(extra){ const b=G.battle; if(!b||b.over)return;
+  // Clear the per-turn Devour flag now that control is returning — a Devour cast and its
+  // DoT aftermath are over by this point, so the bonus-engagement path is free to fire
+  // for the next turn's basic-attack kills.
+  if(b._devourCastTurn) b._devourCastTurn=0;
   setTimeout(()=>{ const bb=G.battle; if(bb&&!bb.over){ bb._lock=false; render(); } }, 240+(extra||0)); }
 function useUltimate(){ const p=G.player,b=G.battle; if(battleBusy()||(b.charge||0)<100)return; lockBattle(); clearBuildFlash(); b.charge=0;
   SFX.play('win'); flash('playerHit'); const mm=Math.min(180,p.maxMana); ensureTarget();
@@ -5282,6 +5292,7 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       // devourKillFragment records the kill — so a boss got its fragment queued twice (once here,
       // once in processDevourCast). The flag makes onEnemyDeath defer to the cast's own pipeline.
       b._devourActive=1;
+      b._devourCastTurn=1;   // sticks until the start of the next player turn — see onEnemyDeath
       // 'multi' (Vermin) trait grants an extra strike even on the no-combo bind path.
       const strikes=Math.max(1,(d&&d.strikes)||1) + ((d&&(d.effects||[]).includes('multi'))?1:0);
       SFX.play('crit');
