@@ -399,6 +399,14 @@
   .j-zones{margin-top:3px;display:flex;justify-content:space-around;font-size:7px;letter-spacing:1.5px;opacity:.7}
   .j-zone-lbl{flex:1;text-align:center}
   .j-zone-lbl.amber{color:#ffcf4d}.j-zone-lbl.red{color:#ff7c50}.j-zone-lbl.purple{color:#bca0ee}.j-zone-lbl.blue{color:#9fc4ff}
+  /* Small (i) info badge in the corner of choice cards (omens, etc).
+     Opens a popup with the neutral "what this actually does" reading.
+     Click on it is captured before it bubbles to the card's pick action. */
+  .omen-card{position:relative;padding-right:30px}
+  .omen-info{position:absolute;top:6px;right:6px;width:18px;height:18px;line-height:16px;text-align:center;
+    border:2px solid #4a3a70;border-radius:50%;background:#0a0a16;color:#b8a8e0;font-size:10px;font-style:italic;
+    font-family:Georgia,serif;cursor:pointer;user-select:none;font-weight:bold;letter-spacing:0}
+  .omen-info:hover{border-color:#cbb6ff;color:#fff;background:#1c1438;box-shadow:0 0 8px rgba(192,140,255,.45)}
   /* The lone boss door gets a red glow so it reads as a threat, no extra text needed. */
   .btn.btn-boss{border-color:#a8482a;background:linear-gradient(180deg,#2a1010,#170808);
     box-shadow:0 0 14px rgba(255,80,80,.18)}
@@ -1706,20 +1714,20 @@ const SYNERGIES=[
 // Omens are FATES, not modifiers. The note line should sell the run-feel, not the percentage.
 // Mechanics still live in the apply functions and on the info-modal at chooseOmen time.
 const OMENS=[
-  {id:'none',name:'Calm Descent',note:'The crypt is quiet tonight. Walk steady. Walk a little harder.',apply:g=>{g.pDmg=(g.pDmg||1)*1.10;}},
-  {id:'blood',name:'Bloodmoon',note:'Red light on the stones. Every hurt costs more &mdash; every kill pays more.',apply:g=>{g.eDmg*=1.15;g.goldMul*=1.6;}},
-  {id:'arcane',name:'Arcane Surge',note:'Something hums under the floor and your mana refuses to spend itself.',apply:g=>{g.skillCost=0.80;}},
-  {id:'brittle',name:'Brittle Bones',note:'Every thing down here is hollow. You too. Glass against glass.',apply:(g,p)=>{g.eHp*=0.78;const c=Math.round(p.maxHp*0.12);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
-  {id:'greedy',name:'Greedy Halls',note:'The chambers have been arranged for trade. Coin everywhere. Eyes on it.',apply:g=>{g.greedy=1;g.goldMul*=1.3;}},
-  {id:'veteran',name:"Veteran's Path",note:'You wake up older than you went to sleep. The dark woke up bigger.',apply:(g,p)=>{g.eHp*=1.12;for(let i=0;i<3;i++)levelUp(p,true);}},
-  {id:'glassworld',name:'Glass World',note:'Every blow lands, on both sides. The world is a held breath.',apply:g=>{g.eDmg*=1.3;g.pDmg*=1.3;}},
-  {id:'lucky',name:'Lucky Star',note:'Something is watching you kindly. Just for tonight. Just for now.',apply:(g,p)=>{p.crit+=12;g.luck=1;}},
-  {id:'elites',name:'Cursed Riches',note:'You start with full pockets. The crypt sent its captains to take them back.',apply:(g,p)=>{p.gold+=90;g.eliteMul=2.4;}},
-  {id:'endless',name:'Endless Night',note:'No room is ever empty. You bleed less between them, somehow.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
-  {id:'harvest',name:'Soul Harvest',note:'Every kill leaves more of itself behind. The forge will be hungry.',apply:g=>{g.essMul=(g.essMul||1)*1.7;}},
-  {id:'hunter',name:"Hunter's Instinct",note:'Your hands learn quickly tonight. Each kind teaches you faster than the last.',apply:g=>{g.slayFast=1;}},
-  {id:'resolve',name:"Champion's Resolve",note:'Your great breath comes back to you twice as fast as it should.',apply:g=>{g.ultFast=1;}},
-  {id:'fragile',name:'Fragile Might',note:'You strike like a man with nothing to lose &mdash; and you take like one too.',apply:g=>{g.pDmg*=1.4;g.eDmg*=1.25;}},
+  {id:'none',name:'Calm Descent',note:'The crypt is quiet tonight. Walk steady. Walk a little harder.',effect:'You deal slightly more damage. Nothing else changes.',apply:g=>{g.pDmg=(g.pDmg||1)*1.10;}},
+  {id:'blood',name:'Bloodmoon',note:'Red light on the stones. Every hurt costs more &mdash; every kill pays more.',effect:'Enemies hit harder. Gold drops are much larger.',apply:g=>{g.eDmg*=1.15;g.goldMul*=1.6;}},
+  {id:'arcane',name:'Arcane Surge',note:'Something hums under the floor and your mana refuses to spend itself.',effect:'Your skills cost less mana to use.',apply:g=>{g.skillCost=0.80;}},
+  {id:'brittle',name:'Brittle Bones',note:'Every thing down here is hollow. You too. Glass against glass.',effect:'Enemies have less health. You have less health.',apply:(g,p)=>{g.eHp*=0.78;const c=Math.round(p.maxHp*0.12);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
+  {id:'greedy',name:'Greedy Halls',note:'The chambers have been arranged for trade. Coin everywhere. Eyes on it.',effect:'More gold from every source. More merchants, too.',apply:g=>{g.greedy=1;g.goldMul*=1.3;}},
+  {id:'veteran',name:"Veteran's Path",note:'You wake up older than you went to sleep. The dark woke up bigger.',effect:'You start three levels stronger. Enemies are tougher to match.',apply:(g,p)=>{g.eHp*=1.12;for(let i=0;i<3;i++)levelUp(p,true);}},
+  {id:'glassworld',name:'Glass World',note:'Every blow lands, on both sides. The world is a held breath.',effect:'Both sides hit harder. Fights end faster, both ways.',apply:g=>{g.eDmg*=1.3;g.pDmg*=1.3;}},
+  {id:'lucky',name:'Lucky Star',note:'Something is watching you kindly. Just for tonight. Just for now.',effect:'You crit more often. Better gear and relic rolls.',apply:(g,p)=>{p.crit+=12;g.luck=1;}},
+  {id:'elites',name:'Cursed Riches',note:'You start with full pockets. The crypt sent its captains to take them back.',effect:'Start with extra gold. The crypt sends far more elites after you.',apply:(g,p)=>{p.gold+=90;g.eliteMul=2.4;}},
+  {id:'endless',name:'Endless Night',note:'No room is ever empty. You bleed less between them, somehow.',effect:'Larger enemy packs, but you mend a little between rooms.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
+  {id:'harvest',name:'Soul Harvest',note:'Every kill leaves more of itself behind. The forge will be hungry.',effect:'Kills yield more Soul Essence for the forge.',apply:g=>{g.essMul=(g.essMul||1)*1.7;}},
+  {id:'hunter',name:"Hunter's Instinct",note:'Your hands learn quickly tonight. Each kind teaches you faster than the last.',effect:'The Slayer bonus against each enemy family kicks in twice as fast.',apply:g=>{g.slayFast=1;}},
+  {id:'resolve',name:"Champion's Resolve",note:'Your great breath comes back to you twice as fast as it should.',effect:'Your Ultimate charges twice as quickly.',apply:g=>{g.ultFast=1;}},
+  {id:'fragile',name:'Fragile Might',note:'A bargain you cannot quite remember making. You hit harder. So do they.',effect:'You deal much more damage. You take more damage.',apply:g=>{g.pDmg*=1.4;g.eDmg*=1.25;}},
 ];
 
 /* ============================================================
@@ -3172,7 +3180,12 @@ function renderOmen(){
     setTimeout(()=>showInfo({title:'OMENS &mdash; A RUN-LONG PACT',
       body:`<p style="font-size:11px;line-height:1.7">Your first descent had none. From now on, each run begins by reading an <b class="teal">OMEN</b> &mdash; a single fate that bends the <i>whole</i> run: richer loot, faster ultimates, harder enemies, stranger luck.</p><p class="muted" style="font-size:10px;line-height:1.7;margin-top:8px">You commit before you descend. Choose the run you want to have.</p>`}), 140);
   } }catch(e){}
-  const cards=G.omenChoices.map((o,i)=>`<button class="btn" onclick="chooseOmen(${i})">
+  // Each card carries an (i) badge that opens the short, neutral "what this
+  // actually does" description.  Click bubbling is stopped on the badge so
+  // tapping it doesn't also pick the omen.  Tester feedback: flavor text
+  // alone doesn't tell them what they're committing to.
+  const cards=G.omenChoices.map((o,i)=>`<button class="btn omen-card" onclick="chooseOmen(${i})">
+    <span class="omen-info" title="What this actually does" onclick="event.stopPropagation();showOmenInfo(${i})">i</span>
     <span class="k teal">&#10022;</span>${o.name}<small>${o.note}</small></button>`).join('');
   app.innerHTML=`<h1 class="title" style="font-size:15px">READ THE OMENS</h1>
     <div class="subtitle">A force that will shape this entire run</div>
@@ -3181,6 +3194,11 @@ function renderOmen(){
       <p class="muted center" style="font-size:9px">Choose one fate:</p>${cards}</div>`;
 }
 function chooseOmen(i){ const o=G.omenChoices[i]; G.omen=o; o.apply(G.mods,G.player); discoverLore('l1'); nextCorridor(); G.screen='corridor'; render(); }
+function showOmenInfo(i){ const o=G.omenChoices[i]; if(!o)return;
+  showInfo({title:o.name, body:
+    `<p class="evtext" style="font-size:10px;line-height:1.7">${o.note}</p>`+
+    `<p class="muted" style="font-size:8px;letter-spacing:1px;margin-top:10px">WHAT IT DOES</p>`+
+    `<p style="font-size:10px;line-height:1.6">${o.effect||'A subtle hand on the run. Hard to name.'}</p>`}); }
 
 /* ============================================================
    DUNGEON GENERATION
