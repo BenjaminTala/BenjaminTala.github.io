@@ -275,6 +275,12 @@
   .c-guard{border-color:var(--blue);color:var(--blue);background:rgba(8,28,52,.6);box-shadow:0 0 6px rgba(108,184,255,.45)}
   .c-burn, .c-pois, .c-weak, .c-vuln, .c-stun{font-weight:bold;animation:chipPulse 1.8s ease-in-out infinite}
   @keyframes chipPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+  /* CRIT / heavy-hit screen-shake — wrapped on #scene only, so HUD elements
+     outside the battle pane don't jitter.  Tiny + brief (240ms / 5 frames). */
+  #scene.crit-shake{animation:critShake .26s cubic-bezier(.36,.07,.19,.97) 1}
+  #scene.hit-shake {animation:hitShake  .18s cubic-bezier(.36,.07,.19,.97) 1}
+  @keyframes critShake{0%{transform:translate(0,0)}15%{transform:translate(-4px,1px)}30%{transform:translate(4px,-1px)}50%{transform:translate(-3px,-2px)}65%{transform:translate(3px,2px)}80%{transform:translate(-2px,1px)}100%{transform:translate(0,0)}}
+  @keyframes hitShake {0%{transform:translate(0,0)}30%{transform:translate(-2px,0)}60%{transform:translate(2px,0)}100%{transform:translate(0,0)}}
   .enemies-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:flex-end}
   .enemy-cell{flex:1;min-width:118px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s;position:relative}
   .fxlayer{position:absolute;left:0;right:0;top:26%;pointer-events:none;text-align:center;z-index:6;line-height:1}
@@ -5117,6 +5123,13 @@ function dealToEnemy(idx,dmg,label,crit){ const b=G.battle,e=b.enemies[idx],p=G.
   e.hp=clamp(e.hp-dmg,0,e.maxHp); b.animIdx=idx; b.animWasCrit=!!crit;
   (b.floats=b.floats||[]).push({idx,text:''+dmg+(e.resist?' &#128737;':''),cls:crit?'crit':'dmg'});
   pushFx(idx, crit?'crit':(_fxKind||'hit'));
+  // CRIT screen-shake — visceral feedback when a crit lands or when a single hit
+  // takes >=20% of the target's max HP.  Tiny CSS-only effect: 240ms shake on
+  // the #scene wrapper.  No balance impact, just feel.
+  if(crit || dmg>=Math.round((e.maxHp||1)*0.20)){
+    const sc=document.getElementById('scene');
+    if(sc){ sc.classList.remove('hit-shake'); void sc.offsetWidth; sc.classList.add(crit?'crit-shake':'hit-shake'); }
+  }
   blog(`${label} for ${dmg}${crit?' (CRIT!)':''}!${b.enemies.length>1?` [${e.name}]`:''}`,crit?'crit':'dmg');
   if(p.lifesteal>0&&!e.bloodless){ const ls=Math.max(1,Math.round(dmg*p.lifesteal/100)); heal(p,ls); blog(`You drain ${ls} HP.`,'heal'); }
   if(crit&&p.affTier.g>=3){ p.mana=clamp(p.mana+5,0,p.maxMana); }
@@ -5474,6 +5487,9 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
     p.hp=Math.max(1,Math.round(p.maxHp*0.25));
     SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
   else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');
+      // Shake the scene when YOU take a real hit — bigger shake on >=15% maxHp hits.
+      const sc=document.getElementById('scene');
+      if(sc){ sc.classList.remove('crit-shake','hit-shake'); void sc.offsetWidth; sc.classList.add(dmg>=p.maxHp*0.15?'crit-shake':'hit-shake'); }
       // Sealed Compact (WRATH III + VEIL III): every 5th hit you take heals you AND primes your next strike for a crit.
       if(p.flags.sealedCompact && dmg>0){ p._sealedHits=(p._sealedHits||0)+1;
         if(p._sealedHits>=5){ p._sealedHits=0; p._sealedNextCrit=1;
