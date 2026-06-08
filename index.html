@@ -5775,7 +5775,27 @@ function causeOfDeathHtml(){
   const press=entries.find(([k,v])=>k!==kb && k!=='enemy' && v/tot>=0.12);
   const kbBlock = kb ? `<div style="margin-top:9px;font-size:9px;line-height:1.5">
       <span class="muted" style="font-size:8px;letter-spacing:.5px">KILLING BLOW</span><br><b style="color:${kbColor}">${kbLabel}</b>${press?`<br><span class="muted" style="font-size:8px;letter-spacing:.5px">CONTRIBUTING PRESSURE</span><br><span style="color:${colors[press[0]]}">${labels[press[0]]||press[0]}</span>`:''}</div>` : '';
-  return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}${kbBlock}</div>`; }
+  // PRESCRIPTION — one line of "what would have helped" tied to the dominant
+  // damage source.  Turns the death recap from "you lost" into "next time, try
+  // this".  Hades does the same via Hypnos commentary; we do it inline.
+  const top = entries[0]; const topKey = top && top[0]; const topPct = top ? top[1]/tot : 0;
+  const rx = (()=>{
+    if(!topKey) return null;
+    if(topKey==='miasma') return 'Miasma is corruption, not damage — <b>cleanse it</b> at fountains and the shrine prayer instead of trying to heal through it.';
+    if(topKey==='burn') return 'Burn ticks every turn. <b>End the source</b> fast (the burning enemy or the cursed weapon) and consider water at the forge to drop Heat.';
+    if(topKey==='poison') return 'Poison stacks add up. Wraps and cleansing fountains shrug it off; <b>focus the venom source first</b>.';
+    if(topKey==='heat') return 'The Furnace turned on you. <b>Cool down at fountains and shrines</b> before chambers start to burn you, and beware Furnace-forged weapons that stoke Heat.';
+    if(topKey==='deepcold') return 'The Deep Cold cannot be cleansed — it is the wall of the Abyss. <b>Retire at the throne</b> next time, or build for raw HP/DR to last more floors.';
+    if(topKey==='hazard') return 'Hazards reward caution. <b>Read event consequences</b> before clicking — the danger lines say what they cost.';
+    if(topKey==='debt') return 'Borrowed power compounded into the Collector. Next time, <b>BORROW only when a reward closes the run</b>, not for general rewards.';
+    if(topKey==='enemy'){
+      if(topPct>0.7) return 'Pure enemy damage. Consider a <b>defensive relic line</b> (Stone Skin, Thornmail, Phoenix Feather) or a higher dodge build.';
+      return 'Enemy damage was the killer — your guard / dodge / mana shield may have been off when the HEAVY hits landed. <b>Watch intents and pop defense before they swing</b>.';
+    }
+    return null;
+  })();
+  const rxBlock = rx ? `<div style="margin-top:8px;padding:6px 8px;border-left:3px solid var(--amber);background:rgba(80,60,16,.18);font-size:8.5px;line-height:1.65;color:#e8dbb0"><span class="amber" style="font-size:8px;letter-spacing:1px">&#9750; LESSON</span><br>${rx}</div>` : '';
+  return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}${kbBlock}${rxBlock}</div>`; }
 // EPITAPH HOOK — at the end of every run, the crypt remembers ONE new thing about you. The data
 // already exists (loadRecords + crypt_npc + per-run memoir flags); this just surfaces it as the last
 // breath before the player decides whether to start again. Push, not closure.
