@@ -378,27 +378,26 @@
     border:1px solid #a8482a;border-radius:9px;color:#ff9a3c;background:rgba(60,16,8,.5);vertical-align:middle}
   .asc-badge.clickable{cursor:pointer}
   .asc-badge.clickable:hover{color:#fff;border-color:#ff9a3c;box-shadow:0 0 8px rgba(255,120,40,.45)}
-  /* JOURNEY BAR — Spire-style 4-zone segmented progress bar shown above the
-     corridor's player strip.  40 cells, boss chambers get a skull glyph,
-     each zone is colour-tinted, current chamber pulses, passed chambers
-     dim.  Hover any cell to see "Chamber N — BOSS (Zone Name)". */
-  .journey-bar{max-width:680px;margin:4px auto 2px;padding:0;text-align:center;font-size:0}
-  .j-cell{display:inline-block;width:13px;height:10px;margin:0 1px;border:1px solid #2a2a40;background:#0e0e1a;
-    border-radius:2px;font-size:8px;line-height:8px;text-align:center;color:#9a9ab0;vertical-align:middle}
-  .j-cell.passed{background:#1a1a2c;border-color:#3a3a55;opacity:.55}
-  .j-cell.here{background:linear-gradient(180deg,#ffe070,#ffa030);border-color:#ffd800;color:#1a1410;
-    box-shadow:0 0 8px rgba(255,200,80,.7); animation:synPulse 1.3s ease-in-out infinite; transform:scale(1.18); z-index:2; position:relative}
-  .j-cell.boss{background:#1a0a14;border-color:#a8482a;color:#ff8060}
-  .j-cell.boss.passed{background:#180810;border-color:#5a2018;color:#7a3030}
-  .j-cell.boss.here{background:linear-gradient(180deg,#ff8060,#a8482a);border-color:#ff8060;color:#fff}
-  /* zone tinting (subtle) */
-  .j-cell.j-zone-amber{border-bottom-color:#5a4020}
-  .j-cell.j-zone-red{border-bottom-color:#5a2018}
-  .j-cell.j-zone-purple{border-bottom-color:#3a285a}
-  .j-cell.j-zone-blue{border-bottom-color:#1f3c5a}
-  .j-zones{margin-top:3px;display:flex;justify-content:space-around;font-size:7px;letter-spacing:1.5px;opacity:.7}
-  .j-zone-lbl{flex:1;text-align:center}
-  .j-zone-lbl.amber{color:#ffcf4d}.j-zone-lbl.red{color:#ff7c50}.j-zone-lbl.purple{color:#bca0ee}.j-zone-lbl.blue{color:#9fc4ff}
+  /* JOURNEY BAR — 4 zone-segments. Each segment shows the zone name, a boss skull
+     (greyed = unmet, lit = current zone, done = cleared), and the current zone shows
+     chamber progress inline. Replaces the old 40-cell strip — same information, ~10x
+     less ink, no longer eats the top of every corridor. */
+  .journey-bar{max-width:680px;margin:4px auto 6px;padding:0;display:flex;align-items:stretch;justify-content:center;gap:0}
+  .jz-seg{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
+    padding:5px 6px;border:1px solid #2a2a40;background:#0e0e1a;border-radius:3px;
+    font-size:8px;letter-spacing:1px;color:#7a7a90;text-transform:uppercase;white-space:nowrap;min-width:0}
+  .jz-seg.passed{opacity:.45}
+  .jz-seg.here{box-shadow:0 0 10px rgba(255,200,80,.25);border-color:#5a4a20}
+  .jz-amber{border-bottom:2px solid #5a4020}.jz-amber.here .jz-lbl{color:#ffcf4d}
+  .jz-red  {border-bottom:2px solid #5a2018}.jz-red.here   .jz-lbl{color:#ff7c50}
+  .jz-blue {border-bottom:2px solid #1f3c5a}.jz-blue.here  .jz-lbl{color:#9fc4ff}
+  .jz-purple{border-bottom:2px solid #3a285a}.jz-purple.here .jz-lbl{color:#bca0ee}
+  .jz-lbl{font-weight:bold;letter-spacing:1.4px}
+  .jz-prog{color:#ffd070;font-size:8px;letter-spacing:.5px}
+  .jz-boss{font-size:10px;color:#3a3a55;line-height:1}
+  .jz-boss.live{color:#ff8060;animation:synPulse 1.3s ease-in-out infinite}
+  .jz-boss.done{color:#a85020;opacity:.7}
+  .jz-link{flex:0 0 4px}
   /* Small (i) info badge in the corner of choice cards (omens, etc).
      Opens a popup with the neutral "what this actually does" reading.
      Click on it is captured before it bubbles to the card's pick action. */
@@ -1650,30 +1649,30 @@ const UPGRADES=[
   {name:'Brewer\'s Recipe',aff:{g:1},apply:p=>{p.potionBonus=(p.potionBonus||0)+0.12;},note:'potions heal +12%'},
 ];
 const RELICS=[
-  {id:'battery',name:'Arcane Battery',aff:{v:2},note:'+45 max mana, +6 regen',apply:p=>{p.maxMana+=45;p.mana+=45;p.regen+=6;}},
-  {id:'glass',name:'Glass Cannon',aff:{w:2},note:'+35% damage, -35% max HP',apply:p=>{addFlag(p,'glassCannon');const c=Math.round(p.maxHp*0.35);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
-  {id:'stone',name:'Stone Skin',aff:{v:2},note:'+6 DEF, -20% damage dealt',apply:p=>{p.def+=6;addFlag(p,'stoneSkin');}},
-  {id:'berserk',name:"Berserker's Heart",aff:{w:2},note:'up to +80% dmg the lower your HP',apply:p=>{addFlag(p,'berserker');}},
-  {id:'exec',name:'Executioner',aff:{w:2},note:'x2 damage to foes below 20% HP',apply:p=>{addFlag(p,'executioner');}},
-  {id:'thorns',name:'Thornmail',aff:{v:2},note:'+3 DEF, reflect 30% damage taken',apply:p=>{p.def+=3;addFlag(p,'thorns');}},
-  {id:'vamp',name:'Vampiric Aura',aff:{w:1,v:1},note:'+20% lifesteal',apply:p=>{p.lifesteal+=20;}},
-  {id:'swift',name:'Swift Boots',aff:{g:2},note:'+15% dodge, +8% crit',apply:p=>{p.dodge+=15;p.crit+=8;}},
-  {id:'blood',name:'Blood Pact',aff:{v:2},note:'heal 8% max HP on every kill',apply:p=>{addFlag(p,'bloodpact');}},
-  {id:'twin',name:'Twin Fang',aff:{g:2},note:'35% chance basic attacks strike twice',apply:p=>{addFlag(p,'doubleStrike');}},
-  {id:'toxic',name:'Toxic Coating',aff:{g:2},note:'basic attacks POISON foes',apply:p=>{addFlag(p,'toxic');}},
-  {id:'concuss',name:'Concussive Rounds',aff:{g:2},note:'18% chance basic hits STUN',apply:p=>{addFlag(p,'concuss');}},
-  {id:'frostbrand',name:'Frostbrand',aff:{g:2},note:'basic attacks WEAKEN foes',apply:p=>{addFlag(p,'frostbrand');}},
-  {id:'sunder',name:'Sunderer',aff:{w:1,g:1},note:'basic attacks apply VULNERABLE',apply:p=>{addFlag(p,'sunder');}},
-  {id:'regenrelic',name:'Trollblood',aff:{v:2},note:'regenerate 4% HP each combat turn',apply:p=>{addFlag(p,'combatRegen');}},
-  {id:'second',name:'Phoenix Feather',aff:{v:2},note:'survive a lethal blow once per run',apply:p=>{addFlag(p,'secondWind');}},
-  {id:'scholar',name:"Scholar's Lens",aff:{g:1,v:1},note:'+50% XP gained',apply:p=>{addFlag(p,'scholar');}},
-  {id:'giant',name:'Giant Growth',aff:{v:2},note:'+30% max HP',apply:p=>{const g=Math.round(p.maxHp*0.3);p.maxHp+=g;heal(p,g);}},
-  {id:'crit',name:'Eagle Eye',aff:{g:2},note:'+18% crit, crits deal more',apply:p=>{p.crit+=18;addFlag(p,'bigCrit');}},
-  {id:'mana2hp',name:'Soul Siphon',aff:{v:2},note:'spending mana heals you a little',apply:p=>{addFlag(p,'soulSiphon');}},
+  {id:'battery',name:'Arcane Battery',aff:{v:2},note:'Your reservoir runs deeper, and refills itself between blows.',apply:p=>{p.maxMana+=45;p.mana+=45;p.regen+=6;}},
+  {id:'glass',name:'Glass Cannon',aff:{w:2},note:'Your strikes ring louder. Your bones ring with them — you break easier now.',apply:p=>{addFlag(p,'glassCannon');const c=Math.round(p.maxHp*0.35);p.maxHp-=c;p.hp=clamp(p.hp,1,p.maxHp);}},
+  {id:'stone',name:'Stone Skin',aff:{v:2},note:'Blows slide off you. So do your own, a little.',apply:p=>{p.def+=6;addFlag(p,'stoneSkin');}},
+  {id:'berserk',name:"Berserker's Heart",aff:{w:2},note:'The closer you are to dying, the harder you swing.',apply:p=>{addFlag(p,'berserker');}},
+  {id:'exec',name:'Executioner',aff:{w:2},note:'A wounded thing in front of you stops being a thing. You finish it.',apply:p=>{addFlag(p,'executioner');}},
+  {id:'thorns',name:'Thornmail',aff:{v:2},note:'Whatever hits you keeps a piece of itself behind.',apply:p=>{p.def+=3;addFlag(p,'thorns');}},
+  {id:'vamp',name:'Vampiric Aura',aff:{w:1,v:1},note:'Every wound you open closes one of yours.',apply:p=>{p.lifesteal+=20;}},
+  {id:'swift',name:'Swift Boots',aff:{g:2},note:'You are harder to touch, and you find the seams more often.',apply:p=>{p.dodge+=15;p.crit+=8;}},
+  {id:'blood',name:'Blood Pact',aff:{v:2},note:'Killing mends you. The crypt counts a kill as a kind of breath.',apply:p=>{addFlag(p,'bloodpact');}},
+  {id:'twin',name:'Twin Fang',aff:{g:2},note:'Your hand sometimes lands twice before it knows it.',apply:p=>{addFlag(p,'doubleStrike');}},
+  {id:'toxic',name:'Toxic Coating',aff:{g:2},note:'Your blade leaves something behind it. The wound keeps eating.',apply:p=>{addFlag(p,'toxic');}},
+  {id:'concuss',name:'Concussive Rounds',aff:{g:2},note:'Sometimes a strike of yours just stops what it hits.',apply:p=>{addFlag(p,'concuss');}},
+  {id:'frostbrand',name:'Frostbrand',aff:{g:2},note:'Your blade chills what it touches. They swing slower for it.',apply:p=>{addFlag(p,'frostbrand');}},
+  {id:'sunder',name:'Sunderer',aff:{w:1,g:1},note:'You split armour where you hit it. Their next breath costs more.',apply:p=>{addFlag(p,'sunder');}},
+  {id:'regenrelic',name:'Trollblood',aff:{v:2},note:'Wounds close while the fight is still going on.',apply:p=>{addFlag(p,'combatRegen');}},
+  {id:'second',name:'Phoenix Feather',aff:{v:2},note:'Once, when it kills you, it will not.',apply:p=>{addFlag(p,'secondWind');}},
+  {id:'scholar',name:"Scholar's Lens",aff:{g:1,v:1},note:'Every fight teaches you a little more than it used to.',apply:p=>{addFlag(p,'scholar');}},
+  {id:'giant',name:'Giant Growth',aff:{v:2},note:'You take up more room than you did. So does what you can carry of hurt.',apply:p=>{const g=Math.round(p.maxHp*0.3);p.maxHp+=g;heal(p,g);}},
+  {id:'crit',name:'Eagle Eye',aff:{g:2},note:'Your eye finds the gap more often. The gap is wider when it does.',apply:p=>{p.crit+=18;addFlag(p,'bigCrit');}},
+  {id:'mana2hp',name:'Soul Siphon',aff:{v:2},note:'Spending your magic stitches you back together a little.',apply:p=>{addFlag(p,'soulSiphon');}},
   // ---- KEYSTONES: class-transforming legendaries (only offered to their class) ----
-  {id:'kbeam',name:'Singularity Lens',cls:'mage',keystone:true,aff:{v:2,w:1},note:'KEYSTONE: Fireball becomes a single-target CHANNELED BEAM (huge dmg + heavy burn)',apply:p=>{addFlag(p,'kBeam');}},
-  {id:'kwhirl',name:'Eternal Cyclone',cls:'warrior',keystone:true,aff:{w:2,v:1},note:'KEYSTONE: Whirlwind hits all, no longer drops your guard, and heals you',apply:p=>{addFlag(p,'kWhirl');}},
-  {id:'ksplit',name:'Thousand Arrows',cls:'ranger',keystone:true,aff:{g:2,w:1},note:'KEYSTONE: Aimed Shot strikes EVERY enemy',apply:p=>{addFlag(p,'kSplit');}},
+  {id:'kbeam',name:'Singularity Lens',cls:'mage',keystone:true,aff:{v:2,w:1},note:'KEYSTONE — your Fireball stops being a ball. It becomes a line, and it burns.',apply:p=>{addFlag(p,'kBeam');}},
+  {id:'kwhirl',name:'Eternal Cyclone',cls:'warrior',keystone:true,aff:{w:2,v:1},note:'KEYSTONE — your Whirlwind no longer drops your guard, and it gives back what it takes.',apply:p=>{addFlag(p,'kWhirl');}},
+  {id:'ksplit',name:'Thousand Arrows',cls:'ranger',keystone:true,aff:{g:2,w:1},note:'KEYSTONE — your Aimed Shot becomes every shot you would ever take, all at once.',apply:p=>{addFlag(p,'kSplit');}},
   // ---- DUAL ARTIFACTS (Hades' Duo Boons) — rare relics that appear in the
   // pool ONLY when the player already has 2+ in two specific paths.  The
   // payoff retroactively justifies investing across two axes instead of
@@ -1681,14 +1680,14 @@ const RELICS=[
   // constraints (one slot per piece) plus rare payoff cards that retroactively
   // justify earlier picks."  These do NOT add affinity themselves — they
   // reward affinity already earned, and read as legendary in the UI.
-  {id:'duo_wg',name:"Mirror Veil",dual:{w:2,g:2},legendary:true,note:'DUAL · WRATH+GUILE: first hit each combat is a guaranteed crit and applies VULNERABLE',apply:p=>{addFlag(p,'mirrorVeil');}},
-  {id:'duo_wv',name:"Bone Crown",dual:{w:2,v:2},legendary:true,note:'DUAL · WRATH+VEIL: on every kill, gain +1 ATK for the rest of the battle',apply:p=>{addFlag(p,'boneCrown');}},
-  {id:'duo_gv',name:"Witch's Tongue",dual:{g:2,v:2},legendary:true,note:"DUAL · GUILE+VEIL: your crits apply a random extra status (BURN / POISON / WEAK / VULN)",apply:p=>{addFlag(p,'witchTongue');}},
-  {id:'duo_wg2',name:'Cinder Heart',dual:{w:2,g:2},legendary:true,note:'DUAL · WRATH+GUILE: kills refund 1 potion (max 5)',apply:p=>{addFlag(p,'cinderHeart');}},
-  {id:'duo_wv2',name:'Iron Memory',dual:{w:2,v:2},legendary:true,note:'DUAL · WRATH+VEIL: while above 70% HP, +20% damage; below 30%, +10 DEF',apply:p=>{addFlag(p,'ironMemory');}},
-  {id:'duo_gv2',name:'Pale Reading',dual:{g:2,v:2},legendary:true,note:'DUAL · GUILE+VEIL: dodging an attack restores 5 MP and 5% max HP',apply:p=>{addFlag(p,'paleReading');}},
-  {id:'duo_wgv',name:'Tri-Star Brand',dual:{w:1,g:1,v:1},legendary:true,note:'DUAL · ALL PATHS: each affinity tier you reach grants +2% damage and +2% damage reduction',apply:p=>{addFlag(p,'triStar');}},
-  {id:'duo_lock',name:'Sealed Compact',dual:{w:3,v:3},legendary:true,note:'DUAL · WRATH III+VEIL III: every 5th hit you take heals you AND your next strike crits',apply:p=>{addFlag(p,'sealedCompact');}},
+  {id:'duo_wg',name:"Mirror Veil",dual:{w:2,g:2},legendary:true,note:'DUAL · WRATH+GUILE — the first blow you strike each fight goes too deep, and leaves a crack you can hit again.',apply:p=>{addFlag(p,'mirrorVeil');}},
+  {id:'duo_wv',name:"Bone Crown",dual:{w:2,v:2},legendary:true,note:'DUAL · WRATH+VEIL — each kill makes your arm a little heavier the rest of the fight.',apply:p=>{addFlag(p,'boneCrown');}},
+  {id:'duo_gv',name:"Witch's Tongue",dual:{g:2,v:2},legendary:true,note:'DUAL · GUILE+VEIL — your clean hits leave a different sickness behind, every time.',apply:p=>{addFlag(p,'witchTongue');}},
+  {id:'duo_wg2',name:'Cinder Heart',dual:{w:2,g:2},legendary:true,note:'DUAL · WRATH+GUILE — every kill puts a potion back in your belt.',apply:p=>{addFlag(p,'cinderHeart');}},
+  {id:'duo_wv2',name:'Iron Memory',dual:{w:2,v:2},legendary:true,note:'DUAL · WRATH+VEIL — full and high, you hit harder; low and hurt, you take less.',apply:p=>{addFlag(p,'ironMemory');}},
+  {id:'duo_gv2',name:'Pale Reading',dual:{g:2,v:2},legendary:true,note:'DUAL · GUILE+VEIL — every blow you slip costs them, and gives you back a little of what you spent.',apply:p=>{addFlag(p,'paleReading');}},
+  {id:'duo_wgv',name:'Tri-Star Brand',dual:{w:1,g:1,v:1},legendary:true,note:'DUAL · ALL PATHS — every milestone you reach in any path makes you a little better at being all of you.',apply:p=>{addFlag(p,'triStar');}},
+  {id:'duo_lock',name:'Sealed Compact',dual:{w:3,v:3},legendary:true,note:'DUAL · WRATH III+VEIL III — every fifth wound is a gift. The next thing you do hurts.',apply:p=>{addFlag(p,'sealedCompact');}},
 ];
 /* ---------- affinity paths (escalating build identities) ---------- */
 const AFF_THRESH=[3,6,9];
@@ -1700,12 +1699,12 @@ const AFF_TIER_TITLE={
 };
 /* ---------- synergies (named relic-combo payoffs) ---------- */
 const SYNERGIES=[
-  {name:'Glass Reaper',need:['Glass Cannon','Executioner'],flag:'synReaper',desc:'Execute foes below 30% HP (was 20%)'},
-  {name:'Sanguine Pact',need:['Vampiric Aura','Blood Pact'],flag:'synSanguine',desc:'+10% lifesteal; kills heal twice over',onForm:p=>{p.lifesteal+=10;}},
-  {name:'Frozen Thorns',need:['Thornmail','Frostbrand'],flag:'synFrost',desc:'Reflected damage also WEAKENS attackers'},
-  {name:'Virulent Strike',need:['Toxic Coating','Concussive Rounds'],flag:'synViru',desc:'Your STUNS also inflict heavy POISON'},
-  {name:'Arcane Overflow',need:['Arcane Battery','Soul Siphon'],flag:'synOver',desc:'Spending mana heals more; kills restore mana'},
-  {name:'Stormfury',need:['Twin Fang','Eagle Eye'],flag:'synStorm',desc:'Critical hits trigger an extra strike'},
+  {name:'Glass Reaper',need:['Glass Cannon','Executioner'],flag:'synReaper',desc:'You finish the wounded earlier — the line moves up.'},
+  {name:'Sanguine Pact',need:['Vampiric Aura','Blood Pact'],flag:'synSanguine',desc:'Every wound you open closes two of yours.',onForm:p=>{p.lifesteal+=10;}},
+  {name:'Frozen Thorns',need:['Thornmail','Frostbrand'],flag:'synFrost',desc:'What hits you cools, and slows.'},
+  {name:'Virulent Strike',need:['Toxic Coating','Concussive Rounds'],flag:'synViru',desc:'When you stop them cold, you also rot them.'},
+  {name:'Arcane Overflow',need:['Arcane Battery','Soul Siphon'],flag:'synOver',desc:'Your magic mends more — and your kills give some of it back.'},
+  {name:'Stormfury',need:['Twin Fang','Eagle Eye'],flag:'synStorm',desc:'A clean hit pulls another behind it.'},
 ];
 
 /* ============================================================
@@ -1833,7 +1832,10 @@ const EVENTS=[
                     : top==='v' ? '<span class="shout">"Yours is PATIENCE. He has watched you bleed and not stop. He is the one I would pray to, if I could."</span>'
                     : top==='g' ? '<span class="shout-purple">"Yours is THE TURN — the one between intention and proof. He laughs at me. He laughs at me kindly."</span>'
                     : null;
-       if(paleRumor()) return '"A patient one." A long silence under the hood. <span class="shout-red">"There is a deep she will not consecrate. She told me there was nothing down there worth blessing."</span> A pause. <span class="shout-red">"She lied to me. There is something. It is only older than blessing &mdash; older than the thing blessing was invented to keep out."</span>'+(yourGod?' '+yourGod:'');
+       // Second meeting onwards: the Pale reveal is guaranteed, so the world's most important rumor
+       // is no longer behind a chance roll. paleRumor() still rolls for FIRST meetings (preserves the
+       // first-time mystery), and noteRumor is called either way so saga progress still tracks.
+       if(n.met>=2 || paleRumor()){ noteRumor('pale'); return '"A patient one." A long silence under the hood. <span class="shout-red">"There is a deep she will not consecrate. She told me there was nothing down there worth blessing."</span> A pause. <span class="shout-red">"She lied to me. There is something. It is only older than blessing &mdash; older than the thing blessing was invented to keep out."</span>'+(yourGod?' '+yourGod:''); }
        if(n.met<=2) return '"A patient one." He does not turn his head. <span class="shout">"She does not enter the lower chambers."</span> A pause. <span class="shout-red">"I would not, if I were her."</span>'+(yourGod?' '+yourGod:'');
        npcSet('cardinal',{stage:Math.max(1,n.stage),asked:1});
        return '"A patient one." A long pause. "She has watched you come back. She is curious about you. She is afraid OF you." <span class="shout-red">"That is not a thing a god should be."</span>'+(yourGod?' '+yourGod:'');}},
@@ -1972,7 +1974,10 @@ const EVENTS=[
    options:[
      {label:'"You know what I have been doing."',desc:'Acknowledge',run:p=>{discoverLore('l19');const fams=(p.memory.path||[]).slice(-2).join(', ');return `<span class="shout-purple">"I can taste it on you."</span> He does not flinch. <span class="shout-purple">"That is how He started. Small things. Then the ${fams}. Then everything else."</span> A long pause. "You should stop. You will not stop."`;}},
      {label:'"Who is HE?"',desc:'Press',run:p=>{discoverLore('l18');
-       if(paleRumor()) return '"The one this place was built around." He grips the chain until it creaks. <span class="shout-red">"It does not &mdash; listen. It does not EAT you. Eating leaves something. A bone. A name said less and less."</span> His voice splinters. <span class="shout-red">"It un-happens you. I had a brother. I think. I cannot find the place where he was."</span>';
+       // Second meeting onwards: the Pale reveal is guaranteed — this is the single line that names
+       // what the Pale actually does, and the Watcher is the one NPC who would know.
+       const n=npcState('watcher');
+       if(n.met>=2 || paleRumor()){ noteRumor('pale'); return '"The one this place was built around." He grips the chain until it creaks. <span class="shout-red">"It does not &mdash; listen. It does not EAT you. Eating leaves something. A bone. A name said less and less."</span> His voice splinters. <span class="shout-red">"It un-happens you. I had a brother. I think. I cannot find the place where he was."</span>'; }
        return '"The one this place was built around." He nods toward the floor &mdash; downward. "We took him apart. We hid the pieces in the only place nothing leaves." He looks at you again. <span class="shout-red">"You have been finding them."</span>';}},
      {label:'"Break your chains?"',desc:'Free him &middot; +relic, +6 Miasma',run:p=>{const r=grantRandomRelic(p);addMiasma(6);return (r?`You snap the irons. He does not stand. He presses a small black relic into your hand &mdash; <b>${r}</b> &mdash; and closes his eyes. "Thank you. I have been here a long time."`:'You snap the irons. He does not stand. He presses something into your hand that you already carry, and closes his eyes.')+' (the cold thickens)';}},
      {label:'Walk past in silence',desc:'No reward, no cost',run:p=>'He watches you the whole way across the room. He does not call after you. He does not need to.'},
@@ -3102,7 +3107,7 @@ function renderClassSelect(){
     <div class="grid3 fade">${card('mage')}${card('warrior')}${card('ranger')}</div>`;
 }
 function stepAsc(d){ const unlocked=loadAscension(); G._ascSel=clamp((G._ascSel||0)+d,0,unlocked); renderClassSelect(); }
-function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes(); G._memoir=null; memoir();   // fresh per-run page for the death-screen epitaph
+function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes(); G._memoir=null; G._earlyEliteSeen=0; memoir();   // fresh per-run page for the death-screen epitaph
   // Lock in the selected Ascension for this run and stack its modifiers onto G.mods.
   G.ascension = clamp(G._ascSel!=null?G._ascSel:loadAscension(), 0, loadAscension());
   applyAscension(G.ascension);
@@ -3223,19 +3228,22 @@ function depthLabel(){ const asc=ascBadge(); if(G.abyss){ return `<span class="p
 // because that descent has no segmented structure.
 function journeyBar(){
   if(G.abyss) return '';
-  const cur=G.depth;
-  const cells=[];
-  for(let i=1;i<=RUN_LENGTH;i++){
-    const z=ZONES[zoneOf(i)]; const isBoss=BOSS_CHAMBERS[i]!==undefined;
-    const here = (i===cur);
-    const passed = (i<cur);
-    const cls = ['j-cell','j-zone-'+z.color, here?'here':'', passed?'passed':'', isBoss?'boss':''].filter(Boolean).join(' ');
-    const lbl = isBoss ? '&#9760;' : '';   // skull glyph for boss chambers
-    cells.push(`<span class="${cls}" title="Chamber ${i}${isBoss?' — BOSS':''} (${z.name})">${lbl}</span>`);
-  }
-  // Zone labels under the strip (only show the four zone names, centered under their segments)
-  const zoneLabels = ZONES.map((z,zi)=>`<span class="j-zone-lbl ${z.color}">${z.name.replace(/^THE\s+/,'')}</span>`).join('');
-  return `<div class="journey-bar">${cells.join('')}<div class="j-zones">${zoneLabels}</div></div>`;
+  // Collapsed to 4 zone-segments instead of 40 individual cells: each zone shows its name, a boss
+  // skull (filled when cleared), and the current zone shows chamber progress inline. Removes 36
+  // cells of HUD noise while preserving everything the player actually needs to read at a glance.
+  const cur=G.depth; const curZone=zoneOf(cur);
+  const segs=ZONES.map((z,zi)=>{
+    const zStart=zi*10+1, zEnd=zi*10+10;
+    const passed=cur>zEnd;
+    const here=zi===curZone;
+    const bossKilled=cur>zEnd;   // boss at end of zone — cleared if we're past it
+    const lbl=z.name.replace(/^THE\s+/,'');
+    const skull=bossKilled?'<span class="jz-boss done">&#9760;</span>':here?'<span class="jz-boss live">&#9760;</span>':'<span class="jz-boss">&#9760;</span>';
+    const prog=here?`<span class="jz-prog">${cur-zStart+1}/10</span>`:'';
+    const cls=['jz-seg','jz-'+z.color,here?'here':'',passed?'passed':''].filter(Boolean).join(' ');
+    return `<span class="${cls}" title="${z.name} — chambers ${zStart}–${zEnd}"><span class="jz-lbl">${lbl}</span>${prog}${skull}</span>`;
+  }).join('<span class="jz-link"></span>');
+  return `<div class="journey-bar">${segs}</div>`;
 }
 function omenTag(){ return G.omen&&G.omen.id!=='none'?`<div class="omentag">&#10022; OMEN: ${G.omen.name}</div>`:''; }
 // Slay-the-Spire-style mid-act boss preview: shows the player which chamber the
@@ -3295,8 +3303,18 @@ function makeGroup(depth){
   return Array.from({length:count},()=>({base:pick(ENEMIES),affix:rollAffix(depth)}));
 }
 function rollAffix(depth){
+  // Front-load: every run, the first elite of the run is guaranteed somewhere in chambers 3–5 so the
+  // opening zone has at least one stranger-than-trash thing to chew on. Reviewer feedback was that
+  // the opening felt too flat — pure-trash chamber 1, pure-trash chamber 2, fine. Pure-trash 3-4-5
+  // breaks the rhythm. Once that first elite has been placed, the curve returns to normal.
+  if(!G._earlyEliteSeen && depth>=3 && depth<=5){
+    G._earlyEliteSeen=1; return pick(AFFIXES);
+  }
   let p=4+depth*1.1; p*=G.mods.eliteMul;
-  return chance(p)?pick(AFFIXES):null;
+  if(depth>=3 && depth<=6) p=Math.max(p,16);   // first-zone elite floor
+  const a = chance(p)?pick(AFFIXES):null;
+  if(a) G._earlyEliteSeen=1;
+  return a;
 }
 // Door peeks — sensory, ambiguous. The player should suspect, not know.
 const PEEKS={
@@ -6114,16 +6132,17 @@ function playerBar(p,full){
   const xpPct=clamp(p.xp/xpNeeded(p.level)*100,0,100);
   const mpPct=p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0;
   const ultTag = ch>=100?' &middot; <span class="purple">&#10022; ULT READY</span>':'';
-  // Affinity row — one compact line showing the three paths and progress at a glance, so the
-  // player never needs to dig into the SKILLS tab just to check "how close to Wrath II am I."
+  // Affinity pills — inline at the end of the stats line so the HUD reads as ONE row, not three.
+  // A path you haven't entered (tier 0, no points) is hidden — the row only shows what the build is
+  // actually doing, which is what the player needs to track.
   const tierRoman=['','I','II','III'];
-  const affEntry=k=>{ const meta=AFF_META[k]; const t=p.affTier[k]; const pts=p.aff[k]; const next=t<3?AFF_THRESH[t]:null;
+  const affEntry=k=>{ const meta=AFF_META[k]; const t=p.affTier[k]; const pts=p.aff[k];
+    if(t===0 && pts===0) return '';   // dead path — don't crowd the strip with it
+    const next=t<3?AFF_THRESH[t]:null;
     const lbl = t>0?` <span class="muted">${tierRoman[t]}</span>`:'';
     const prog = next!=null ? `<span class="muted">${pts}/${next}</span>` : `<span class="amber">MAX</span>`;
-    // Hover -> native tooltip; click/tap -> info modal. Same path the inventory pills use, so a tester
-    // (and a phone player who can't hover) gets the same explanation either way.
     return `<span class="aff-pill aff-${meta.color}" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}" role="button" tabindex="0"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
-  const affRow = `<div class="pstrip-aff">${['w','g','v'].map(affEntry).join('')}</div>`;
+  const affPills = ['w','g','v'].map(affEntry).filter(s=>s).join('');
   // Each button TOGGLES its own view (tap again to close). The active view is highlighted so the strip
   // doubles as the tab bar — no in-panel tabs needed.
   const onInv=G.screen==='inventory'; const cv=G._invView||'gear';
@@ -6150,11 +6169,10 @@ function playerBar(p,full){
       <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div>
       <div class="track xpline"><div class="fill mp" style="width:${mpPct}%"></div></div></div>
     <div class="pstrip-row">
-      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="amber" title="Gold — spend at merchants">${p.gold}g</span> &middot; <span class="teal" title="Soul Essence — spent at the Forge">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple" title="${p.relics.length} relic${p.relics.length===1?'':'s'} carried">&#9670;${p.relics.length}</span>`:''}</div>
+      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="amber" title="Gold — spend at merchants">${p.gold}g</span> &middot; <span class="teal" title="Soul Essence — spent at the Forge">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple" title="${p.relics.length} relic${p.relics.length===1?'':'s'} carried">&#9670;${p.relics.length}</span>`:''}${affPills?' &middot; '+affPills:''}</div>
       <div class="pot-row" title="Potions ready (heal ~30% HP each)">${potPips}</div>
       ${invBtns}
     </div>
-    ${affRow}
   </div>`;
 }
 /* ---------- keyboard ---------- */
