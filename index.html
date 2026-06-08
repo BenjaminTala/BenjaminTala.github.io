@@ -267,9 +267,14 @@
   .best-row{display:flex;justify-content:space-between;align-items:center;border:2px solid var(--line);background:#00000055;padding:7px 9px;margin:5px 0;font-size:9px;gap:8px}
   .best-bar{flex:0 0 78px;height:9px;background:#000;border:2px solid var(--line)}
   .best-bar>i{display:block;height:100%;background:linear-gradient(var(--red),#a82f3a)}
-  .c-burn{border-color:var(--amber);color:var(--amber)}.c-pois{border-color:var(--green);color:var(--green)}
-  .c-weak{border-color:var(--purple);color:var(--purple)}.c-vuln{border-color:var(--red);color:var(--red)}
-  .c-stun{border-color:var(--teal);color:var(--teal)}.c-guard{border-color:var(--blue);color:var(--blue)}
+  .c-burn{border-color:var(--amber);color:var(--amber);background:rgba(60,28,8,.6);box-shadow:0 0 6px rgba(255,140,40,.4)}
+  .c-pois{border-color:var(--green);color:var(--green);background:rgba(12,40,16,.6);box-shadow:0 0 6px rgba(92,255,143,.4)}
+  .c-weak{border-color:var(--purple);color:var(--purple);background:rgba(36,16,56,.6);box-shadow:0 0 6px rgba(192,108,255,.4)}
+  .c-vuln{border-color:var(--red);color:var(--red);background:rgba(48,8,12,.6);box-shadow:0 0 6px rgba(255,80,80,.45)}
+  .c-stun{border-color:var(--teal);color:var(--teal);background:rgba(8,40,40,.6);box-shadow:0 0 6px rgba(92,224,255,.45)}
+  .c-guard{border-color:var(--blue);color:var(--blue);background:rgba(8,28,52,.6);box-shadow:0 0 6px rgba(108,184,255,.45)}
+  .c-burn, .c-pois, .c-weak, .c-vuln, .c-stun{font-weight:bold;animation:chipPulse 1.8s ease-in-out infinite}
+  @keyframes chipPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
   .enemies-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:flex-end}
   .enemy-cell{flex:1;min-width:118px;max-width:200px;border:3px solid transparent;padding:6px;transition:border-color .1s;position:relative}
   .fxlayer{position:absolute;left:0;right:0;top:26%;pointer-events:none;text-align:center;z-index:6;line-height:1}
@@ -380,6 +385,15 @@
   .cls-tips{font-size:7.5px;line-height:1.65;letter-spacing:.3px;color:#cfcbef;list-style:none;padding:0;margin:0 0 6px;text-align:left}
   .cls-tips li{padding:2px 0 2px 10px;border-left:2px solid #2a2a40;margin:2px 0}
   .cls-tips li::before{content:'\\25B8 ';color:#6c6c8a;margin-right:3px}
+  /* PRE-BOSS BRIEFING — recap panel shown above the lone boss door. */
+  .briefing{max-width:520px;margin:6px auto 4px;border-color:#a8482a;background:linear-gradient(180deg,rgba(60,18,16,.4),rgba(20,12,16,.35));
+    box-shadow:0 0 22px rgba(255,80,80,.18)}
+  .briefing .brief-head{text-align:center;font-size:10px;letter-spacing:2px;color:#ff8060;margin-bottom:6px;text-shadow:0 0 8px rgba(255,80,80,.45)}
+  .briefing .brief-row{font-size:8.5px;line-height:1.7;letter-spacing:.4px;color:#cfcbef}
+  .briefing .brief-verdict{margin-top:6px;text-align:center;font-size:9px;line-height:1.7;font-style:italic}
+  .btn.btn-boss{border-color:#a8482a;background:linear-gradient(180deg,#2a1010,#170808);
+    box-shadow:0 0 14px rgba(255,80,80,.18)}
+  .btn.btn-boss:hover{border-color:#ff8060;color:#fff;text-shadow:0 0 8px rgba(255,80,80,.6)}
   .asc-picker{max-width:440px;margin:8px auto 4px;text-align:center;border-color:#a8482a;
     background:linear-gradient(180deg,rgba(60,20,12,.5),rgba(20,12,16,.4))}
   .asc-head{font-size:10px;letter-spacing:2px;color:#ff9a3c;margin-bottom:6px;text-shadow:0 0 8px rgba(255,120,60,.5)}
@@ -3986,7 +4000,35 @@ function drainBanners(max){
 }
 function renderCorridor(){
   const isBoss=G.doors.length===1&&G.doors[0].boss;
-  const doors=G.doors.map((d,i)=>`<button class="btn" onclick="openDoor(${i})">
+  // PRE-BOSS BRIEFING — when the corridor is the one-door boss corridor, surface
+  // a "this is what you've built" recap above the door.  Hades does this with
+  // House-of-Hades dialogue between biomes; we do it inline.  Fires at every
+  // boss corridor (chambers 10/20/30/40 + every 4th abyss floor).
+  const briefHtml = isBoss ? (()=>{
+    const p=G.player; const tiers=['w','g','v'].filter(k=>p.affTier[k]>0)
+      .map(k=>`<span class="${AFF_META[k].color}">${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}</span>`).join(' &middot; ') || '<span class="muted">no path yet</span>';
+    const setStr = (p.sets&&p.sets.length) ? `<span class="teal">${p.sets.join(' &middot; ')}</span>` : '<span class="muted">no set</span>';
+    const dualOwn = (p.relics||[]).filter(rn=>(RELICS.find(r=>r.name===rn)||{}).dual);
+    const ksOwn   = (p.relics||[]).filter(rn=>(RELICS.find(r=>r.name===rn)||{}).keystone);
+    const rare = [...ksOwn.map(n=>`<b class="amber">&#10022; ${n}</b>`), ...dualOwn.map(n=>`<b class="purple">&#9670; ${n}</b>`)].join(' &middot; ');
+    const slEntries=Object.entries(p.slayer||{}).sort((a,b)=>b[1]-a[1]); const topQ=slEntries[0];
+    const slLine = topQ ? `<span class="muted">Top quarry:</span> <b>${topQ[0]}</b> &times; ${topQ[1]}` : '';
+    // Auto verdict — light heuristic from build commitment.  Not a balance check,
+    // just a flavour read.  "Ready" if any path at II OR a set OR a dual/keystone.
+    const ready = p.affTier.w>=2 || p.affTier.g>=2 || p.affTier.v>=2 || (p.sets&&p.sets.length) || dualOwn.length || ksOwn.length;
+    const verdict = ready
+      ? '<span class="green">You feel ready.</span> The crypt has watched you commit. It is curious.'
+      : '<span class="amber">You feel unfinished.</span> The boss will not wait for the build that did not arrive.';
+    return `<div class="panel tight briefing fade">
+      <div class="brief-head">&#9760; THE WAY NARROWS &mdash; A WARDEN AHEAD</div>
+      <div class="brief-row"><span class="muted">Paths:</span> ${tiers}</div>
+      <div class="brief-row"><span class="muted">Set:</span> ${setStr}</div>
+      ${rare ? `<div class="brief-row"><span class="muted">Rare carried:</span> ${rare}</div>` : ''}
+      ${slLine ? `<div class="brief-row">${slLine}</div>` : ''}
+      <div class="brief-verdict">${verdict}</div>
+    </div>`;
+  })() : '';
+  const doors=G.doors.map((d,i)=>`<button class="btn ${isBoss?'btn-boss':''}" onclick="openDoor(${i})">
     <span class="k">${isBoss?'&#9760;':'['+(i+1)+']'}</span>${isBoss?'THE BOSS DOOR':'Door '+(i+1)}<small>${doorHint(d)}</small></button>`).join('');
   // At most 2 prioritized banners; the generic whisper is suppressed when anything more important
   // is already showing, so a major beat never arrives wrapped in ambient flavor.
@@ -3995,7 +4037,7 @@ function renderCorridor(){
   // where the player is choosing their next room.  Hidden during the boss corridor
   // itself (you're already there) and in the abyss (different pacing).
   const bossPrev = isBoss ? '' : bossPreviewHtml();
-  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${journeyBar()}${omenTag()}${worldBar()}${banners}${playerBar(G.player,true)}${bossPrev}
+  app.innerHTML=`<div class="floortag">${depthLabel()}</div>${journeyBar()}${omenTag()}${worldBar()}${banners}${playerBar(G.player,true)}${bossPrev}${briefHtml}
     <div class="panel fade room-in"><p class="muted" style="font-size:9px">${isBoss?'The corridor narrows to one path. No turning back.':'You reach a junction. Which way?'}</p>${doors}
       ${(G._whisper && !banners)?`<p class="muted center" style="font-size:9px;font-style:italic;line-height:1.9;opacity:.82;margin-top:6px">&#10075; ${G._whisper} &#10076;</p>`:''}</div>${statusFooter()}`;
 }
