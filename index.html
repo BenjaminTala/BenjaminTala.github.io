@@ -437,8 +437,8 @@
      Filled = ready to drink, hollow/dim = consumed.  Replaces the older
      "X potion(s)" text so a glance gives the count without reading. */
   .pot-row{display:inline-flex;gap:3px;align-items:center;margin-right:6px}
-  .pot-pip{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;
-    border:2px solid var(--line);border-radius:50%;font-size:11px;background:#0a0a16}
+  .pot-pip{display:inline-block;width:18px;height:18px;line-height:14px;text-align:center;
+    border:2px solid var(--line);border-radius:50%;font-size:14px;font-weight:bold;background:#0a0a16}
   .pot-pip.on{color:#5cff8f;border-color:#3aa860;box-shadow:0 0 6px rgba(92,255,143,.35), inset 0 0 4px rgba(92,255,143,.18)}
   .pot-pip.off{color:#3a3a4a;border-color:#2a2a38;opacity:.55}
   .pot-pip.more{width:auto;padding:0 5px;border-radius:9px;font-size:8px;letter-spacing:1px;
@@ -1796,7 +1796,7 @@ const EVENTS=[
   // dungeon notices what you ARE" moment that Hades does via NPC dialogue but
   // we can do at one-line scale.  The helper is pure (just returns a string)
   // so it can be templated into any NPC's text() function.
-  {id:'lantern',title:'THE LANTERN KEEPER',zone:0,npc:'lantern',sprite:{src:'assets/players/mage.png',tint:'tint-amber'},art:"  .o.o.o.\n  | | | |\n  ( \" )\n  )===( \n  /| |\\",
+  {id:'lantern',title:'THE LANTERN KEEPER',zone:0,npc:'lantern',sprite:{src:'assets/monsters/wisp.png',tint:'tint-amber'},art:"  .o.o.o.\n  | | | |\n  ( \" )\n  )===( \n  /| |\\",
    text:p=>{ const r=loadRecords(); const n=npcState('lantern'); const deaths=Math.max(0,(r.runs||0)-(r.wins||0));
      const tail=npcBuildTail(p,'lantern');
      if(n.met<=1) return 'An old man passes you, carrying an iron frame strung with hundreds of tiny lanterns. Each one burns a different colour. He stops to look at you the way one looks at weather.'+tail;
@@ -1818,7 +1818,7 @@ const EVENTS=[
        if(deaths<=10) return `"Stopped counting around the Sixth Expedition." A pause. "Of your run though, I do keep count. ${deaths}. So far."`;
        return `He turns the frame so you can see the bottom row. ${deaths} small green lights, in neat order. <span class="shout-red">"I do not light them for everyone. Only the ones the crypt keeps sending back."</span>`;}},
    ]},
-  {id:'cardinal',title:'THE CARDINAL WITHOUT A FACE',zone:1,npc:'cardinal',sprite:{src:'assets/players/warrior.png',tint:'tint-gold'},art:"  ,---,\n  |   |\n  )...(\n  /|=|\\\n  d   b",
+  {id:'cardinal',title:'THE CARDINAL WITHOUT A FACE',zone:1,npc:'cardinal',sprite:{src:'assets/monsters/cultist.png',tint:'tint-gold'},art:"  ,---,\n  |   |\n  )...(\n  /|=|\\\n  d   b",
    text:p=>{ const n=npcState('cardinal'); const tail=npcBuildTail(p,'cardinal');
      if(n.met<=1) return 'A priest in robes of beaten gold stands at a small stone altar. His hood is up. Where his face should be, there is nothing — not darkness, not skin. Nothing.'+tail;
      if(n.met===2) return 'The faceless priest is still at his altar. He does not move when you enter, but the absence under his hood orients toward you with patience.'+tail;
@@ -1864,7 +1864,7 @@ const EVENTS=[
      {label:'"Whose swords were these?"',desc:'Press',run:p=>{discoverLore('l18');return '"Champions." He says it without looking up. "Like you. Some of them were even good." He keeps snapping.';}},
      {label:'Give him a piece to destroy',desc:'-1 armor piece, +random upgrade',run:p=>{const slots=['head','chest','legs','boots','ring'].filter(s=>p.equip[s]);if(!slots.length)return 'He shakes his head at your bare hands.';const slot=pick(slots);const it=p.equip[slot];unequip(p,slot);const up=pick(UPGRADES);gainUpgrade(p,up);return `He takes your ${it.name} and breaks it across his knee. Something old comes loose. (${up.note})`;}},
    ]},
-  {id:'cartog',title:'THE LAST CARTOGRAPHER',zone:1,npc:'cartog',sprite:{src:'assets/players/ranger.png',tint:'tint-grey'},art:"  ,---,\n  |~~~|\n  ( o )\n  )===( \n  d   b",
+  {id:'cartog',title:'THE LAST CARTOGRAPHER',zone:1,npc:'cartog',sprite:{src:'assets/monsters/ghost.png',tint:'tint-grey'},art:"  ,---,\n  |~~~|\n  ( o )\n  )===( \n  d   b",
    text:p=>{ const r=loadRecords(); const n=npcState('cartog'); const tail=npcBuildTail(p,'cartog');
      if(n.met<=1) return 'An old explorer sits with a map spread across his knees. The lines on the map move when you are not looking directly at them.'+tail;
      if(r.deepest>=RUN_LENGTH) return `The cartographer looks up before you reach him. "You. The one who got to ${r.deepest}." He marks a small black cross at the bottom of his map. "I will add a line."`+tail;
@@ -1904,7 +1904,7 @@ const EVENTS=[
      {label:'Pry it out with a blade',desc:'-8 HP, +6 Heat, small loot',run:p=>{const c=8;selfHurt(p,c,'hazard');addHeat(6);const g=18+rnd(20);p.gold+=g;return `You hook the glint out. Your arm still smokes (-${c} HP, +6 Heat, +${g} gold).`;}},
      {label:'Leave it',desc:'Nothing happens',run:p=>'You step around the channel. The Furnace keeps its trinkets.'},
    ]},
-  {id:'priest',title:'THE DYING PRIEST',zone:0,sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  .--.\n ( || )\n  )/\\(\n  |  |",
+  {id:'priest',title:'THE DYING PRIEST',zone:0,sprite:{src:'assets/monsters/cultist.png',tint:'tint-grey'},art:"  .--.\n ( || )\n  )/\\(\n  |  |",
    text:'A robed man slumps against a half-broken shrine. He looks up and his eyes widen — with relief.',
    options:[
      {label:'"Father — are you hurt?"',desc:'Tend to him &middot; +1 potion &middot; he may teach you',run:p=>{p.potions++;let extra='';if(!p.memory && chance(60)){grantMemory(p,'tithe');extra=' He whispers a phrase you do not understand, but you will not forget it.';}return '"Another champion. Good. The last three never returned. Do not be the fourth." He presses a cold vial into your hand and is still. (+1 potion)'+extra;}},
@@ -1918,7 +1918,7 @@ const EVENTS=[
      {label:'"Other champions came through?"',desc:'Listen',run:p=>'"All of them, son. Same face, different cloak." He laughs at his own joke. You do not.'},
      {label:'Walk away',desc:'No purchase',run:p=>'You leave. He does not ask your name. Nobody ever does, you realize.'},
    ]},
-  {id:'burnedkt',title:'THE BURNED KNIGHT',zone:1,sprite:{src:'assets/players/warrior.png',tint:'tint-red'},art:"  ,---,\n  [o_o]\n  )/|\\(\n  /| |\\",
+  {id:'burnedkt',title:'THE BURNED KNIGHT',zone:1,sprite:{src:'assets/monsters/golem.png',tint:'tint-red'},art:"  ,---,\n  [o_o]\n  )/|\\(\n  /| |\\",
    text:'A knight in fire-blackened plate sits against a column. He raises his head — and goes very still.',
    options:[
      {label:'"Who are you?"',desc:'Press him',run:p=>{return '<span class="shout-red">"You wear his face."</span> He says it very quietly. <span class="shout-red">"The last one. That is all."</span> He refuses to look at you again.';}},
@@ -1932,14 +1932,14 @@ const EVENTS=[
      {label:'"Not AGAIN? What does that mean?"',desc:'Demand an answer',run:p=>'They go silent. The silence is the answer.'},
      {label:'Kick them aside',desc:'+8 gold, -6 HP',run:p=>{const c=6;selfHurt(p,c,'hazard');p.gold+=8;return `You shove past. The cultist topples in. Their purse — ${8} gold — lies abandoned (-${c} HP, scuffle).`;}},
    ]},
-  {id:'frozenchild',title:'THE FROZEN CHILD',zone:2,sprite:{src:'assets/players/ranger.png',tint:'tint-blue'},art:"   o\n  /|\\\n   |\n  / \\",
+  {id:'frozenchild',title:'THE FROZEN CHILD',zone:2,sprite:{src:'assets/monsters/imp.png',tint:'tint-blue'},art:"   o\n  /|\\\n   |\n  / \\",
    text:'A child stands ankle-deep in frost, staring at you with patient, unsurprised eyes. They do not seem cold.',
    options:[
      {label:'"You\'re back."',desc:'Wait — what?',run:p=>{addMiasma(4);return '<span class="shout-purple">"You always come back. We have done this so many times now."</span> They smile, sadly. The child is gone before you can speak again. (the cold thickens)';}},
      {label:'"I don\'t know you."',desc:'Insist &middot; they may teach you',run:p=>{heal(p,Math.round(p.maxHp*0.12));let extra='';if(!p.memory && chance(55)){grantMemory(p,'hollow');extra=' Before they vanish, they show you how to step outside a moment.';}return '"...oh." The child looks down. "I am sorry. I thought you were ready." They press warm hands to your wound and walk into the wall. (heal)'+extra;}},
      {label:'Walk through them',desc:'They were never there',run:p=>{addMiasma(8);return 'There was no child. Of course there was no child. The Miasma is doing its work. (the cold thickens)';}},
    ]},
-  {id:'scholar',title:'THE FROZEN SCHOLAR',zone:2,npc:'scholar',sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  [_=_]\n  ( o )\n  )===( \n  /| |\\",
+  {id:'scholar',title:'THE FROZEN SCHOLAR',zone:2,npc:'scholar',sprite:{src:'assets/monsters/darkacolyte.png',tint:'tint-purple'},art:"  [_=_]\n  ( o )\n  )===( \n  /| |\\",
    text:p=>{ const r=loadRecords(); const n=npcState('scholar'); const tail=npcBuildTail(p,'scholar');
      if(n.met<=1) return 'A scholar sits at a desk of ice, ledgers spread before her. She finishes a sentence before she looks up.'+tail;
      return `The scholar is on a new ledger. There are ${Math.max(0,(r.runs||1)-1)} closed ones stacked beside her, each one bound in pale leather. She does not look up. She is already writing your name.`+tail;
@@ -1962,7 +1962,7 @@ const EVENTS=[
      {label:'"I am the first."',desc:'Insist',run:p=>{return '"That is what every one of us says." It does not argue further. It just waits for you to leave.';}},
      {label:'Cut it down',desc:'Lay the echo to rest &middot; +essence',run:p=>{p.essence+=12;return `You cut the echo down. It does not resist. "Good," it says, very quietly. "Good." (+12 ${ESS})`;}},
    ]},
-  {id:'lostchamp',title:'A LOST CHAMPION',zone:3,sprite:{src:'assets/players/warrior.png',tint:'tint-shadow'},art:"  .---,\n  ( ?? )\n  /|##|\\\n   |  |\n  _|  |_",
+  {id:'lostchamp',title:'A LOST CHAMPION',zone:3,sprite:{src:'assets/monsters/ghost.png',tint:'tint-shadow'},art:"  .---,\n  ( ?? )\n  /|##|\\\n   |  |\n  _|  |_",
    text:'A champion stands at the lip of the Deep, looking down. They do not turn when you arrive.',
    options:[
      {label:'"Who were you?"',desc:'Ask',run:p=>'"We all thought we were heroes." They say it softly, without bitterness. "Even now. Even here." They will not say more.'},
@@ -1971,7 +1971,7 @@ const EVENTS=[
    ]},
   // === DEVOUR-GATED — only surface once you have actually started eating things ===
   {id:'watcher',title:'THE WATCHFUL PRISONER',zone:2,npc:'watcher',available:p=>p.memory && p.memory.path && p.memory.path.length>=2,
-   sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  ,---,\n  |[ ]|\n  ( - )\n  )===( \n  /| |\\",
+   sprite:{src:'assets/monsters/zombie.png',tint:'tint-purple'},art:"  ,---,\n  |[ ]|\n  ( - )\n  )===( \n  /| |\\",
    text:p=>{ const n=npcState('watcher');
      if(n.met<=1) return 'A man sits chained to a pillar of black iron. The chains are old. So is he. He watches you walk in, and his face goes very still — not afraid, exactly. Recognising something.';
      return 'The chained man is still there. Of course he is. He watches you come in and something that is almost a smile crosses him. "Back," he says. "More of him in you than last time. I can count it now, nearly."';
@@ -1988,7 +1988,7 @@ const EVENTS=[
      {label:'Walk past in silence',desc:'No reward, no cost',run:p=>'He watches you the whole way across the room. He does not call after you. He does not need to.'},
    ]},
   // ===== ORIGINAL EVENTS =====
-  {id:'knight',title:'THE WOUNDED KNIGHT',sprite:{src:'assets/players/warrior.png',tint:'tint-grey'},art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
+  {id:'knight',title:'THE WOUNDED KNIGHT',sprite:{src:'assets/monsters/golem.png',tint:'tint-grey'},art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
    text:'A dying knight slumps against the wall. "Please... mend me, and take my blade."',
    options:[
      {label:'Heal him (-12 HP)',desc:'He gives you his weapon',run:p=>{selfHurt(p,12,'hazard');const w=makeItem('weapon',p.cls,G.depth+2);equipItem(p,w);return `You bind his wounds. He presses a ${w.name} (Lv${w.ilvl}) into your hands and fades away.`;}},
@@ -2002,7 +2002,7 @@ const EVENTS=[
      {label:'Bet everything',desc:'50/50: double all gold or lose it',run:p=>{if(p.gold<=0)return 'You have nothing to wager.';if(chance(48)){const g=p.gold;p.gold*=2;return `Fortune smiles! Your ${g} becomes ${p.gold} gold!`;}p.gold=0;return 'Disaster — you lose every coin to the cackling imp.';}},
      {label:'Refuse',desc:'Keep your gold',run:p=>'You decline. The imp sulks and disappears.'},
    ]},
-  {id:'mirror2',title:'THE MIRROR CHAMBER',sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  +----+\n  | () |\n  |/||\\|\n  +----+",
+  {id:'mirror2',title:'THE MIRROR CHAMBER',sprite:{mirrorPlayer:true,tint:'tint-purple'},art:"  +----+\n  | () |\n  |/||\\|\n  +----+",
    text:'Another champion stands across the chamber. Your face. Your scars. Your blade — held a heartbeat too late.',
    options:[
      {label:'Fuse with it',desc:'-25% max HP &middot; +6 ATK, +8% crit',run:p=>{const c=Math.round(p.maxHp*0.25);p.maxHp=Math.max(20,p.maxHp-c);p.hp=clamp(p.hp,1,p.maxHp);p.atk+=6;p.crit+=8;return `Skin to skin, soul to soul. The mirror is gone — -${c} max HP, +6 ATK, +8% crit.`;}},
@@ -2016,7 +2016,7 @@ const EVENTS=[
      {label:'Burn the door',desc:'Refuse &middot; +60% loot for the next 3 rooms',run:p=>{G._luckBoom=3;return 'You smash the gilded threshold. The light flares and dies — your luck swells for the next three rooms.';}},
      {label:'Touch the threshold',desc:'Risk Miasma; relic if it favors you',run:p=>{if(chance(55)){const r=grantRandomRelic(p);return r?`The gold flares — a relic forms in your hand: ${r}.`:'The gold flares — but you already carry every relic it knows.';}const c=12;addMiasma(12);selfHurt(p,c,'miasma');return `The threshold drinks from you (-${c} HP, the cold thickens).`;}},
    ]},
-  {id:'mirror',title:'THE CURSED MIRROR',sprite:{src:'assets/players/mage.png',tint:'tint-blue'},art:"  +----+\n  | ?? |\n  | () |\n  +----+",
+  {id:'mirror',title:'THE CURSED MIRROR',sprite:{mirrorPlayer:true,tint:'tint-blue'},art:"  +----+\n  | ?? |\n  | () |\n  +----+",
    text:'A tall mirror shows a warped reflection that moves a heartbeat too late.',
    options:[
      {label:'Gaze into it',desc:'Random boon or bane',run:p=>{const r=rnd(3);if(r===0){p.maxHp+=18;heal(p,18);return 'Your reflection grows stronger — +18 max HP!';}if(r===1){p.atk+=3;p.crit+=5;return 'It bares its teeth — +3 ATK, +5% crit!';}const c=Math.round(p.maxHp*0.12);selfHurt(p,c,'hazard');return `It lunges! You take ${c} damage from your own image.`;}},
@@ -2044,7 +2044,7 @@ const EVENTS=[
      {label:'Drink deeply',desc:'Restore & +6 max mana',run:p=>{p.maxMana+=6;p.mana=p.maxMana;heal(p,Math.round(p.maxHp*0.25));return 'The waters refresh body and mind. (+6 max mana, restored)';}},
      {label:'Fill a flask',desc:'Gain a potion',run:p=>{p.potions++;return 'You bottle the glowing water as a potion.';}},
    ]},
-  {id:'library',title:'THE FORGOTTEN LIBRARY',sprite:{src:'assets/players/mage.png',tint:'tint-purple'},art:"  [|||||]\n  [|||||]\n  [|||||]",
+  {id:'library',title:'THE FORGOTTEN LIBRARY',sprite:{src:'assets/monsters/darkacolyte.png',tint:'tint-purple'},art:"  [|||||]\n  [|||||]\n  [|||||]",
    text:'Dust-choked shelves of forbidden tomes loom in the gloom.',
    options:[
      {label:'Study the tomes',desc:'+12 max mana, +4 regen',run:p=>{p.maxMana+=12;p.mana+=12;p.regen+=4;return 'Arcane knowledge seeps in — +12 max mana, +4 regen.';}},
@@ -2058,7 +2058,7 @@ const EVENTS=[
         G.room={type:'enemy',_enemies:[gob]};startBattle('You corner the treasure goblin!');return false;}},
      {label:'Let it go',desc:'Not worth the risk',run:p=>'You watch the jingling sack vanish around the corner. A shame.'},
    ]},
-  {id:'beggar',title:'THE HOODED BEGGAR',sprite:{src:'assets/players/ranger.png',tint:'tint-shadow'},art:"  .-.\n ( o )\n /| |\\\n  | |",
+  {id:'beggar',title:'THE HOODED BEGGAR',sprite:{src:'assets/monsters/cultist.png',tint:'tint-shadow'},art:"  .-.\n ( o )\n /| |\\\n  | |",
    text:'A frail beggar extends a trembling bowl. "Spare some coin, hero?"',
    options:[
      {label:'Give 25 gold',desc:'Kindness may be repaid',run:p=>{if(p.gold<25)return 'Your purse is too light to give.';p.gold-=25;const roll=rnd(3);if(roll===0){const r=grantRandomRelic(p);return r?`The beggar throws off the cloak — a spirit! It gifts you: ${r}.`:'The beggar smiles warmly and blesses your path.';}if(roll===1){p.maxHp+=16;heal(p,16);return 'A warm blessing settles on you — +16 max HP.';}return 'The beggar blesses you. You feel... luckier.';}},
@@ -2114,7 +2114,7 @@ const EVENTS=[
      {label:'Reinforce your armor',desc:'+2 levels to a worn armor piece',run:p=>{const worn=ARMOR_SLOTS.filter(s=>p.equip[s]);if(!worn.length)return 'You wear no armor to improve.';const s=pick(worn);upgradeGear(p,s);return `Your ${p.equip[s].name} is hammered thick and true (Lv${p.equip[s].ilvl}).`;}},
      {label:'Scavenge the scrap',desc:'Essence from old metal',run:p=>{const e=16+rnd(18);p.essence+=e;return `You strip the forge for ${e} ${ESS} essence.`;}},
    ]},
-  {id:'prisoner',title:'THE STARVED PRISONER',sprite:{src:'assets/players/warrior.png',tint:'tint-shadow'},art:"  ,---,\n  (- -)\n  /|=|\\\n   | |",
+  {id:'prisoner',title:'THE STARVED PRISONER',sprite:{src:'assets/monsters/zombie.png',tint:'tint-shadow'},art:"  ,---,\n  (- -)\n  /|=|\\\n   | |",
    text:'A champion who came before you, chained and wasted to bone. "Free me... or take what little I have left."',
    options:[
      {label:'Break the chains',desc:'A grateful gift',run:p=>{const roll=rnd(3);if(roll===0){const r=grantRandomRelic(p);return r?`Freed, the champion presses a relic into your hand: ${r}.`:'Freed, the champion blesses your blade. (+3 ATK)'+(p.atk+=3,'');}if(roll===1){p.maxHp+=20;heal(p,20);return 'Freed, the champion shares their last vigor — +20 max HP.';}p.essence+=40;return 'As the chains fall, the champion dissolves into 40 '+ESS+' essence and a whispered thanks.';}},
@@ -3511,7 +3511,7 @@ const DISCOVERIES=[
   // further once you are deep in the cold AND deep in Devour. (uncommon · high Miasma + Devour path)
   { id:'still_mirror', tier:'uncommon',
     when:()=>{ const p=G.player; return miasmaActive() && G.miasma>=35 && p&&p.memory&&p.memory.path&&p.memory.path.length>=2; },
-    build:()=>({ title:'THE STILL MIRROR', sprite:{src:'assets/players/mage.png',tint:'tint-purple'},
+    build:()=>({ title:'THE STILL MIRROR', sprite:{mirrorPlayer:true,tint:'tint-purple'},
       art:"  +----+\n  | () |\n  |/||\\|\n  +----+",
       _peek:'A flat black surface ahead, and your reflection in it is already moving without you.',
       text:'A tall mirror, iron-framed, fogged with cold. Your reflection is in it &mdash; but it is not copying you. It is doing something with its hands; it has been busy. It looks up when you do, and it has eaten the same things you have. You can see them in its face the way you can no longer see them in your own.',
@@ -4491,8 +4491,11 @@ function renderEvent(){
   // Anchor NPCs put their intro text in a function so it reads current persistence; ordinary
   // events keep using a plain string. Resolve either form here.
   const evText = (typeof ev.text==='function') ? ev.text(p) : ev.text;
+  // Mirror events show the player's OWN class sprite, not a hard-coded one — looking into a mirror
+  // and seeing some other class was a placeholder that read as "the game forgot what I chose."
+  const spriteSrc = ev.sprite && ev.sprite.mirrorPlayer ? `assets/players/${p.cls}.png` : (ev.sprite && ev.sprite.src);
   const art=ev.sprite
-    ?`<img class="ev-sprite ${ev.sprite.tint||''}" src="${ev.sprite.src}" alt="${ev.title}" draggable="false">`
+    ?`<img class="ev-sprite ${ev.sprite.tint||''}" src="${spriteSrc}" alt="${ev.title}" draggable="false">`
     :`<pre class="sprite teal ev-ascii">${ev.art}</pre>`;
   // Anchor NPCs (lantern keeper / cardinal / scholar / smith / prisoner / cartographer) get a teal
   // sigil + a faintly haloed panel so the player can FEEL "this is someone the crypt has been
@@ -6193,7 +6196,7 @@ function playerBar(p,full){
   let potPips = '';
   for(let i=0;i<potCap;i++){
     const filled = i < (p.potions||0);
-    potPips += `<span class="pot-pip ${filled?'on':'off'}" title="${filled?'Potion ready — heals ~30% HP':'Empty potion slot'}">&#9763;</span>`;
+    potPips += `<span class="pot-pip ${filled?'on':'off'}" title="${filled?'Potion ready — heals ~30% HP':'Empty potion slot'}">+</span>`;
   }
   if((p.potions||0) > potCap) potPips += `<span class="pot-pip on more" title="${p.potions} potions">+${(p.potions)-potCap}</span>`;
   return `<div class="panel tight pstrip">
