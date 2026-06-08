@@ -1417,9 +1417,9 @@ const CLASSES={
     weapon:{name:'Apprentice Wand',dmg:5,type:'magic'},
     sprite:"   /\\\n  (oo)\n <(  )>\n   ||\n  _||_",
     skills:[
-      {id:'bolt',name:'Arcane Bolt',cost:10,desc:'Single magic hit, scales w/ mana.'},
-      {id:'fire',name:'Fireball',cost:24,aoe:true,desc:'Hit ALL foes + BURN.'},
-      {id:'frost',name:'Frost Nova',cost:18,aoe:true,desc:'Dmg ALL + WEAKEN them.'},
+      {id:'bolt',name:'Arcane Bolt',cost:10,desc:'A bolt of raw force. The more mana you carry, the more it bites.'},
+      {id:'fire',name:'Fireball',cost:24,aoe:true,desc:'Fire blooms across them all, and clings.'},
+      {id:'frost',name:'Frost Nova',cost:18,aoe:true,desc:'The cold catches everyone at once. Their blows come slower.'},
     ]},
   warrior:{name:'WARRIOR',color:'red',affinity:'FURY',
     affinityText:'Heavy armor. Heavier hands. Wins by enduring what should have killed him.',
@@ -1427,9 +1427,9 @@ const CLASSES={
     weapon:{name:'Rusty Sword',dmg:9,type:'melee'},
     sprite:"  _____\n [_+_]\n  (oo)\n /|##|\\\n  d  b",
     skills:[
-      {id:'power',name:'Power Strike',cost:8,desc:'Heavy single blow (x1.95).'},
-      {id:'shield',name:'Shield Wall',cost:6,desc:'Take 55% less for 2 turns.'},
-      {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'Hit ALL hard, drop guard.'},
+      {id:'power',name:'Power Strike',cost:8,desc:'One blow with everything behind it.'},
+      {id:'shield',name:'Shield Wall',cost:6,desc:'You set your feet. The next blows barely land.'},
+      {id:'reck',name:'Whirlwind',cost:12,aoe:true,desc:'You spin through all of them — and leave yourself open.'},
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'Never where the blow lands. Every miss becomes an opening.',
@@ -1437,9 +1437,9 @@ const CLASSES={
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
-      {id:'aim',name:'Aimed Shot',cost:8,desc:'Single shot, very high crit + POISON.'},
-      {id:'evade',name:'Evade',cost:6,desc:'+45% dodge for 2 turns.'},
-      {id:'volley',name:'Volley',cost:12,aoe:true,desc:'3 arrows across the foes.'},
+      {id:'aim',name:'Aimed Shot',cost:8,desc:'A patient shot for the soft places. It draws blood that lingers.'},
+      {id:'evade',name:'Evade',cost:6,desc:'You become hard to find. Their arrows meet nothing.'},
+      {id:'volley',name:'Volley',cost:12,aoe:true,desc:'A fan of arrows finds every one of them.'},
     ]},
 };
 
@@ -1615,9 +1615,9 @@ const PASSIVES={
 };
 /* SETS: collect both pieces (armor + trinket) to unlock a build-defining bonus */
 const SETS={
-  Shadowdancer:{name:'Shadowdancer',pieces:2,desc:'2pc: +15% dodge; a dodge guarantees your next hit CRITS',stats:{dodge:15},flags:['shadowDodge']},
-  Archmage:{name:'Archmage',pieces:2,desc:'2pc: gain a Mana Shield (any class); when it fully blocks a hit, STUN the attacker',stats:{maxMana:25},flags:['gearManaShield','aegisStun']},
-  Bloodforged:{name:'Bloodforged',pieces:2,desc:'2pc: +14% lifesteal, +1 ATK; kills heal you',stats:{lifesteal:14,atk:1},flags:['bloodKill']},
+  Shadowdancer:{name:'Shadowdancer',pieces:2,desc:'You move like smoke — and the moment a blow misses you, your next one cuts clean through.',stats:{dodge:15},flags:['shadowDodge']},
+  Archmage:{name:'Archmage',pieces:2,desc:'Magic hardens around you. When the ward swallows a blow whole, it throws the attacker reeling.',stats:{maxMana:25},flags:['gearManaShield','aegisStun']},
+  Bloodforged:{name:'Bloodforged',pieces:2,desc:'You hit a little harder, and every life you take pours back into your own.',stats:{lifesteal:14,atk:1},flags:['bloodKill']},
 };
 const SET_ITEMS=[
   {slot:'boots',set:'Shadowdancer',name:'Shadowweave Treads',stats:{def:2,dodge:7},aff:{g:1}},
@@ -1686,9 +1686,9 @@ const RELICS=[
 const AFF_THRESH=[3,6,9];
 const AFF_META={w:{key:'w',name:'WRATH',color:'red'},g:{key:'g',name:'GUILE',color:'teal'},v:{key:'v',name:'VEIL',color:'blue'}};
 const AFF_TIER_TITLE={
-  w:['','WRATH I: +12% damage &middot; RENDING EDGE — every 3rd strike sinks deeper (+60% dmg)','WRATH II: +12% damage, +8% crit','AVATAR OF WRATH: +15% dmg & your hits CLEAVE'],
-  g:['','GUILE I: +12% crit, +10% dodge &middot; FEINT — the strike right after Shield Wall lands a guaranteed crit','GUILE II: status effects last longer, +8% crit','TRICKSTER: basic hits inflict random status; crits refund mana'],
-  v:['','VEIL I: +18 max HP, +12 mana &middot; STEADY HEART — every 3rd hit you take heals you','VEIL II: regenerate HP each combat turn','WARDEN: begin each battle with a damage BARRIER'],
+  w:['','RENDING EDGE — your blows land harder, and every third one sinks deep enough to make them scream.','RISING FURY — harder still, and your eye finds the killing gap more often.','AVATAR OF WRATH — you hit like a landslide, and the blow carries through to whatever stands beside them.'],
+  g:['','FEINT — quicker, harder to touch, and the strike right after you guard finds its mark every time.','LONG SHADOW — the wounds you leave linger, and your aim keeps sharpening.','TRICKSTER — every plain blow leaves something behind, and a clean hit gives back what it cost you.'],
+  v:['','STEADY HEART — harder to break, and every third wound you take only steadies you.','SLOW MENDING — the wounds close on their own, even mid-fight.','WARDEN — you walk into every fight already shielded against the first blows.'],
 };
 /* ---------- synergies (named relic-combo payoffs) ---------- */
 const SYNERGIES=[
@@ -2484,12 +2484,16 @@ function checkAffinityTiers(p){ ['w','g','v'].forEach(k=>{ while(p.affTier[k]<3 
 function unlockAffinity(p,k,t){
   if(k==='v'&&t===1){ p.maxHp+=18; heal(p,18); p.maxMana+=12; p.mana+=12; }
   const msg=AFF_TIER_TITLE[k][t];
-  if(G.screen==='battle') blog(msg.split(':')[0]+' UNLOCKED!','lvl'); else G._affMsg=msg;
-  // Build popup — players should see and feel every tier unlock.
-  const title=AFF_META[k].name+' '+['','I','II','III'][t]+(t===3?' &mdash; CAPSTONE':'');
+  const roman=['','I','II','III'][t];
+  const title=AFF_META[k].name+' '+roman+(t===3?' &mdash; CAPSTONE':'');
+  if(G.screen==='battle') blog(`${AFF_META[k].name} ${roman} — you feel the path open.`,'lvl'); else G._affMsg=msg;
+  // Build popup — players should see and feel every tier unlock.  The flavour line
+  // (msg) carries the meaning; the old "you have N points, next tier at X" tracker
+  // read like a progress bar in a dev console, so it's gone — the path deepening
+  // is felt, not counted.
   popupBuild(title,
     `<p class="shout" style="font-size:11px;line-height:1.7">${msg}</p>`+
-    `<p class="muted" style="font-size:9px;margin-top:8px">You have ${p.aff[k]} ${AFF_META[k].name} points.${t<3?` Next tier at ${AFF_THRESH[t]} pts.`:''}</p>`,
+    (t<3?`<p class="muted" style="font-size:9px;margin-top:8px">The ${AFF_META[k].name} road runs deeper still.</p>`:`<p class="muted" style="font-size:9px;margin-top:8px">You have walked this road as far as it goes.</p>`),
   'aff'); }
 function recomputeSynergies(p){ p.synergies=[];
   SYNERGIES.forEach(s=>{ if(s.need.every(n=>p.relics.includes(n))){ p.synergies.push(s.name);
@@ -2531,8 +2535,8 @@ function levelUp(p,silent){ p.level++; p.maxHp+=11; p.atk+=2; p.maxMana+=5; p.ma
     } else {
       // Out of combat, a full modal is fine (rare path: XP from events).
       popupBuild('LEVEL UP &mdash; Lv '+p.level,
-        `<p class="shout" style="font-size:11px;line-height:1.7">You grow stronger.</p>`+
-        `<p class="muted" style="font-size:10px;margin-top:6px">maxHP +11 &middot; ATK +2 &middot; maxMP +5 &middot; +14 HP healed</p>`,
+        `<p class="shout" style="font-size:11px;line-height:1.7">The crypt has taught you something. You are harder to kill than you were.</p>`+
+        `<p class="muted" style="font-size:10px;margin-top:6px">+11 HP &middot; +2 ATK &middot; +5 MP &middot; wounds close (+14 HP)</p>`,
         'level');
     }
   } }
@@ -2569,7 +2573,7 @@ function recomputeSets(p){
     p._setApplied[sn]={stats:{...stats},flags:[...(set.flags||[])]};
     // New set activation -> popup
     if(!before.has(sn)){
-      popupBuild('ARMOR SET ACTIVATED &mdash; '+set.name+' '+set.pieces+'/'+set.pieces,
+      popupBuild('THE '+set.name.toUpperCase()+' IS WHOLE',
         `<p class="shout" style="font-size:11px;line-height:1.7">&#10022; ${set.desc}</p>`,
       'set');
     }
@@ -4828,9 +4832,9 @@ function projectIncomingDmg(e, b, p, baseDmg){
 // startBattle.  Hooked into playerDamageMult (out) and the incoming-damage
 // path (DR).
 const STANCES={
-  bal:{name:'BALANCED',short:'BAL',cls:'st-bal', dmgOut:1.00, drIn:0.00, note:'no modifier'},
-  agg:{name:'AGGRESSIVE',short:'AGG',cls:'st-agg', dmgOut:1.25, drIn:-0.15, note:'+25% dmg out, take +15% dmg in'},
-  grd:{name:'GUARDED',short:'GRD',cls:'st-grd', dmgOut:0.85, drIn:0.25, note:'-15% dmg out, take -25% dmg in'},
+  bal:{name:'BALANCED',short:'BAL',cls:'st-bal', dmgOut:1.00, drIn:0.00, note:'feet planted, no risk'},
+  agg:{name:'AGGRESSIVE',short:'AGG',cls:'st-agg', dmgOut:1.25, drIn:-0.15, note:'all teeth — you hit harder, and so do they'},
+  grd:{name:'GUARDED',short:'GRD',cls:'st-grd', dmgOut:0.85, drIn:0.25, note:'turtle up — blows glance off, but yours soften too'},
 };
 function curStance(){ const b=G.battle; if(!b) return STANCES.bal; return STANCES[b.stance||'bal']||STANCES.bal; }
 function setStance(key){ const b=G.battle; if(!b||b.over||battleBusy()) return; if(!STANCES[key])return; b.stance=key; render(); }
@@ -4958,9 +4962,9 @@ function renderBattle(){
   const cm=G.mods.skillCost;
   const ultReady=b.charge>=100;
   const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm)); const enabled=p.mana>=cost;
-    return `<button class="cmd" ${enabled?'':'disabled'} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,s,!!s.aoe):''}<small>${s.desc}</small></span></button>`;}).join('')
+    return `<button class="cmd" ${enabled?'':'disabled'} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber" title="Strikes every enemy">&#9650; all</span>':''}${enabled?skillProjChip(p,s,!!s.aoe):''}<small>${s.desc}</small></span></button>`;}).join('')
     +(p.memory
-      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm)); const enabled=p.mana>=cost; return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${enabled?'':'disabled'} onclick="playerSkill('${m.id}')"><span class="k purple">&#9763;</span><span class="lbl">${m.name} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber">AOE</span>':''}${enabled?skillProjChip(p,m,!!m.aoe):''}<small>MEMORY &middot; ${m.desc}</small></span></button>`;})()
+      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm)); const enabled=p.mana>=cost; return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${enabled?'':'disabled'} onclick="playerSkill('${m.id}')"><span class="k purple">&#9763;</span><span class="lbl">${m.name} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber" title="Strikes every enemy">&#9650; all</span>':''}${enabled?skillProjChip(p,m,!!m.aoe):''}<small>${m.desc}</small></span></button>`;})()
       :'<button class="cmd" disabled style="opacity:.45;border-style:dashed"><span class="k purple">&#9763;</span><span class="lbl">MEMORY (empty)<small>find an Echo, a king, a dragon, a priest... they remember things you do not.</small></span></button>');
   const fleeEnabled=!b.hadBoss;
   const pSprite=playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`;
