@@ -158,6 +158,21 @@
     border:2px solid #4a4070;color:var(--dim);font-family:inherit;font-size:9px;
     text-align:center;cursor:pointer;letter-spacing:1px}
   .abyss-offer .ao-back:hover{color:var(--amber);border-color:var(--amber)}
+  /* TRIUMPH SCREEN — the proper ending deserves more than a button. The champion's sprite gets a
+     pulsing gold halo, and a small stats spread surfaces what the run actually was so the player
+     can read it once before deciding to keep their glory or gamble it. */
+  .triumph-panel{border-color:#a8782a;background:linear-gradient(180deg,rgba(80,52,18,.18),rgba(40,28,10,.08));box-shadow:0 0 22px rgba(255,200,80,.18)}
+  .triumph-halo{position:relative;display:flex;justify-content:center;align-items:center;margin:6px auto 4px;min-height:120px}
+  .triumph-halo::before{content:'';position:absolute;width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,200,80,.32) 0%,rgba(255,200,80,.10) 38%,transparent 70%);
+    animation:triHalo 2.4s ease-in-out infinite;z-index:0}
+  .triumph-halo .sprite-player{position:relative;z-index:1}
+  @keyframes triHalo{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.18);opacity:1}}
+  .triumph-stats{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 18px;margin:10px auto 12px;
+    padding:8px 10px;border:1px dashed #6a5028;border-radius:4px;background:rgba(0,0,0,.18);max-width:520px}
+  .triumph-stats span{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:7.5px;letter-spacing:1.2px;color:var(--dim)}
+  .triumph-stats b{font-size:12px;letter-spacing:.5px}
+  .triumph-stats small{font-size:7px;letter-spacing:1.4px;opacity:.75;text-transform:uppercase}
   /* THE ABYSS — past the throne the whole interface changes its grain. Panels gain pale-frost
      borders and a violet-glow shadow; the page floats a faint thin haze; the floortag drifts; the
      buttons read a touch colder. None of this is information — it's TEXTURE. The deep should not
@@ -5850,14 +5865,27 @@ function renderTriumph(){
       <div class="asc-desc"><b class="red">${ju.name}</b> &mdash; ${ju.desc}<br>
         <span class="muted" style="font-size:8px">Choose it at the next run's champion screen. The crypt grows teeth as you do.</span>${peekHtml}</div>
     </div>` : '';
+  const p=G.player;
+  const champSprite = playerSpriteHtml(p) || `<pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>`;
+  // Run-stats spread — gives the moment weight. Pulled from G.player so anything the player has
+  // built up over the run gets one last look on the way out.
+  const statHtml = `<div class="triumph-stats">
+    <span><b class="amber">${p.kills}</b><small>kills</small></span>
+    <span><b class="amber">${G.depth}/${RUN_LENGTH}</b><small>chambers</small></span>
+    <span><b class="amber">LV${p.level}</b><small>level</small></span>
+    <span><b class="amber">${p.relics.length}</b><small>relics</small></span>
+    <span><b class="amber">${p.essence}</b><small>essence</small></span>
+    <span><b class="amber">${p.gold}g</b><small>gold</small></span>
+  </div>`;
   app.innerHTML=`<h1 class="title" style="color:var(--amber)">THE THRONE FALLS</h1>
     <div class="subtitle">YOU WON &middot; Chamber ${G.depth}/${RUN_LENGTH}${G.ascension?` &middot; <span class="red">ASC ${G.ascension}</span>`:''}</div>
     ${ascBanner}
-    <div class="panel center fade">
-      <pre class="sprite amber">  \\o/   \\o/\n   |     |\n  / \\   / \\</pre>
+    <div class="panel center fade triumph-panel">
+      <div class="triumph-halo">${champSprite}</div>
+      ${statHtml}
       <p class="evtext center"><b class="amber">The crypt's last guardian lies broken at your feet.</b> Your run is over &mdash; you can retire as a legend, with everything you carry.<br><br>
         Below the throne, a stair that should not exist spirals down into the dark. The Abyss. Bottomless. Optional. <b class="red">Choose only if you want to gamble what you just earned.</b></p>
-      <p class="center purple fade" style="font-size:9px;letter-spacing:.6px;margin:10px 4px 4px;opacity:.85"><i>&#9763; You have done this many times. You will do it again.</i></p>
+      <p class="center purple fade" style="font-size:9px;letter-spacing:.6px;margin:10px 4px 4px;opacity:.85"><i>You have done this many times. You will do it again.</i></p>
       <button class="btn center amber" onclick="claimVictory()"><span class="k">&#9819;</span>&#9654; RETIRE A LEGEND <span class="muted">(end the run, keep your glory)</span><small>RECOMMENDED &middot; the proper ending</small></button>
       <button class="btn center" onclick="confirmAbyss()"><span class="k purple">&#10549;</span>DESCEND INTO THE ABYSS<small>see what lies beneath the throne</small></button>
     </div>`;
