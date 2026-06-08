@@ -288,6 +288,11 @@
   .stance-row .st-btn.st-agg.active{border-color:#ff7c50;color:#ff7c50;box-shadow:0 0 10px rgba(255,120,60,.45);background:rgba(60,16,8,.4)}
   .stance-row .st-btn.st-bal.active{border-color:#9fbcff;color:#9fbcff;box-shadow:0 0 10px rgba(150,180,255,.4);background:rgba(20,28,56,.4)}
   .stance-row .st-btn.st-grd.active{border-color:#5cff8f;color:#5cff8f;box-shadow:0 0 10px rgba(92,255,143,.45);background:rgba(12,40,16,.4)}
+  /* Stance commitment: lock shows a small countdown beside the active stance label,
+     and the inactive (locked) buttons go dim + non-interactive until the lock expires. */
+  .stance-row .st-btn.st-locked{opacity:.4;cursor:not-allowed;filter:grayscale(.6)}
+  .stance-row .st-btn.st-locked:hover{border-color:var(--line);color:inherit}
+  .st-lock{display:inline-block;margin-left:5px;padding:0 4px;border:1px solid currentColor;border-radius:6px;font-size:7px;line-height:1.1;letter-spacing:0;opacity:.8;vertical-align:middle}
   /* CRIT / heavy-hit screen-shake — wrapped on #scene only, so HUD elements
      outside the battle pane don't jitter.  Tiny + brief (240ms / 5 frames). */
   #scene.crit-shake{animation:critShake .26s cubic-bezier(.36,.07,.19,.97) 1}
@@ -2241,8 +2246,22 @@ const ABYSS_WHISPERS=[
   'You meet yourself going the other way. Neither of you is surprised. Neither of you stops.',
   'Someone is waiting at the very bottom of this. They have been you for far longer than you have, and they are patient about it.',
 ];
+// PLAYER INNER VOICE — first-person fragments the champion catches themselves thinking. Tonally
+// distinct from world-voice whispers: anxious, short, intimate. Gated to ~20% of whisper rolls so
+// the world's own voice still dominates, but the player has SOMEONE in the dark who sounds like
+// them. Six lines, drawn from late-zone-1 onward (the first chamber should feel like the world
+// noticing you, not you noticing yourself).
+const INNER_VOICE=[
+  'I keep waiting to hear footsteps that are not mine.',
+  'I am still carrying things I would not have picked up the first time.',
+  'Tell me I get to sit down soon.',
+  'Past the place I died. The walls look the same.',
+  'My hands smell like something I did not eat.',
+  'I keep going back. I do not remember choosing to.',
+];
 function whisperFor(d){
   if((G.abyss || zoneOf(d)>=3) && paleRumor() && chance(40)){ return pick(PALE_INSCRIPTIONS); }   // paleRumor() already noteRumor'd — don't double-count
+  if(d>=4 && chance(20)) return pick(INNER_VOICE);   // the player's own voice, occasionally
   if(G.abyss) return chance(60)?pick(ABYSS_WHISPERS):pick(WHISPERS[3]);
   return pick(WHISPERS[zoneOf(d)]||WHISPERS[0]); }
 /* boss bios — shown the first time you meet each boss across all your runs */
@@ -4726,7 +4745,7 @@ function startBattle(intro){
   const carriedCharge=(G.player&&G.player._charge!=null)?G.player._charge:0;
   G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:carriedCharge,
     over:false,anim:'',animIdx:-1,usedSecond:false,floats:[],fx:[],
-    stance:'bal',   // every fight starts neutral; the player chooses to commit a stance turn-by-turn
+    stance:'bal', stanceLock:0,   // every fight starts neutral; switching commits you for 2 turns
     pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:!G.abyss&&enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
   if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
@@ -4873,10 +4892,22 @@ const STANCES={
   grd:{name:'GUARDED',short:'GRD',cls:'st-grd', dmgOut:0.85, drIn:0.25, note:'turtle up — blows glance off, but yours soften too'},
 };
 function curStance(){ const b=G.battle; if(!b) return STANCES.bal; return STANCES[b.stance||'bal']||STANCES.bal; }
-function setStance(key){ const b=G.battle; if(!b||b.over||battleBusy()) return; if(!STANCES[key])return; b.stance=key; render(); }
+// Switching a stance COMMITS you to it for 2 of your own turns (decremented in afterPlayer).
+// Without commitment cost, stance is free min-max — you'd always swap to AGG on the kill swing and
+// GRD on the take-the-hit turn with no downside. The lock makes the choice mean something.
+function setStance(key){ const b=G.battle; if(!b||b.over||battleBusy()) return; if(!STANCES[key])return;
+  if(b.stance===key) return;   // no-op
+  if((b.stanceLock||0)>0){ SFX.play('fail'); blog(`Your ${STANCES[b.stance].name} stance is still set (${b.stanceLock} more turn${b.stanceLock===1?'':'s'}).`,'muted'); render(); return; }
+  b.stance=key; b.stanceLock=2; SFX.play('click'); render();
+}
 function stanceRowHtml(b){
-  const cur=b.stance||'bal';
-  const btn=(k)=>{ const s=STANCES[k]; const active=cur===k; return `<button class="cmd st-btn ${s.cls} ${active?'active':''}" onclick="setStance('${k}')" title="${escAttr(s.name+' — '+s.note)}"><span class="lbl"><b>${s.short}</b><small>${s.note}</small></span></button>`; };
+  const cur=b.stance||'bal'; const lock=b.stanceLock||0;
+  const btn=(k)=>{ const s=STANCES[k]; const active=cur===k;
+    const locked = lock>0 && !active;
+    const dis = locked?' disabled':'';
+    const lockTag = (active && lock>0) ? `<span class="st-lock">${lock}</span>` : '';
+    const title = locked ? `${s.name} — locked for ${lock} more turn${lock===1?'':'s'}` : `${s.name} — ${s.note}`;
+    return `<button class="cmd st-btn ${s.cls} ${active?'active':''} ${locked?'st-locked':''}"${dis} onclick="setStance('${k}')" title="${escAttr(title)}"><span class="lbl"><b>${s.short}</b>${lockTag}<small>${s.note}</small></span></button>`; };
   return `<div class="stance-row" style="grid-column:1/-1">${btn('agg')}${btn('bal')}${btn('grd')}</div>`;
 }
 function intentBadgeHtml(e){
@@ -5454,6 +5485,7 @@ const HALLUCINATIONS=[
   'Something in the floor opens an eye, then closes it.',
 ];
 function afterPlayer(){ const b=G.battle;
+  if(b.stanceLock>0) b.stanceLock--;   // stance commitment counts down per player turn
   b.enemies.forEach(e=>{ if(e.hp>0){ tickDoT(e,e.st,e.name); if(e.hp<=0)onEnemyDeath(e); } });
   if(allDead()){ winBattle(); return; }
   // Hallucinations measured at ~1.77/run — frequent enough to feel like a mechanic rather than a
