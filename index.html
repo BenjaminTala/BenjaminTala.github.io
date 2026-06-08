@@ -352,6 +352,8 @@
   /* Ascension — picker on the class screen, persistent HUD badge, unlock banner. */
   .asc-badge{display:inline-block;margin-left:8px;font-size:8px;letter-spacing:1px;padding:1px 6px;
     border:1px solid #a8482a;border-radius:9px;color:#ff9a3c;background:rgba(60,16,8,.5);vertical-align:middle}
+  .asc-badge.clickable{cursor:pointer}
+  .asc-badge.clickable:hover{color:#fff;border-color:#ff9a3c;box-shadow:0 0 8px rgba(255,120,40,.45)}
   .asc-picker{max-width:440px;margin:8px auto 4px;text-align:center;border-color:#a8482a;
     background:linear-gradient(180deg,rgba(60,20,12,.5),rgba(20,12,16,.4))}
   .asc-head{font-size:10px;letter-spacing:2px;color:#ff9a3c;margin-bottom:6px;text-shadow:0 0 8px rgba(255,120,60,.5)}
@@ -2270,7 +2272,21 @@ function unlockNextAscension(){ const cur=loadAscension(); if(cur<ASC_MAX){ save
 // Apply tiers 1..n onto the current G.mods.  Called from chooseClass AFTER defaultMods().
 function applyAscension(n){ for(let i=1;i<=n && i<=ASC_MAX;i++){ try{ ASCENSION[i].apply(G.mods); }catch(e){} } }
 function ascBadge(){ const n=G.ascension||0; if(!n) return '';
-  return `<span class="asc-badge" title="Ascension ${n}: ${ASCENSION[n]?ASCENSION[n].name:''} — the crypt is harder, and it remembers why">&#9650; ASC ${n}</span>`; }
+  // Click/hover shows the full active-modifier list via the existing INFO_TEXT system.
+  const lines = []; for(let i=1;i<=n && i<=ASC_MAX;i++){ lines.push(`<b class="red">A${i} ${ASCENSION[i].name}</b> &mdash; ${ASCENSION[i].desc}`); }
+  const tip = `Ascension ${n}: every tier 1-${n} is active this run. ` + lines.map(l=>l.replace(/<[^>]+>/g,'')).join(' / ');
+  return `<span class="asc-badge clickable" data-info-concept="ascension_active" title="${escAttr(tip)}">&#9650; ASC ${n}</span>`; }
+// Built fresh per render so the modal always reflects the CURRENT run's ascension stack.
+function ascActiveInfo(){
+  const n=G.ascension||0;
+  const body = n<=0
+    ? '<p class="muted">No Ascension is active this run. Pick a tier on the class-select screen after your first Triumph.</p>'
+    : '<p>Every tier 1&ndash;'+n+' stacks on this run:</p>' + '<div class="gloss-group">' + Array.from({length:n}, (_,i)=>{
+        const t = ASCENSION[i+1];
+        return `<div class="gloss-btn" style="cursor:default"><span class="gloss-name red">A${i+1} &middot; ${t.name}</span><span class="gloss-blurb">${t.desc}</span></div>`;
+      }).join('') + '</div>';
+  return {title:`ACTIVE ASCENSION &middot; ${n}`, body};
+}
 function newGame(){ try{clearTimeout(G&&G._navTimer);}catch(e){}   // don't orphan the prior run's nav-lock timer
   G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
   heat:0,miasma:0,collapsed:0,dmgBy:{},debt:0,collectorEta:0,_forceCollector:0}; }
@@ -5632,10 +5648,15 @@ function renderTriumph(){
     if(after>before){ G._ascJustUnlocked={n:after, name:ASCENSION[after].name, desc:ASCENSION[after].desc}; }
   }
   const ju=G._ascJustUnlocked;
+  // Peek the *next* tier too — gives the player a reason to beat THIS unlock and come back.
+  // (Slay the Spire's Ascension UI shows the tier-N hint; we do the same here for legibility.)
+  const peekN = ju ? ju.n+1 : (loadAscension()+1);
+  const peekTier = peekN<=ASC_MAX ? ASCENSION[peekN] : null;
+  const peekHtml = peekTier ? `<div class="muted" style="font-size:8px;letter-spacing:1px;margin-top:6px">Beat this and unlock <b class="red">A${peekN} ${peekTier.name}</b> &mdash; <i>${peekTier.desc}</i></div>` : '';
   const ascBanner = ju ? `<div class="panel tight asc-unlock fade">
       <div class="asc-head">&#9650; ASCENSION ${ju.n} UNLOCKED</div>
       <div class="asc-desc"><b class="red">${ju.name}</b> &mdash; ${ju.desc}<br>
-        <span class="muted" style="font-size:8px">Choose it at the next run's champion screen. The crypt grows teeth as you do.</span></div>
+        <span class="muted" style="font-size:8px">Choose it at the next run's champion screen. The crypt grows teeth as you do.</span>${peekHtml}</div>
     </div>` : '';
   app.innerHTML=`<h1 class="title" style="color:var(--amber)">THE THRONE FALLS</h1>
     <div class="subtitle">YOU WON &middot; Chamber ${G.depth}/${RUN_LENGTH}${G.ascension?` &middot; <span class="red">ASC ${G.ascension}</span>`:''}</div>
@@ -5723,15 +5744,31 @@ function renderEnd(win){ const p=G.player;
     <div class="panel center fade"><pre class="sprite ${col}">${win?"  \\o/   \\o/\n   |     |\n  / \\   / \\\n THE THRONE IS YOURS":"   _____\n  /     \\\n | x   x |\n  \\  _  /\n   |||||\n   R.I.P"}</pre>
       <p style="font-size:10px;line-height:2">
         ${tellTale}<br>
-        <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level} &middot; <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}<br>
+        <span class="muted">Class:</span> ${CLASSES[p.cls].name} &middot; <span class="muted">Lv</span> ${p.level} &middot; <span class="muted">Omen:</span> ${G.omen?G.omen.name:'-'}${G.ascension?` &middot; <span class="red">&#9650; ASC ${G.ascension}</span>`:''}<br>
         <span class="muted">Chamber:</span> ${G.depth}/${RUN_LENGTH} &middot; <span class="muted">Kills:</span> ${p.kills} &middot; <span class="muted">Gold:</span> ${p.gold}</p>
       ${win?'':causeOfDeathHtml()}
       <h3 class="amber center" style="font-size:11px;margin:6px 0">YOUR BUILD</h3>
       ${gear}
+      ${(()=>{
+        // Top Slayer family + Devour path summary — surfaces what the player ACTUALLY hunted this run.
+        const sl = p.slayer||{}; const entries = Object.entries(sl).sort((a,b)=>b[1]-a[1]);
+        const top = entries[0]; const topLine = top ? `<span class="muted">Top quarry:</span> <b>${top[0]}</b> &times; ${top[1]}` : '';
+        const dpath = (p.memory&&p.memory.path||[]).slice(-5).join(' &rarr; ');
+        const dLine = dpath ? `<br><span class="muted">Devour path:</span> ${dpath}` : '';
+        // Highlight DUAL artifacts in the relic list so the "I got the rare thing" moment lands.
+        const relicHtml = p.relics.length ? p.relics.map(rn=>{
+          const r = RELICS.find(x=>x.name===rn);
+          if(r && r.dual) return `<b class="purple">${rn}</b>`;
+          if(r && r.keystone) return `<b class="amber">${rn}</b>`;
+          return rn;
+        }).join(', ') : 'none';
+        return `<p style="font-size:9px;line-height:2">${topLine?topLine+'<br>':''}
+          ${dLine?dLine.replace(/^<br>/,''):''}</p>`;
+      })()}
       <p style="font-size:9px;line-height:2"><span class="muted">Paths:</span> ${paths}<br>
         ${p.sets&&p.sets.length?`<span class="teal">Sets: ${p.sets.join(', ')}</span><br>`:''}
         ${p.synergies&&p.synergies.length?`<span class="teal">Synergies: ${p.synergies.join(', ')}</span><br>`:''}
-        <span class="muted">Relics:</span> ${p.relics.length?p.relics.join(', '):'none'}</p>
+        <span class="muted">Relics:</span> ${(()=>{ if(!p.relics.length)return 'none'; return p.relics.map(rn=>{const r=RELICS.find(x=>x.name===rn); if(r&&r.dual) return `<b class="purple" title="DUAL artifact — earned by investing across two paths">&#9670; ${rn}</b>`; if(r&&r.keystone) return `<b class="amber" title="Keystone — class-transforming relic">&#10022; ${rn}</b>`; return rn;}).join(', '); })()}</p>
       ${deathEpitaphHtml(p, win)}
       <button class="btn center" onclick="restart()"><span class="k">&#8635;</span>PLAY AGAIN</button></div>`;
 }
@@ -5999,7 +6036,10 @@ document.addEventListener('click',e=>{
 /* delegated handler for chip/info-button clicks (tap-friendly on mobile) */
 document.addEventListener('click',e=>{
   const ic=e.target.closest('[data-info-concept]');
-  if(ic){ showInfo(ic.getAttribute('data-info-concept')); return; }
+  if(ic){ const key=ic.getAttribute('data-info-concept');
+    // Live-computed concept entries — content depends on the current run state.
+    if(key==='ascension_active'){ showInfo(ascActiveInfo()); return; }
+    showInfo(key); return; }
   const r=e.target.closest('[data-info-relic]');
   if(r){ showRelicInfo(r.getAttribute('data-info-relic')); return; }
   const s=e.target.closest('[data-info-synergy]');
