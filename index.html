@@ -275,6 +275,19 @@
   .c-guard{border-color:var(--blue);color:var(--blue);background:rgba(8,28,52,.6);box-shadow:0 0 6px rgba(108,184,255,.45)}
   .c-burn, .c-pois, .c-weak, .c-vuln, .c-stun{font-weight:bold;animation:chipPulse 1.8s ease-in-out infinite}
   @keyframes chipPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+  /* STANCE ROW — three-button row above the action buttons during combat.
+     Default BAL is no-op; AGG trades DR for damage; GRD trades damage for DR.
+     The active stance gets a glowing border so it's clear which one is on. */
+  .stance-row{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 0 6px;grid-column:1/-1}
+  .stance-row .st-btn{padding:4px 6px;font-size:8.5px;line-height:1.3;text-align:center;
+    border:2px solid var(--line);background:#0a0a16;color:var(--dim);border-radius:3px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .stance-row .st-btn .lbl{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .stance-row .st-btn .lbl small{font-size:7px;letter-spacing:.4px;opacity:.85}
+  .stance-row .st-btn:hover{border-color:#9fbcff;color:#fff}
+  .stance-row .st-btn.st-agg.active{border-color:#ff7c50;color:#ff7c50;box-shadow:0 0 10px rgba(255,120,60,.45);background:rgba(60,16,8,.4)}
+  .stance-row .st-btn.st-bal.active{border-color:#9fbcff;color:#9fbcff;box-shadow:0 0 10px rgba(150,180,255,.4);background:rgba(20,28,56,.4)}
+  .stance-row .st-btn.st-grd.active{border-color:#5cff8f;color:#5cff8f;box-shadow:0 0 10px rgba(92,255,143,.45);background:rgba(12,40,16,.4)}
   /* CRIT / heavy-hit screen-shake — wrapped on #scene only, so HUD elements
      outside the battle pane don't jitter.  Tiny + brief (240ms / 5 frames). */
   #scene.crit-shake{animation:critShake .26s cubic-bezier(.36,.07,.19,.97) 1}
@@ -4734,6 +4747,7 @@ function startBattle(intro){
   const carriedCharge=(G.player&&G.player._charge!=null)?G.player._charge:0;
   G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:carriedCharge,
     over:false,anim:'',animIdx:-1,usedSecond:false,floats:[],fx:[],
+    stance:'bal',   // every fight starts neutral; the player chooses to commit a stance turn-by-turn
     pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:!G.abyss&&enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
   if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
@@ -4867,6 +4881,24 @@ function projectIncomingDmg(e, b, p, baseDmg){
   }
   exp = Math.max(1, exp - absorb);
   return Math.round(exp);
+}
+// STANCE SYSTEM (research #12) — three combat stances the player can switch
+// freely each turn.  Default is BALANCED (no modifier), so non-engagement is
+// identical to the pre-stance game.  AGGRESSIVE trades incoming DR for outgoing
+// damage; GUARDED is the inverse.  Per-battle state, resets to BALANCED on
+// startBattle.  Hooked into playerDamageMult (out) and the incoming-damage
+// path (DR).
+const STANCES={
+  bal:{name:'BALANCED',short:'BAL',cls:'st-bal', dmgOut:1.00, drIn:0.00, note:'no modifier'},
+  agg:{name:'AGGRESSIVE',short:'AGG',cls:'st-agg', dmgOut:1.25, drIn:-0.15, note:'+25% dmg out, take +15% dmg in'},
+  grd:{name:'GUARDED',short:'GRD',cls:'st-grd', dmgOut:0.85, drIn:0.25, note:'-15% dmg out, take -25% dmg in'},
+};
+function curStance(){ const b=G.battle; if(!b) return STANCES.bal; return STANCES[b.stance||'bal']||STANCES.bal; }
+function setStance(key){ const b=G.battle; if(!b||b.over||battleBusy()) return; if(!STANCES[key])return; b.stance=key; render(); }
+function stanceRowHtml(b){
+  const cur=b.stance||'bal';
+  const btn=(k)=>{ const s=STANCES[k]; const active=cur===k; return `<button class="cmd st-btn ${s.cls} ${active?'active':''}" onclick="setStance('${k}')" title="${escAttr(s.name+' — '+s.note)}"><span class="lbl"><b>${s.short}</b><small>${s.note}</small></span></button>`; };
+  return `<div class="stance-row" style="grid-column:1/-1">${btn('agg')}${btn('bal')}${btn('grd')}</div>`;
 }
 function intentBadgeHtml(e){
   if(!e||!e.intent||e.hp<=0)return '';
@@ -5009,6 +5041,7 @@ function renderBattle(){
           <div class="center" style="margin-top:2px">${pStatus}</div>
         </div>
         ${b.over?'<div class="ff-cmd"><div class="muted center" style="grid-column:1/-1;padding:18px 4px">&#8212; battle over &#8212;</div></div>':b._lock?'<div class="ff-cmd"><div class="enemy-turn-banner" style="grid-column:1/-1">&#9876; the enemy answers&hellip;</div></div>':`<div class="ff-cmd">
+          ${stanceRowHtml(b)}
           <button class="cmd ult ${ultReady?'ready':''}" ${ultReady?'':'disabled'} onclick="useUltimate()"><span class="k">&#10022;</span><span class="lbl">${um.name}<small>${ultReady?um.desc:'charge by fighting &middot; '+Math.floor(b.charge||0)+'/100'}</small></span></button>
           <button class="cmd" onclick="playerAttack()"><span class="k">&#9876;</span><span class="lbl">ATTACK${skillProjChip(p,{id:'attack'},false)}<small>${p.weapon.name} &middot; ${p.atk+p.weapon.dmg} pow</small></span></button>
           <button class="cmd" onclick="useItem()" ${p.potions?'':'disabled'}><span class="k green">&#10010;</span><span class="lbl">POTION<small>${p.potions} left &middot; heal 30%</small></span></button>
@@ -5044,6 +5077,8 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   if(f.triStar){ const t=(p.affTier.w|0)+(p.affTier.g|0)+(p.affTier.v|0); m *= (1 + t*0.02); }
   // Bone Crown stacks: per-battle +1 ATK per kill is folded into p.atk in onEnemyDeath;
   // this is a no-op here but documented so future edits don't add it twice.
+  // STANCE — Aggressive +25% / Guarded -15% / Balanced no change.
+  const st = curStance(); if(st && st.dmgOut!=null) m *= st.dmgOut;
   return m; }
 function rollCrit(){ return chance(effCrit(G.player)); }
 function critMult(){ return G.player.flags.bigCrit?2.1:1.8; }
@@ -5473,6 +5508,8 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
   dmg=Math.max(1, dmg-Math.min(p.def+defAdd,Math.floor(dmg*0.6)));
   // Tri-Star Brand: 2% damage reduction per affinity tier reached (cap built into integer floor below).
   if(p.flags.triStar){ const t=(p.affTier.w|0)+(p.affTier.g|0)+(p.affTier.v|0); if(t>0) dmg=Math.max(1, Math.round(dmg*(1 - t*0.02))); }
+  // STANCE damage-in modifier — Aggressive +15% taken, Guarded -25% taken.
+  { const st=curStance(); if(st && st.drIn) dmg=Math.max(1, Math.round(dmg*(1 - st.drIn))); }
   if(b.guardDown>0)dmg=Math.round(dmg*1.3);
   if(b.pst.vulnT>0)dmg=Math.round(dmg*1.25);
   if(b.barrier>0&&dmg>0){ const ab=Math.min(b.barrier,dmg); b.barrier-=ab; dmg-=ab; blog(`Barrier absorbs ${ab}.`,'info'); }
@@ -5950,6 +5987,7 @@ const GLOSSARY_GROUPS=[
   {title:'IN COMBAT', items:[
     {k:'intent',   name:'INTENT',     blurb:'Every enemy telegraphs its next move + projected damage. Read it, then choose.'},
     {k:'statuses', name:'STATUSES',   blurb:'BURN, POISON, WEAK, VULNERABLE, STUN — each ticks differently.'},
+    {k:'stance',   name:'STANCE',     blurb:'Aggressive / Balanced / Guarded. Each turn, commit to one — change the trade between damage out and damage in.'},
     {k:'ultimate', name:'ULTIMATE',   blurb:'Charges as you fight. Per-class super attack at 100.'},
   ]},
 ];
@@ -6008,6 +6046,7 @@ const INFO_TEXT={
   intent:{title:'ENEMY INTENT', body:`Every enemy telegraphs its next move at the top of its cell:<br>&bull; <b class="red">ATK / HEAVY</b> with a projected damage number.<br>&bull; <b class="purple">CAST / STATUS</b> — burn, poison, weak, vulnerable.<br>&bull; <b class="amber">CHARGE / UNLEASH</b> — multi-turn windups.<br>&bull; <b class="amber">DOZING / ENRAGED</b> — your free turn or a cornered foe.<br><br>The intent shows the EXPECTED damage to you, accounting for your DEF and any buff/debuff active. Use it to decide who to focus, when to guard, when to potion.`},
   statuses:{title:'STATUS EFFECTS', body:`&bull; <b class="red">BURN</b> — damage at end of every turn for N turns.<br>&bull; <b class="green">POISON</b> — damage at end of every turn for N turns.<br>&bull; <b>WEAK</b> — target deals reduced damage.<br>&bull; <b>VULNERABLE</b> — target takes +25% damage.<br>&bull; <b>STUN</b> — target skips its next turn.<br><br>Re-applying a status takes the MAX of the old and new durations — never the SUM. Guile II lengthens the statuses you apply.`},
   ultimate:{title:'ULTIMATE', body:`Charge fills as you attack, get hit, cast, and kill. At <b>100</b> the ULT button glows.<br><br>Each class has its own ULT:<br>&bull; <b class="red">Warrior — Earthshatter</b>: massive AoE that stuns survivors.<br>&bull; <b class="purple">Mage — Mind Bolt</b>: a single nuclear bolt.<br>&bull; <b class="teal">Ranger — Death Volley</b>: hits every foe twice.<br><br>Charge carries between fights — saving up for a boss is real.`},
+  stance:{title:'STANCE', body:`Three combat stances you can switch each turn (free, no cost):<br><br>&bull; <b style="color:#ff7c50">AGGRESSIVE</b> — +25% damage out, you take +15% damage. Burst windows when the enemy is stunned or weakened.<br>&bull; <b style="color:#9fbcff">BALANCED</b> — no modifier. The default; never wrong.<br>&bull; <b style="color:#5cff8f">GUARDED</b> — -15% damage out, you take -25% damage. Sit out a HEAVY intent without losing a turn to Shield Wall.<br><br>Each battle starts BALANCED. The stance you pick persists turn-to-turn until you switch — making "when to commit" the new combat decision.`},
   glossary:{title:'CRYPT GLOSSARY', body: buildGlossaryHtml() },
 };
 // Build the glossary card grid lazily (used in the GLOSSARY info card).
