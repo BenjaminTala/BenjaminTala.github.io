@@ -683,6 +683,8 @@
   .sprite-enemy.boss.spr-golem    {max-height:160px}
   .sprite-enemy.boss.spr-stonegolem{max-height:170px}
   .sprite-enemy.boss.spr-gobking  {max-height:158px}
+  .sprite-enemy.boss.spr-cavetyrant{max-height:165px;max-width:210px}
+  .sprite-enemy.boss.spr-winterking{max-height:168px}
   .sprite-enemy.boss.spr-dragon   {max-height:160px;max-width:220px}
   .sprite-enemy.boss.spr-demonlord{max-height:170px}
   /* In room-preview cells they shrink uniformly so the row line up */
@@ -1342,9 +1344,9 @@ const ENEMY_SPRITE={
 };
 const BOSS_SPRITE={
   'GOBLIN KING':'gobking',
-  'THE NECROMANCER':'darkacolyte','STONE TITAN':'stonegolem','CAVE TYRANT':'stonegolem',
+  'THE NECROMANCER':'darkacolyte','STONE TITAN':'stonegolem','CAVE TYRANT':'cavetyrant',
   'DEMON LORD':'demonlord','THE LICH':'darkacolyte',
-  'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'demonlord','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
+  'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'winterking','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
   'THE THOUSANDTH CHAMPION':'thousandth','THE PALE DEVOURER':'paledevourer',
   // re-mapped wrong placeholders
   'OGRE WARLORD':'ogrewarlord','BROODMOTHER':'broodmother','FLAME KNIGHT':'flameknight',
@@ -1970,7 +1972,7 @@ const EVENTS=[
      {label:'"Not AGAIN? What does that mean?"',desc:'Demand an answer',run:p=>'They go silent. The silence is the answer.'},
      {label:'Kick them aside',desc:'+8 gold, -6 HP',run:p=>{const c=6;selfHurt(p,c,'hazard');p.gold+=8;return `You shove past. The cultist topples in. Their purse — ${8} gold — lies abandoned (-${c} HP, scuffle).`;}},
    ]},
-  {id:'frozenchild',title:'THE FROZEN CHILD',zone:2,sprite:{src:'assets/monsters/imp.png',tint:'tint-blue'},art:"   o\n  /|\\\n   |\n  / \\",
+  {id:'frozenchild',title:'THE FROZEN CHILD',zone:2,sprite:{src:'assets/monsters/child.png',tint:'tint-blue'},art:"   o\n  /|\\\n   |\n  / \\",
    text:'A child stands ankle-deep in frost, staring at you with patient, unsurprised eyes. They do not seem cold.',
    options:[
      {label:'"You\'re back."',desc:'Wait — what?',run:p=>{addMiasma(4);return '<span class="shout-purple">"You always come back. We have done this so many times now."</span> They smile, sadly. The child is gone before you can speak again. (the cold thickens)';}},
@@ -2107,7 +2109,7 @@ const EVENTS=[
      {label:'Scavenge',desc:'Gold, maybe a potion',run:p=>{const g=12+rnd(18);p.gold+=g;let extra='';if(chance(45)){p.potions++;extra=' and a health potion';}return `You find ${g} gold${extra} among the packs.`;}},
      {label:'Douse it & move',desc:'Leave no trace',run:p=>'You scatter the embers and slip onward unseen.'},
    ]},
-  {id:'spring',title:'THE ENCHANTED SPRING',sprite:{src:'assets/monsters/ghost.png',tint:'tint-blue'},art:"  .~~~.\n (~ + ~)\n  '~~~'",
+  {id:'spring',title:'THE ENCHANTED SPRING',sprite:{src:'assets/events/spring.png',tint:'tint-natural'},art:"  .~~~.\n (~ + ~)\n  '~~~'",
    text:'Crystal water hums with magic. You could temper your weapon in it.',
    options:[
      {label:'Temper weapon',desc:'+5 weapon damage',run:p=>{p.weapon.dmg+=5;p.weapon.stats.dmg=(p.weapon.stats.dmg||0)+5;return `Your ${p.weapon.name} glows — its damage rises by 5!`;}},
@@ -2163,7 +2165,7 @@ const EVENTS=[
      {label:'Climb down slowly',desc:'Less gold, no harm',run:p=>{const g=18+rnd(18);p.gold+=g;return `Careful does it — ${g} gold, no scratches.`;}},
      {label:'Leave it',desc:'Greed is a trap',run:p=>'You resist temptation and walk on.'},
    ]},
-  {id:'witch',title:'THE WANDERING WITCH',sprite:{src:'assets/monsters/ghost.png',tint:'tint-green'},art:"   /^\\\n  ( o )\n  /|~|\\\n   | |",
+  {id:'witch',title:'THE WANDERING WITCH',sprite:{src:'assets/monsters/witch.png',tint:'tint-natural'},art:"   /^\\\n  ( o )\n  /|~|\\\n   | |",
    text:'A witch stirs a bubbling cauldron. "A brew for a price, dearie?"',
    options:[
      {label:'Buy a brew (35g)',desc:'Random powerful boon',run:p=>{if(p.gold<35)return 'The witch frowns at your thin purse and shoos you off.';p.gold-=35;const r=rnd(4);if(r===0){p.lifesteal+=15;return 'A crimson brew — +15% lifesteal!';}if(r===1){p.crit+=12;return 'A sparkling brew — +12% crit!';}if(r===2){p.dodge+=12;return 'A misty brew — +12% dodge!';}p.regen+=6;p.maxMana+=12;p.mana+=12;return 'A glowing brew — +12 max mana, +6 regen!';}},
@@ -2962,8 +2964,14 @@ function showFragmentChoice(){
   const empowerDesc=`Sharpen the current path &mdash; it strikes harder and its effects linger.`;
   const replaceLabel=`Become ${fdef.label} Strike`;
   const replaceDesc=`Abandon ${d.name} for a pure ${fdef.label} skill (${fdef.desc}). It begins fresh, and fierce.`;
+  // One-time teach: the FIRST time a named combo is on the table, say plainly that merging
+  // families is a thing. After this once, the EVOLVE button's combo name carries the idea.
+  let comboHint='';
+  try{ if(combo && !localStorage.getItem('crypt_seen_combo')){ localStorage.setItem('crypt_seen_combo','1');
+    comboHint=`<p class="amber" style="font-size:9px;line-height:1.7;margin:6px 0">&#10022; Two hungers can merge &mdash; feeding it a different family than the last forges a NAMED form, stronger than either alone.</p>`; } }catch(e){}
   const body=
     `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; You ${verb} a <b>${fdef.label} ${noun}</b>.</p>`+
+    comboHint+
     `<p class="muted" style="font-size:9px;margin:8px 0">Current: <b>${d.name}</b> &middot; path: ${d.path.length?d.path.join(' &rarr; '):'(none)'}</p>`+
     `<button class="btn" onclick="pickFragment('${fam}','evolve')" style="margin-top:6px;border-left:3px solid #c06cff"><span class="k purple">&#9670;</span>EVOLVE &mdash; ${evolveLabel}<small>${evolveDesc}</small></button>`+
     `<button class="btn" onclick="pickFragment('${fam}','empower')" style="border-left:3px solid var(--amber)"><span class="k amber">&#10022;</span>EMPOWER &mdash; ${empowerLabel}<small>${empowerDesc}</small></button>`+
@@ -4710,7 +4718,7 @@ function renderMerchant(){
   else if(sameRun){ greet='"Back so soon. You did not like my prices, or you found gold in something you killed?"'; sub='A small smile, the kind a man gives a regular.'; }
   else if(met===2 || met===3){ greet='"Ah. You. Coin for comfort, as we agreed."'; sub='He recognises you the way a riverbed recognises water.'; }
   else { greet='"Coin for comfort, traveler. I do not ask your name."'; sub='An old man at a stall in a place that should not have stalls.'; }
-  const heatNote=(st.pm||1)>1?`<div class="center red" style="font-size:8px">The Furnace's heat has driven prices up.</div>`:'';
+  const heatNote=(st.pm||1)>1?`<div class="center red" style="font-size:8px">The Furnace's heat has driven prices up <span class="muted">(+${Math.round(((st.pm||1)-1)*100)}%)</span>.</div>`:'';
   const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
   const relicBtn=st.relic?item('Relic: '+st.relic.name,mc(70),st.relic.note,"buy('relic')",p.gold>=mc(70)):'';
   const gcost=st.gear?mc(40+st.gear.rarity*22):0;
@@ -5611,6 +5619,8 @@ function fleeBattle(){ const p=G.player,b=G.battle; if(battleBusy())return;
     // Fleeing abandons any unresolved Devour queue from this fight so the modal
     // doesn't surface mid-corridor next room.
     G._multiEssenceFams=null; G._fragQueue=[]; if(b){b._castKills=[]; b._devourActive=0; if(b._cycloneAtk){p.atk-=b._cycloneAtk; b._cycloneAtk=0;}}
+    if(p._burningArmor>0){ p.def=Math.max(0,(p.def||0)-8); p._burningArmor=0; }   // same unwind as winBattle
+    p._mobBuffNextHit=0;
     blog(`You break away — claws and cold take ${tax} HP from your back.`,'info');
     showInfo({title:'FLED &mdash; WOUNDED',body:`<p class="shout-red" style="font-size:11px">You turned your back to the dark. Claws and cold took <b>${tax} HP</b> from you on the way out, and the cold has thickened around you (+2 Miasma).</p>`});
     b.over=true; render(); setTimeout(()=>proceed('You escaped — wounded.'),700);
@@ -5847,6 +5857,11 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   p._charge=clamp(b.charge||0,0,100);
   // Eternal Cyclone stacks per-fight ATK that must be unwound at battle end.
   if(b._cycloneAtk){ p.atk-=b._cycloneAtk; b._cycloneAtk=0; }
+  // Burning Armor (Heart of Iron Flame) +8 DEF is normally unwound by the in-battle countdown;
+  // if the fight ends while it's still up, strip it here or the bonus leaks across chambers.
+  if(p._burningArmor>0){ p.def=Math.max(0,(p.def||0)-8); p._burningArmor=0; }
+  // "Next basic strike" buffs are per-fight promises — don't let them carry to the next battle.
+  p._mobBuffNextHit=0;
   // ECHO LOOT — if you killed an Echo, the gear it carried (and its relic) drops to you.
   // Weapons from a different class are reskinned to your own, same rarity/ilvl.
   const echoEnemyKilled=b.enemies.find(e=>e._echo);
