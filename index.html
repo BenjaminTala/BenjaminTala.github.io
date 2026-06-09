@@ -2727,20 +2727,129 @@ const BOSS_BIO={
 // BOSS AWARENESS — at most one extra line, reacting to HOW the player arrived: overheated, frozen,
 // deep in Devour, or returning to a boss that has killed them before. Makes bosses feel aware of
 // the run without changing their mechanics. Returns '' for an ordinary arrival.
+// BOSS TAUNT — fires when this boss has KILLED THE PLAYER at least once across runs. Five lines
+// per boss, picked at random, in that boss's voice. Stacks with the arrival-state lines below
+// so a player who arrives hot AND has died here before gets the taunt followed by the heat line.
+const BOSS_TAUNT_DEAD={
+  ogre:[
+    '"Back to be meat. Good. The wife will be pleased."',
+    '"You died here last time. I remember. The blade went in like butter."',
+    '"Some of you grow taste over the rounds. You taste exactly the same."',
+    '"The meat learns nothing. I love this part."',
+    '"Come on then. Bring the same blade. Make the same mistake."',
+  ],
+  gobking:[
+    '"You died for nothing here, last time. I have not forgotten the smell."',
+    '"Back, are we? My readers placed bets on you. Most lost."',
+    '"The doors close behind you now. They learned, even if you have not."',
+    '"I keep your bones in a box. Pull up a chair."',
+    '"Same champion. Same mistake. I do enjoy the consistency."',
+  ],
+  spider:[
+    '"My babies remember your taste. They have not forgotten."',
+    '"You. You fed us last time. Are you here to feed us again."',
+    '"You came back. We did not expect that. We are SO HAPPY."',
+    '"I told the little ones not to get attached. You are back. You see why."',
+    '"Be quick this time, please. The brood is louder when they are full."',
+  ],
+  necro:[
+    '"Court is in session, and you are still in contempt."',
+    '"You died here under my gavel. I have not adjourned. Stand."',
+    '"The dead in my retinue remember you. They are not pleased."',
+    '"Same defendant. Same charge. ...same verdict, I expect."',
+    '"Welcome back. I assume the appeal failed."',
+  ],
+  titan:[
+    '"...CRUSHED. ...CRUSHED YOU. ...AGAIN."',
+    '"...SAME. ...SAME ONE."',
+    '"...DEAD. ...NOT DEAD. ...HOW."',
+    '"...COME BACK. ...CRUSH BACK."',
+    '"...AGAIN. ...AGAIN. ...AGAIN."',
+  ],
+  tyrant:[
+    '"Back in MY hall. Did you forget what happens here?"',
+    '"You died here. My floor drank it. Welcome home."',
+    '"I keep your dust. It is mine. You are mine, when you come back."',
+    '"Same fool. Same death waits. I am patient."',
+    '"Mine. ...still mine. ...you again does not change that."',
+  ],
+  demon:[
+    '"You burned for almost a thousand years last time. I am counting."',
+    '"Back? Good. The flames missed you. ...the chains missed you."',
+    '"I have rehearsed your screaming. ...do try a new note this time."',
+    '"Your soul was tasty. Bring it again."',
+    '"Champions all come back. I have learned to recognise preheated meat."',
+  ],
+  lich:[
+    '"You died on page fourteen of my notes. ...do try to make it further this round."',
+    '"Same student. Same syllabus. ...the test is unchanged."',
+    '"I have kept your body in the library. ...as a footnote."',
+    '"You came back. Excellent. The case study needed more data."',
+    '"I am beginning to think you are auditing the course."',
+  ],
+  flameknight:[
+    '"You died for nothing here. ...I died for nothing, too. We have that."',
+    '"Back? The kingdom did not ask you to come. ...it did not ask me to refuse."',
+    '"Ash to ash, hero. ...this is the second ash."',
+    '"Same fire. Same fool. ...alright. Begin."',
+    '"I refused once. ...you should learn to refuse, too."',
+  ],
+  warden:[
+    '"Champion. ...the door is unchanged. ...you are unchanged."',
+    '"You died at this threshold. I did not move. I will not move now."',
+    '"The keeper does not ask why you come back. The keeper only keeps."',
+    '"Try the door, champion. ...try again. ...the door is the same door."',
+    '"Same champion. Same door. Same answer. ...try."',
+  ],
+  dragon:[
+    '"You die. You return. ...the chain does not slacken either way."',
+    '"Every time you reach me, you think you are the first. ...you are not even the first YOU."',
+    '"I have killed you specifically before. ...you do not look any wiser."',
+    '"The chained do not forget who put us here. Or who came back to look."',
+    '"Welcome back. The smoke remembers your name."',
+  ],
+  king:[
+    '"...you. ...I killed you. ...I think I killed you. ...did I."',
+    '"...back. ...back. ...what was I doing. ...what were you doing."',
+    '"...you died here. ...sit. ...no. ...do not sit."',
+    '"...I am tired. ...you keep dying and coming back. ...stop, please."',
+    '"...same one. ...same one. ...the throne is heavier each time."',
+  ],
+  devourer:[
+    '"...you came back. ...you keep coming back. ...how nice."',
+    '"...I ate you last time. ...you are still around. ...there must be more of you somewhere."',
+    '"...closer. I have been so quiet. ...you have been so loud."',
+    '"...I remember the taste. ...come back to it."',
+    '"...you keep finding me anyway. ...I love that. ...I think I love that."',
+  ],
+  remembered:[
+    '"Oh. ...you died last time. ...you have my walk. You died with my walk."',
+    '"Back. ...you have my smile too, now. The dying one."',
+    '"...you. ...you again. ...I remember being you. I remember dying."',
+    '"We are getting tired, you and I. ...neither of us stops, though."',
+    '"Same champion. Same mistake. ...same me, watching."',
+  ],
+};
 function bossAwareLine(key){
   const p=G.player; if(!p) return '';
   const r=loadRecords(); const bd=(r.bossDeaths&&r.bossDeaths[key])||0;
   const wrap=(cls,t)=>`<p class="${cls}" style="font-size:11px;line-height:1.7;margin-bottom:8px">${t}</p>`;
-  // Prior-death recognition wins over arrival-state — being remembered is the stronger beat.
-  if(bd>=2) return wrap('shout-purple','It regards you the way you regard a door you have already walked through. "You. Again. We both know how this goes."');
-  if(key==='warden'){
-    if(heatTier()>=4) return wrap('shout-red','Steam screams off your armour as you near it. The Warden\'s head turns, slow and deliberate. "You come carrying the Furnace itself. Good. It will be quicker for both of us."');
-    if(G.heat<=8) return wrap('shout','"You came cold." It sounds, almost, disappointed. "The others ran hot. They burned out before the door. You... you might make me move."');
+  let out='';
+  // Prior-death taunt — fires for ANY boss the player has died to (bd>=1). Random of 5 per boss.
+  if(bd>=1 && BOSS_TAUNT_DEAD[key]){
+    const pool=BOSS_TAUNT_DEAD[key];
+    out += wrap('shout-purple', pool[Math.floor(Math.random()*pool.length)]);
   }
-  if(key==='remembered' && miasmaActive() && miasmaTier()>=4) return wrap('shout-purple','"You are mostly cold now. Good. There is so much less of you to argue with this time."');
-  if((key==='king'||key==='dragon'||key==='devourer') && p.memory && p.memory.path && p.memory.path.length>=3) return wrap('shout-red','It sees what you have been eating on the way down. It goes very still. "...oh. You are doing it on purpose this time."');
-  if(key==='devourer' && (G.debt||0)>=60) return wrap('shout-purple','"You owe so much already. Borrowing against a future you will not be allowed to keep." It almost sounds kind.');
-  return '';
+  // Arrival-state lines — STACK with the taunt above when both apply. Named bosses get extra
+  // recognition for HOW the player arrived (heat, miasma, devour path, debt).
+  if(key==='warden'){
+    if(heatTier()>=4) out += wrap('shout-red','Steam screams off your armour as you near it. The Warden\'s head turns, slow and deliberate. "You come carrying the Furnace itself. Good. It will be quicker for both of us."');
+    else if(G.heat<=8) out += wrap('shout','"You came cold." It sounds, almost, disappointed. "The others ran hot. They burned out before the door. You... you might make me move."');
+  }
+  if(key==='remembered' && miasmaActive() && miasmaTier()>=4) out += wrap('shout-purple','"You are mostly cold now. Good. There is so much less of you to argue with this time."');
+  if((key==='king'||key==='dragon'||key==='devourer') && p.memory && p.memory.path && p.memory.path.length>=3) out += wrap('shout-red','It sees what you have been eating on the way down. It goes very still. "...oh. You are doing it on purpose this time."');
+  if(key==='devourer' && (G.debt||0)>=60) out += wrap('shout-purple','"You owe so much already. Borrowing against a future you will not be allowed to keep." It almost sounds kind.');
+  return out;
 }
 function showBossIntro(key){ if(BOSS_BIO[key]===undefined||!BOSSES[key])return;
   // Per-run gate: every new run reintroduces every boss you face. The lines should be impossible to miss.
