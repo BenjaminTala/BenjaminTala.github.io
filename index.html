@@ -1513,6 +1513,164 @@ const BOSS_DEATHCRY={
   // flameknight BIO: "Asked to die for a kingdom that no longer existed, and refused." The refusal finally given up.
   flameknight:'"The kingdom asked. I said no. ...I said no for a long time. ...alright. ...alright now."',
 };
+// BOSS INTRO PROGRESSION — the cry a boss makes on entry changes by the player's CUMULATIVE
+// lore advancement across runs. Stage 0 is the existing first-meeting line; stages 1-6 escalate
+// with what the player has learned. bossCryFor(key) picks based on records milestones (kills,
+// deaths, throne reached, Devour revealed, Devourer killed, Pale killed). Paledevourer is
+// intentionally absent — its silence is the point; bossCryFor falls through to BOSS_CRY[''].
+const BOSS_CRY_PROGRESSION={
+  ogre:[
+    '"FRESH MEAT FOR THE WARLORD!"',
+    '"Back so soon? The meat keeps coming back warmer."',
+    '"You have walked past me. I do not like being walked past."',
+    '"...you smell different. Cleaner. Or sharper. I cannot decide."',
+    '"Something of the deep is on you. ...I would salute it, if I knew how."',
+    '"It is gone? You took the one I was afraid of? ...then I am the warlord of nothing."',
+    '"You are the meat that eats the room. ...I still try."',
+  ],
+  gobking:[
+    '"Kill it! Kill it for the King!"',
+    '"Again the door! Bar the door! ...you found us anyway."',
+    '"You went past my throne. The throne above. ...you found bigger thrones."',
+    '"My readers say a word lives in you. They do not say which word."',
+    '"You ate the Eater. ...the books did not have that page."',
+    '"The one below the cold is below no more. We have ALL just been promoted to nothing."',
+    '"I read what you are now. I do not have the words for it. I had words for it once."',
+  ],
+  spider:[
+    '"My children are so hungry..."',
+    '"...you again. You did not bring me food last time either."',
+    '"You came past me from above. ...did you see my children up there?"',
+    '"My babies smell what you smell of. ...they want to climb into you."',
+    '"You took the Devourer down. ...you ate something larger than my whole brood. Larger than me."',
+    '"The cold below ate my eggs. ...you ate the cold. ...there are no eggs."',
+    '"My children have stopped asking after me. ...they smell you instead."',
+  ],
+  necro:[
+    '"You will serve me in death."',
+    '"Court is in session. ...you have stood before me before. ...you stand again."',
+    '"You walked past the kingdom of the dead. ...the kings down there did not announce you."',
+    '"The dead in my court will not look at you. ...they say you smell of the next thing."',
+    '"You devoured the Devourer. ...there is no court large enough for that."',
+    '"The one we whispered about in court has been silenced. ...by you. The court now whispers about YOU."',
+    '"...my dead have started reading you. Reading, not raising. ...something has changed."',
+  ],
+  titan:[
+    '"...INTRUDER. CRUSH. CRUSH."',
+    '"...INTRUDER. ...INTRUDER AGAIN. ...SAME WORD."',
+    '"...YOU GO PAST. ...PAST. ...NEW WORD."',
+    '"...DIFFERENT. ...INTRUDER DIFFERENT. ...NO WORD."',
+    '"...EATER. EATER COMES. ...EATER WAS. ...EATER WAS YOU."',
+    '"...PALE. ...PALE GONE. ...HANDS THAT MADE ME ARE COLDER THAN THE PALE NOW."',
+    '"...CRUSH. ...CRUSH WHAT. ...NO WORD FOR YOU. ...NO WORD."',
+  ],
+  tyrant:[
+    '"This crypt is MINE, little champion."',
+    '"You came back to my hall. ...you do not learn."',
+    '"You have stood above me. ...above MY hall. ...there is no above."',
+    '"Something has touched you that I do not own. ...I do not like it."',
+    '"You ate the Eater. ...the title was MINE. The Eater was MINE. You took both."',
+    '"The thing I was afraid to acknowledge owned is gone. ...I own nothing again."',
+    '"Mine. ...still mine. ...less mine each time."',
+  ],
+  demon:[
+    '"Your soul will burn for a thousand years."',
+    '"You again. I have lit a small fire here, for you specifically. Do you like it."',
+    '"You stood above the King. ...the King I outlived. ...the King we both outlived now."',
+    '"Something other than me is burning in you. ...I am jealous of it."',
+    '"The Devourer is gone. ...the chains are mine alone now. ...if there are still chains."',
+    '"The Pale walked through my chains and you ate the Pale. ...the chains are smoke. I am smoke."',
+    '"Burn for a thousand years. ...you will burn for longer. ...I have done the math."',
+  ],
+  lich:[
+    '"Flesh is such a fleeting indulgence."',
+    '"You have come up the syllabus again. ...do try to take notes this time."',
+    '"You read further down the bibliography than I have ever assigned. ...what was the citation."',
+    '"Your soul has a footnote on it now. ...written in a hand I do not recognise."',
+    '"The eater of futures was a thesis I was working on. ...you closed the journal."',
+    '"The Pale was my unfinished sentence. ...you ended it for me. ...badly. ...elegantly. I cannot decide."',
+    '"There is a paper I will not finish. ...you are now the paper."',
+  ],
+  flameknight:[
+    '"Ash to ash, hero."',
+    '"...the kingdom is still gone. ...you are still here. ...we have an agreement, then."',
+    '"You stood at the throne. ...did the kingdom answer? ...no. ...thought not."',
+    '"You have a new oath on you. ...I cannot read it. I can taste it."',
+    '"The Devourer is gone. ...the kingdom I would not die for has buried its last enemy. ...for me. By you."',
+    '"The Pale is dead. ...the cold has nothing to refuse me anymore. ...alright. ...alright."',
+    '"Ash to ash. ...you are also ash. ...we are the same fire, briefly."',
+  ],
+  warden:[
+    '"The door is mine to keep. The keeper does not ask why. The champion will try the door. The champion always tries the door."',
+    '"Champion. ...the door. ...try it again."',
+    '"You opened the door I keep. You went through. ...what was on the other side."',
+    '"Something other than a champion is in you now. ...I keep the door against THAT, too."',
+    '"The Devourer is sealed. ...by you. ...the door is for nothing now."',
+    '"The Pale is gone. ...what does the door keep, if everything beneath it is gone."',
+    '"The door. ...the door. ...you. ...the door."',
+  ],
+  dragon:[
+    '"Every time you reach me, you think you are the first."',
+    '"And here is the version of you that knows me. ...I prefer the first version."',
+    '"You have stood at the throne. ...the throne above mine. ...I once stood there too."',
+    '"Something I cannot look at directly is in you. ...I see what the dragon refused to see."',
+    '"The Devourer is gone. ...I was its first chain. ...the first chain is the last to know it has lost."',
+    '"The Pale. ...there is no first or last. ...there is only what you carry up."',
+    '"Every time you reach me, I am a smaller chain."',
+  ],
+  king:[
+    '"...if you would just. No. If you. ...what was I. Sit down. No &mdash; do not sit down, do not ever &mdash; ...who are you again."',
+    '"...you. ...you again. ...sit. ...no. ...no, do not sit."',
+    '"...you went past me. ...into the Below. ...what did the Below give you. ...it gives me nothing."',
+    '"...you carry the Devour. ...the Devour. ...I was holding the door against it. ...you brought it past me."',
+    '"...you ate the thing I was sitting for. ...the throne is just a chair now. ...the chair is just wood."',
+    '"...the Pale. ...the Pale is finished. ...I can stand up. ...I do not remember how. ...I do not want to."',
+    '"...sit. ...no. ...sit. ...no. ...what was the question."',
+  ],
+  devourer:[
+    '"...closer. I have been so quiet. ...come closer."',
+    '"...you came closer. ...you keep coming closer. ...I like it. I think."',
+    '"...you went above. ...you came back. ...nobody comes back."',
+    '"...you have a piece of me in you already. ...come consume the rest. ...it is more polite that way."',
+    '"...you ate me, once. ...you keep finding me anyway. ...how flattering."',
+    '"...the Pale is gone. ...there is no quiet anymore. ...I am the only quiet left."',
+    '"...closer. I have been so quiet. ...you have been louder than me, now. I had forgotten what that sounded like."',
+  ],
+  remembered:[
+    '"Oh. It is you. It is always you. You have my walk, you know. You never could see it."',
+    '"Oh. It is you AGAIN. ...same walk. ...still cannot see it."',
+    '"You went past me. ...into the deep. ...I do not envy you, even now."',
+    '"You taste of the word that changed. ...I would have warned you, if I were not you."',
+    '"You ate the Eater. ...I knew you would. ...I tried to do the same. ...I came up short."',
+    '"The Pale. ...you killed the Pale. ...one of us got there. ...one of us was you."',
+    '"...we are getting tired. ...one of us is going home soon. ...home as in, gone."',
+  ],
+};
+function bossCryFor(key){
+  // Falls through to BOSS_CRY[key] for any boss not in BOSS_CRY_PROGRESSION (e.g. paledevourer,
+  // whose silence is intentional). Returns one of 7 progression entries based on cumulative
+  // milestones in records. Stage tiers are CUMULATIVE — once the player has hit a milestone
+  // (Devour revealed, Devourer killed, Pale slain), every boss they fight starts at that stage
+  // or higher. Stage 6 is an alternate post-Pale variant that rolls ~35% of meetings.
+  const prog=BOSS_CRY_PROGRESSION[key]; if(!prog||!prog.length) return BOSS_CRY[key]||'';
+  let r={}; try{ r=loadRecords(); }catch(e){}
+  const kills=(r.bossKills&&r.bossKills[key])||0;
+  const deaths=(r.bossDeaths&&r.bossDeaths[key])||0;
+  const wins=r.wins||0;
+  const devourRevealed=!!r.devourRevealed;
+  const devourerKills=(r.bossKills&&r.bossKills.devourer)||0;
+  const paleKills=(r.bossKills&&r.bossKills.paledevourer)||0;
+  let stage=0;
+  if(kills>=1||deaths>=1) stage=1;
+  if(wins>=1) stage=Math.max(stage,2);
+  if(devourRevealed) stage=Math.max(stage,3);
+  if(devourerKills>=1) stage=Math.max(stage,4);
+  if(paleKills>=1){
+    stage=Math.max(stage,5);
+    if(prog.length>=7 && chance(35)) stage=6;
+  }
+  return prog[Math.min(stage, prog.length-1)] || prog[0] || '';
+}
 
 /* ============================================================
    CLASSES
@@ -2589,7 +2747,8 @@ function showBossIntro(key){ if(BOSS_BIO[key]===undefined||!BOSSES[key])return;
   G._seenBoss=G._seenBoss||{}; if(G._seenBoss[key])return; G._seenBoss[key]=1;
   const aware=bossAwareLine(key);
   // Omit the cry paragraph if BOSS_CRY is empty so silence reads as silence, not as a layout glitch.
-  const cry=BOSS_CRY[key]?`<p class="shout-red" style="font-size:12px;line-height:1.8">${BOSS_CRY[key]}</p>`:'';
+  const cryText=bossCryFor(key);
+  const cry=cryText?`<p class="shout-red" style="font-size:12px;line-height:1.8">${cryText}</p>`:'';
   const bio=BOSS_BIO[key]?`<p style="font-size:10px;line-height:1.9;color:#cfcbef;margin-top:10px">${BOSS_BIO[key]}</p>`:'';
   showInfo({title:BOSSES[key].name,body:aware+cry+bio}); }
 // Persisted per-boss death tally — feeds bossAwareLine's "you again" recognition.
@@ -3247,6 +3406,10 @@ function pickFragment(fam, choice){
 function revealDevour(){
   const p=G.player; if(!p||!p.memory||!p.memory.devour||p.memory.revealed) return;
   p.memory.revealed=true; memoir().devourRevealed=true;
+  // Cross-run flag — BOSS_CRY_PROGRESSION stage 3 reads this so every future boss meeting (in
+  // any future run) knows the word has changed for this player. Per-run memoir flag stays for
+  // death-screen epitaphs that fire on the SAME run as the reveal.
+  try{ const r=loadRecords(); r.devourRevealed=1; localStorage.setItem('crypt_records',JSON.stringify(r)); }catch(e){}
   // Only rename the base name. Evolutions (Caustic Flame, etc.) keep their evolution names.
   if(p.memory.name==='Harvest Essence') p.memory.name='Devour';
   if(p.memory.desc==='Strike a weakened enemy and harvest its essence.')
@@ -4805,7 +4968,7 @@ function scaleEnemy(unit,depth){
 }
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-10); const dm=debtMul();
   const hpF=(1+e*0.07+e*e*0.0058)*dm, atkF=(1+e*0.05+e*e*0.0033)*dm;
-  const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:BOSS_CRY[key],_key:key});
+  const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:bossCryFor(key),_key:key});
   // FURNACE BOSSES feed on Heat. Walk in hot and they hit harder, hold more HP, ignite you.
   if(heatActive() && heatTier()>=3 && (key==='warden'||key==='dragon')){
     const m=1+(heatTier()-2)*0.20;
