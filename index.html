@@ -673,9 +673,12 @@
   .sprite-enemy.spr-flameknight {max-height:104px}
   .sprite-enemy.spr-ogrewarlord {max-height:128px}
   .sprite-enemy.spr-broodmother {max-height:130px;max-width:180px}
+  /* fourth batch: dedicated sprites for previously-misnamed enemies */
+  .sprite-enemy.spr-stonegolem  {max-height:108px}
   /* Bosses are 1.5x and override per-key for those that need extra mass */
   .sprite-enemy.boss              {max-height:150px;max-width:200px}
   .sprite-enemy.boss.spr-golem    {max-height:160px}
+  .sprite-enemy.boss.spr-stonegolem{max-height:170px}
   .sprite-enemy.boss.spr-dragon   {max-height:160px;max-width:220px}
   .sprite-enemy.boss.spr-demonlord{max-height:170px}
   /* In room-preview cells they shrink uniformly so the row line up */
@@ -780,12 +783,15 @@
   .iicon.wpn.melee2{background-position:-24px -24px}
   .iicon.wpn.magic {background-position:-72px -24px}
   .iicon.wpn.magic2{background-position:-96px -24px}
-  .iicon.wpn.ranged{background-position:-120px 0}
+  /* Ranged weapons get a DEDICATED bow icon — the wpns.png cell at -120,0 was a sword,
+     which made every Recurve / Longbow / Crossbow look like a melee weapon. Override the
+     background-image (not just the position) so ranged weapons actually look like bows. */
+  .iicon.wpn.ranged{background-image:url('assets/items/bow.png');background-position:0 0;background-size:24px 24px}
   .iicon.lg.wpn.melee {background-position:0 0}
   .iicon.lg.wpn.melee2{background-position:-32px -32px}
   .iicon.lg.wpn.magic {background-position:-96px -32px}
   .iicon.lg.wpn.magic2{background-position:-128px -32px}
-  .iicon.lg.wpn.ranged{background-position:-160px 0}
+  .iicon.lg.wpn.ranged{background-image:url('assets/items/bow.png');background-position:0 0;background-size:32px 32px}
   /* armor cells: 10 cols x 4 rows. SLOT picks the row (head=0, chest=1, boots=2,
      legs=3); MATERIAL picks the column (light=col0, heavy=col2, robe=col6). */
   .iicon.arm.a-head-light {background-position:0 0}
@@ -1319,7 +1325,7 @@ function setMusicForScreen(){
 const ENEMY_SPRITE={
   'Giant Rat':'imp','Goblin':'goblin','Cave Bat':'bloodbat','Slime':'slime',
   'Skeleton':'zombie','Ghoul':'zombie',
-  'Venomspitter':'sahagin','Stone Golem':'golem',
+  'Venomspitter':'sahagin','Stone Golem':'stonegolem',
   'Wraith':'ghost',
   'MIMIC':'slime','Treasure Goblin':'goblin',
   // hand-authored pixel-art sprites added in the sprite revamp
@@ -1332,7 +1338,7 @@ const ENEMY_SPRITE={
 };
 const BOSS_SPRITE={
   'GOBLIN KING':'goblin',
-  'THE NECROMANCER':'darkacolyte','STONE TITAN':'golem','CAVE TYRANT':'golem',
+  'THE NECROMANCER':'darkacolyte','STONE TITAN':'stonegolem','CAVE TYRANT':'stonegolem',
   'DEMON LORD':'demonlord','THE LICH':'darkacolyte',
   'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'demonlord','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
   'THE THOUSANDTH CHAMPION':'thousandth','THE PALE DEVOURER':'paledevourer',
@@ -3873,9 +3879,10 @@ function pickEcho(depth){ const pool=G._echoPool||[]; if(!pool.length)return nul
 function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoom(); } discoverLore('l7');
   const cls=CLASSES[ec.cls]?CLASSES[ec.cls].name:'CHAMPION';
   // Echo sprite was the player's own class, greyscaled — which read as "a poor copy of my
-  // character" instead of a wraith. The ghost monster sprite is what a fallen champion actually
-  // looks like in this dark, and the purple tint matches the panel's mourning palette.
-  const sprite=`<img class="ev-sprite tint-shadow" src="assets/monsters/ghost.png" alt="A fallen champion" draggable="false" style="filter:brightness(.55) drop-shadow(0 0 12px rgba(140,110,200,.6));max-height:120px">`;
+  // character" instead of a wraith. Now uses a dedicated `fallenchampion.png` — a ghostly
+  // knight kneeling beside a grave with their sword driven into the ground. It is the
+  // image of the thing it represents.
+  const sprite=`<img class="ev-sprite" src="assets/monsters/fallenchampion.png" alt="A fallen champion" draggable="false" style="filter:drop-shadow(0 0 12px rgba(160,180,220,.55));max-height:128px">`;
   const gearTxt=ec.item?`${RARITY[ec.item.rarity]?'<span class="'+RARITY[ec.item.rarity].cls+'">'+ec.item.name+'</span>':ec.item.name} Lv${ec.item.ilvl}`:'rusted scraps';
   if(G.room.outcome){
     app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
