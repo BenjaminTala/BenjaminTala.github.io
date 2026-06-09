@@ -321,6 +321,37 @@
   .stance-row .st-btn.st-locked{opacity:.4;cursor:not-allowed;filter:grayscale(.6)}
   .stance-row .st-btn.st-locked:hover{border-color:var(--line);color:inherit}
   .st-lock{display:inline-block;margin-left:5px;padding:0 4px;border:1px solid currentColor;border-radius:6px;font-size:7px;line-height:1.1;letter-spacing:0;opacity:.8;vertical-align:middle}
+  /* REVEAL STAGE — full-viewport ceremony overlay for build moments the game used to whisper.
+     Devour evolutions, the Devour reveal, and Affinity tier-ups all run through stageReveal()
+     now: a 2.8s takeover that pauses for the player to read (and to screenshot) before the
+     usual build popup follows for the players who want detail. Pointer-events:none so combat
+     state behind isn't accidentally interactable during the stage. */
+  #reveal-stage{position:fixed;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;z-index:200;opacity:0}
+  #reveal-stage.on{opacity:1;animation:revealStage 2.8s ease-out forwards}
+  #reveal-stage::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(12,8,24,.55) 0%,rgba(0,0,0,.85) 100%);pointer-events:none}
+  @keyframes revealStage{
+    0%   {opacity:0; transform:scale(.88)}
+    10%  {opacity:1; transform:scale(1)}
+    88%  {opacity:1; transform:scale(1)}
+    100% {opacity:0; transform:scale(1.04)}
+  }
+  .reveal-card{position:relative;text-align:center;background:rgba(8,8,16,.94);border:3px solid var(--purple);padding:30px 56px;
+    box-shadow:0 0 60px rgba(192,108,255,.45), 0 0 0 4px #000, inset 0 0 40px rgba(192,108,255,.08);
+    min-width:320px;max-width:640px;animation:revealCardPulse 1.4s ease-in-out infinite}
+  .reveal-card.reveal-red {border-color:var(--red); box-shadow:0 0 60px rgba(255,124,80,.45), 0 0 0 4px #000, inset 0 0 40px rgba(255,124,80,.08)}
+  .reveal-card.reveal-amber{border-color:var(--amber); box-shadow:0 0 60px rgba(255,207,77,.45), 0 0 0 4px #000, inset 0 0 40px rgba(255,207,77,.08)}
+  .reveal-card.reveal-teal {border-color:var(--teal); box-shadow:0 0 60px rgba(92,255,208,.45), 0 0 0 4px #000, inset 0 0 40px rgba(92,255,208,.08)}
+  .reveal-card.reveal-blue {border-color:var(--blue); box-shadow:0 0 60px rgba(108,184,255,.45), 0 0 0 4px #000, inset 0 0 40px rgba(108,184,255,.08)}
+  @keyframes revealCardPulse{0%,100%{filter:brightness(1)} 50%{filter:brightness(1.18)}}
+  .reveal-kicker{font-size:9px;letter-spacing:4px;color:var(--dim);margin-bottom:14px;text-transform:uppercase}
+  .reveal-title{font-size:30px;letter-spacing:2.5px;color:var(--purple);margin-bottom:14px;text-shadow:0 0 16px currentColor;font-family:inherit;line-height:1.1}
+  .reveal-red  .reveal-title{color:var(--red)}
+  .reveal-amber .reveal-title{color:var(--amber)}
+  .reveal-teal .reveal-title{color:var(--teal)}
+  .reveal-blue .reveal-title{color:var(--blue)}
+  .reveal-formula{font-size:11px;letter-spacing:1.4px;color:var(--amber);margin-bottom:14px}
+  .reveal-body{font-size:10px;line-height:1.9;color:#cfcbef}
+  @media (max-width:640px){ .reveal-card{padding:22px 30px;min-width:240px} .reveal-title{font-size:22px} }
   /* CRIT / heavy-hit screen-shake — wrapped on #scene only, so HUD elements
      outside the battle pane don't jitter.  Tiny + brief (240ms / 5 frames). */
   #scene.crit-shake{animation:critShake .26s cubic-bezier(.36,.07,.19,.97) 1}
@@ -2752,6 +2783,21 @@ function unlockAffinity(p,k,t){
   const roman=['','I','II','III'][t];
   const title=AFF_META[k].name+' '+roman+(t===3?' &mdash; CAPSTONE':'');
   if(G.screen==='battle') blog(`${AFF_META[k].name} ${roman} — you feel the path open.`,'lvl'); else G._affMsg=msg;
+  // STAGE — the build identity audibly clicking in. The capstone (T3) is louder than T1/T2:
+  // longer hold, "CAPSTONE" kicker. The path-tier name (Rending Edge / Trickster / Warden)
+  // shows above the AFF_TIER_TITLE flavour so the player gets the brand name they earned.
+  const capstone = (t===3);
+  const stageColor = {w:'red', g:'teal', v:'blue'}[k];
+  // Extract the bolded path-name from the flavour string (it's the prefix before " — ")
+  const pathName = (msg.split('—')[0]||'').trim();
+  stageReveal({
+    kicker: AFF_META[k].name+' '+roman + (capstone?' &mdash; CAPSTONE':''),
+    title: pathName || (AFF_META[k].name+' '+roman),
+    body: msg,
+    color: stageColor,
+    duration: capstone?3400:2400,
+    sfx: capstone?'crit':'levelup',
+  });
   // Build popup — players should see and feel every tier unlock.  The flavour line
   // (msg) carries the meaning; the old "you have N points, next tier at X" tracker
   // read like a progress bar in a dev console, so it's gone — the path deepening
@@ -3139,8 +3185,29 @@ function showFragmentChoice(){
   showInfo({title, body});
 }
 function pickFragment(fam, choice){
-  const p=G.player; devourMutate(p, fam, choice);
+  const p=G.player;
+  const beforeName=p.memory&&p.memory.name;
+  devourMutate(p, fam, choice);
   const revealed=p.memory&&p.memory.revealed;
+  // STAGE — only for EVOLVE picks that produced a new named combo (the build moment that
+  // used to land as a build popup). Empower and Replace keep the popup-only flow because
+  // they're refinements, not transformations.
+  const evolved = choice==='evolve' && p.memory && p.memory.name && p.memory.name!==beforeName && p.memory.name!=='Harvest Essence' && p.memory.name!=='Devour';
+  if(evolved){
+    // Derive the family formula from the last entries of the path.
+    const path=p.memory.path||[]; const counts={};
+    path.forEach(f=>counts[f]=(counts[f]||0)+1);
+    const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,2);
+    const formula = top.map(([f,n])=>`${f.toUpperCase()} &times;${n}`).join(' + ') + ' &rarr; ' + p.memory.name.toUpperCase();
+    stageReveal({
+      kicker: revealed?'DEVOUR EVOLVES':'ESSENCE GATHERS',
+      title: p.memory.name,
+      formula,
+      body: p.memory.desc,
+      color: 'purple',
+      sfx: 'crit',
+    });
+  }
   // Honest vs hidden language.
   popupBuild((revealed?'DEVOUR EVOLVES':'ESSENCE GATHERS')+' &mdash; '+p.memory.name,
     `<p class="shout-purple" style="font-size:11px;line-height:1.7">${p.memory.desc}</p>`+
@@ -3160,6 +3227,16 @@ function revealDevour(){
   if(p.memory.name==='Harvest Essence') p.memory.name='Devour';
   if(p.memory.desc==='Strike a weakened enemy and harvest its essence.')
     p.memory.desc='Heavy single strike. If this kills, you consume a FRAGMENT and the skill mutates.';
+  // STAGE — the game's thesis moment used to land as a build popup. Now it stops the world.
+  stageReveal({
+    kicker: 'THE WORD CHANGES',
+    title: 'HARVEST ESSENCE &rarr; DEVOUR',
+    body: 'You were never harvesting anything. You were never collecting power. <b>The word was honest the whole time.</b>',
+    color: 'red',
+    duration: 3600,   // longer than the others — this is the once-per-run reveal
+    sfx: 'crit',
+  });
+  // Detail popup still queues for the player who wants to re-read after the stage.
   popupBuild('THE WORD CHANGES',
     `<p class="shout-red" style="font-size:12px;line-height:1.7">&#127744; You read the skill tooltip again. It does not say what it used to say.</p>`+
     `<p class="evtext" style="font-size:10px;margin-top:10px"><b>HARVEST ESSENCE</b> &rarr; <b class="red" style="font-size:13px">DEVOUR</b></p>`+
@@ -6571,9 +6648,44 @@ function flashBuild(label, sub, kind){
   if(G.battle && !G.battle.over){ (G.battle._buildFlash=G.battle._buildFlash||[]).push({label, sub:sub||'', kind:kind||'level'}); }
 }
 function drainBuildQueue(){
+  if(G._stageHold) return;   // wait for the reveal stage to finish before the detail popup
   if(!G._buildQueue || !G._buildQueue.length) return;
   const next=G._buildQueue.shift();
   showInfo(next);
+}
+// REVEAL STAGE — full-viewport ceremony for moments the game used to whisper. 2.8s overlay,
+// no click required, the modal-queue waits its turn so popupBuild()'s detail card still fires
+// for the players who want to read the spec. Used for Devour evolutions, the Devour reveal,
+// and Affinity tier-ups — three places where the build identity audibly clicks into place
+// and the old presentation buried the moment in a build popup or a damage float.
+function stageReveal(opts){
+  opts=opts||{};
+  const dur=opts.duration||2800;
+  const color=opts.color||'purple';
+  let el=document.getElementById('reveal-stage');
+  if(!el){ el=document.createElement('div'); el.id='reveal-stage'; document.body.appendChild(el); }
+  el.innerHTML=`<div class="reveal-card reveal-${color}">
+    ${opts.kicker?`<div class="reveal-kicker">${opts.kicker}</div>`:''}
+    <div class="reveal-title">${opts.title||''}</div>
+    ${opts.formula?`<div class="reveal-formula">${opts.formula}</div>`:''}
+    ${opts.body?`<div class="reveal-body">${opts.body}</div>`:''}
+  </div>`;
+  // restart the animation on re-fire by toggling the class
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  try{ SFX.play(opts.sfx||'levelup'); }catch(e){}
+  // Block the build queue from draining over the stage — drainBuildQueue checks _stageHold.
+  G._stageHold=1;
+  if(el._timer) clearTimeout(el._timer);
+  el._timer=setTimeout(()=>{
+    el.classList.remove('on'); el.innerHTML='';
+    G._stageHold=0;
+    // After the stage clears, the queued detail popup (if any) gets its turn.
+    if(G._buildQueue && G._buildQueue.length){
+      const modal=document.getElementById('info-modal');
+      const modalOpen=modal && !modal.classList.contains('hidden');
+      if(!modalOpen && (!G.battle || G.battle.over)) drainBuildQueue();
+    }
+  }, dur);
 }
 function relicNoteFor(name){const r=RELICS.find(x=>x.name===name);return r?r.note:'';}
 function synergyDescFor(name){const s=SYNERGIES.find(x=>x.name===name);return s?s.desc:'';}
