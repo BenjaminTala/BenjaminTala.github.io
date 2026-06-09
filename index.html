@@ -1485,12 +1485,33 @@ const BOSS_CRY={
   paledevourer:'',
 };
 const BOSS_DEATHCRY={
+  // The "big six" — already characterised
   warden:'"...post abandoned. The keeper falls. Another keeper will be found. There is always another keeper."',
   dragon:'"...not yet. Not like this. Not again."',
   king:'"...take it. The weight. I cannot remember why I &mdash; just take it. I was going to. I was always going to get up in a &mdash;"',
   devourer:'"...oh. Was that all of me? ...so little, in the end."',
   remembered:'"...there. That is what I wanted. Go up. Carry me up. I will be the cold in your hands. See you soon. We always do."',
   paledevourer:'The thing does not fall &mdash; it simply stops. There is no last word. There is no last thought. Whatever it was, it had nothing to do with you. It was here before any of this. It was here before the cold.',
+  // Zone bosses — every line ties back to the boss's BOSS_BIO and BOSS_CRY. Each has its own
+  // distinct rhythm so back-to-back kills don't read as one author.
+  // ogre BIO: "chose this crypt over a soft death." His last word accepts that bargain.
+  ogre:'"...good. ...not soft. ...not a soft death after all."',
+  // gobking BIO: "last of his kin who could read." His kingdom dies with the last reading hand.
+  gobking:'"The words... tell them &mdash; ...there is no one left to tell. There is no one left to read."',
+  // spider BIO: "Her children are old enough to walk now." She dies still tending them.
+  spider:'"...go to them. Go to them now. There are so many of them. They will not understand that I am &mdash; not coming."',
+  // necro BIO: "Holds court over a parliament that no longer remembers being alive." The court adjourns the wrong way.
+  necro:'"The court will rise. ...the court will &mdash; rise. ...rise. ...I gave the order."',
+  // titan BIO: "Stone hauled into this shape by hands that have since forgotten how." A two-word vocabulary cracks at the symmetry.
+  titan:'"...CRUSH. ...CRUSHED. The same word. The same word for both of us."',
+  // tyrant BIO: "rules the dark by the simple right of being there longest." Denying that anything was taken from him.
+  tyrant:'"Mine. ...still mine. ...you cannot have what is already &mdash; ...mine."',
+  // demon BIO: "Brought down here in chains by a champion none remember. It outlived them."
+  demon:'"I outlived the one who chained me down here. ...I will outlive you. ...the chains will outlive us both."',
+  // lich BIO: "Studied immortality for so long it forgot to study mercy." The unfinished paper.
+  lich:'"There was a paper. ...I had a paper to finish. ...on mercy. I never got to mercy."',
+  // flameknight BIO: "Asked to die for a kingdom that no longer existed, and refused." The refusal finally given up.
+  flameknight:'"The kingdom asked. I said no. ...I said no for a long time. ...alright. ...alright now."',
 };
 
 /* ============================================================
@@ -6197,6 +6218,15 @@ function winBattle(){ const b=G.battle,p=G.player; b.over=true;
   addHeat(2+elites); addMiasma(3+elites);
   // Record every boss kill for the Saga tab's THE FALLEN section, ONCE per boss per fight.
   Object.keys(BOSSES).forEach(k=>{ if(b.enemies.some(e=>e.name===BOSSES[k].name)) noteBossKill(k); });
+  // Generic deathcry fallback — every boss that has a BOSS_DEATHCRY entry gets a crit-log line
+  // when it dies. The six "big" bosses (warden/dragon/king/devourer/remembered/paledevourer) have
+  // their own bespoke handlers below with extra side-effects (collapse, lore unlock, fragment
+  // grant); this loop fires for the OTHER nine zone bosses that previously died silently.
+  const _bigSix={warden:1,dragon:1,king:1,devourer:1,remembered:1,paledevourer:1};
+  Object.keys(BOSS_DEATHCRY).forEach(k=>{
+    if(_bigSix[k]) return;
+    if(BOSSES[k] && b.enemies.some(e=>e.name===BOSSES[k].name)) blog(BOSS_DEATHCRY[k],'crit');
+  });
   // Dragon Warden's death collapses the world into the cold
   if(!G.collapsed && b.enemies.some(e=>e.name===BOSSES.warden.name)){ G.collapsed=1; blog(BOSS_DEATHCRY.warden,'crit'); blog('The warmth dies with it. A cold older than fire floods in from below...','lvl'); discoverLore('l4'); discoverLore('l5'); G._pendingBossDeath='warden'; }
   // Devour can already have captured these bosses (via processDevourCast). Skip the legacy memory
