@@ -675,10 +675,14 @@
   .sprite-enemy.spr-broodmother {max-height:130px;max-width:180px}
   /* fourth batch: dedicated sprites for previously-misnamed enemies */
   .sprite-enemy.spr-stonegolem  {max-height:108px}
+  .sprite-enemy.spr-rat         {max-height:78px}
+  .sprite-enemy.spr-skeleton    {max-height:96px}
+  .sprite-enemy.spr-mimic       {max-height:88px}
   /* Bosses are 1.5x and override per-key for those that need extra mass */
   .sprite-enemy.boss              {max-height:150px;max-width:200px}
   .sprite-enemy.boss.spr-golem    {max-height:160px}
   .sprite-enemy.boss.spr-stonegolem{max-height:170px}
+  .sprite-enemy.boss.spr-gobking  {max-height:158px}
   .sprite-enemy.boss.spr-dragon   {max-height:160px;max-width:220px}
   .sprite-enemy.boss.spr-demonlord{max-height:170px}
   /* In room-preview cells they shrink uniformly so the row line up */
@@ -1323,11 +1327,11 @@ function setMusicForScreen(){
    SPRITES  —  PNG art mapping (fallback to ASCII <pre>)
    ============================================================ */
 const ENEMY_SPRITE={
-  'Giant Rat':'imp','Goblin':'goblin','Cave Bat':'bloodbat','Slime':'slime',
-  'Skeleton':'zombie','Ghoul':'zombie',
+  'Giant Rat':'rat','Goblin':'goblin','Cave Bat':'bloodbat','Slime':'slime',
+  'Skeleton':'skeleton','Ghoul':'zombie',
   'Venomspitter':'sahagin','Stone Golem':'stonegolem',
   'Wraith':'ghost',
-  'MIMIC':'slime','Treasure Goblin':'goblin',
+  'MIMIC':'mimic','Treasure Goblin':'goblin',
   // hand-authored pixel-art sprites added in the sprite revamp
   'Bloodbat':'bloodbat','Will-o-Wisp':'wisp','Plague Bearer':'plaguebearer',
   'Sand Wurm':'sandwurm','Gargoyle':'gargoyle','Frostbite':'frostbite',
@@ -1337,7 +1341,7 @@ const ENEMY_SPRITE={
   'Dark Acolyte':'darkacolyte','Cultist':'cultist',
 };
 const BOSS_SPRITE={
-  'GOBLIN KING':'goblin',
+  'GOBLIN KING':'gobking',
   'THE NECROMANCER':'darkacolyte','STONE TITAN':'stonegolem','CAVE TYRANT':'stonegolem',
   'DEMON LORD':'demonlord','THE LICH':'darkacolyte',
   'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'demonlord','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
