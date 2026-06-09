@@ -1488,13 +1488,13 @@ const CLASSES={
     ]},
   ranger:{name:'RANGER',color:'green',affinity:'WIND STEP',
     affinityText:'Never where the blow lands. Every miss becomes an opening.',
-    hp:130,mana:38,atk:14,def:4,dodge:32,crit:24,lifesteal:0,regen:8,
+    hp:130,mana:44,atk:14,def:4,dodge:32,crit:24,lifesteal:0,regen:8,
     weapon:{name:'Short Bow',dmg:7,type:'ranged'},
     sprite:"   o\n  /|)\n  /|\n  ( )\n  d b",
     skills:[
       {id:'aim',name:'Aimed Shot',cost:8,desc:'A patient shot for the soft places. It draws blood that lingers.'},
-      {id:'evade',name:'Evade',cost:6,desc:'You become hard to find. Their arrows meet nothing.'},
-      {id:'volley',name:'Volley',cost:12,aoe:true,desc:'A fan of arrows finds every one of them.'},
+      {id:'evade',name:'Evade',cost:6,desc:'You slip the line of fire and answer with a parting shot.'},
+      {id:'volley',name:'Volley',cost:12,aoe:true,desc:'A fan of arrows finds every one of them — each may fester.'},
     ]},
 };
 
@@ -1547,11 +1547,20 @@ function pickCounter(p){ if(!p)return {key:null,score:0};
     bloodless:Math.max(0,(p.lifesteal-15)/3),
     manasever:(p.cls==='mage'?4:0)+(p.flags.gearManaShield?3:0)+Math.max(0,(p.maxMana-100)/40),
     warded:(p.flags.toxic?3:0)+(p.flags.frostbrand?2:0)+(p.flags.sunder?2:0)+((p.weapon&&p.weapon.proc)?3:0)+(p.affTier.g>=2?2:0) };
-  let best=null,bv=0; for(const k in s){ if(s[k]>bv){bv=s[k];best=k;} } return {key:best,score:bv}; }
-function maybeCounter(e,bossier){ const c=pickCounter(G.player); if(!c.key)return;
+  // Track best AND second-best in a single pass so callers can ask for the runner-up axis when they
+  // want pressure without a perfect shutdown (see A3 elite-counter handling below).
+  let best=null,bv=0,second=null,sv=0;
+  for(const k in s){ if(s[k]>bv){ second=best; sv=bv; bv=s[k]; best=k; } else if(s[k]>sv){ sv=s[k]; second=k; } }
+  return {key:best,score:bv,key2:second,score2:sv}; }
+function maybeCounter(e,bossier){ let c=pickCounter(G.player); if(!c.key)return;
   let ch=clamp((c.score-3)*(bossier?4.5:3.5),0,bossier?38:25);
-  // Ascension 3 (The Crypt Sharpens): elites ALWAYS carry a counter to your build.
-  if(G.mods&&G.mods.eliteCounter && e.elite) ch=100;
+  // Ascension 3 (The Crypt Sharpens): elites ALWAYS carry a counter — but to the SECOND-strongest
+  // axis of your build, not the strongest. Pressure still ratchets up (every elite is a partial
+  // wall) without the double-punish of "100% chance x perfect-fit" that flattened A3+ win-rates.
+  if(G.mods&&G.mods.eliteCounter && e.elite){
+    if(c.key2){ c={key:c.key2,score:c.score2}; }
+    ch=100;
+  }
   if(!chance(ch))return;
   COUNTERS[c.key].apply(e); e.name=COUNTERS[c.key].prefix+e.name; e.counter=c.key; e.xp=(e.xp||6)+8; e.goldBonus=(e.goldBonus||0)+6; }
 
@@ -1773,7 +1782,7 @@ const OMENS=[
   {id:'endless',name:'Endless Night',note:'No room is ever empty. You bleed less between them, somehow.',effect:'Larger enemy packs, but you mend a little between rooms.',apply:g=>{g.packBonus=1;g.roamRegen=1;}},
   {id:'harvest',name:'Soul Harvest',note:'Every kill leaves more of itself behind. The forge will be hungry.',effect:'Kills yield more Soul Essence for the forge.',apply:g=>{g.essMul=(g.essMul||1)*1.7;}},
   {id:'hunter',name:"Hunter's Instinct",note:'Your hands learn quickly tonight. Each kind teaches you faster than the last.',effect:'The Slayer bonus against each enemy family kicks in twice as fast.',apply:g=>{g.slayFast=1;}},
-  {id:'resolve',name:"Champion's Resolve",note:'Your great breath comes back to you twice as fast as it should.',effect:'Your Ultimate charges twice as quickly.',apply:g=>{g.ultFast=1;}},
+  {id:'resolve',name:"Champion's Resolve",note:'Your great breath comes back a little quicker than it should.',effect:'Your Ultimate charges 50% faster.',apply:g=>{g.ultFast=1;}},
   {id:'fragile',name:'Fragile Might',note:'A bargain you cannot quite remember making. You hit harder. So do they.',effect:'You deal much more damage. You take more damage.',apply:g=>{g.pDmg*=1.4;g.eDmg*=1.25;}},
 ];
 
@@ -2196,6 +2205,154 @@ const EVENTS=[
      {label:'Take their gear',desc:'Loot the doomed',run:p=>{const w=makeItem(pick(SLOTS),p.cls,G.depth+1);equipItem(p,w);return `You pry loose their ${w.name} (Lv${w.ilvl}). Their eyes never leave you.`;}},
      {label:'End their suffering',desc:'Mercy, and a dark gift',run:p=>{p.essence+=26;const fam='Undead';p.slayer[fam]=(p.slayer[fam]||0)+2;return `You grant mercy. Their released soul steels you — +26 ${ESS} essence.`;}},
    ]},
+  // ===== ADDITIONAL EVENTS — retention pool expansion =====
+  // Zone 0 — Warm Crypt: low-stakes flavour, small numbers, the crypt feels still and observed.
+  {id:'pews',title:'THE EMPTY PEWS',zone:0,sprite:{src:'assets/monsters/cultist.png',tint:'tint-grey'},art:"  /---\\\n  |   |\n  |===|\n  |   |",
+   text:'A long room of stone pews faces an altar that has been smashed flat. Every pew is occupied by a folded cloak. No bodies. Just the cloaks.',
+   options:[
+     {label:'Search the cloaks',desc:'Pocket what was left behind',run:p=>{const g=10+rnd(14);p.gold+=g;return `Each cloak holds a few coins, carefully arranged. They were expecting to be back. (+${g} gold)`;}},
+     {label:'Sit in one of the pews',desc:'Listen to the room',run:p=>{p.maxHp+=6;heal(p,6);return 'You sit. The pew is warm. Whoever was here last was here long enough to leave a mark in the wood. (+6 max HP)';}},
+     {label:'Walk past',desc:'Disturb nothing',run:p=>'You walk the centre aisle without looking at the cloaks. The cloaks do not move. You are very sure they would have, if you had looked.'},
+   ]},
+  {id:'doorman',title:'THE DOORMAN',zone:0,sprite:{src:'assets/monsters/skeleton.png',tint:'tint-grey'},art:"  ,---,\n  ( - )\n  )===( \n   key \n  /| |\\",
+   text:'A skeleton in a porter\'s coat stands beside a door that has no wall around it. He bows to you as you arrive. He has been bowing for a long time.',
+   options:[
+     {label:'"What is the door for?"',desc:'Ask',run:p=>'He gestures, palm up, to the empty space the door is set in. "It used to lead somewhere. I open it anyway. It is what I do." He bows again. He waits.'},
+     {label:'Tip him (-10 gold)',desc:'Take what he offers',run:p=>{if(p.gold<10)return 'He bows to your empty hand. He does not stop bowing.';p.gold-=10;p.potions++;return 'The coin is gone before it touches him. He produces a small green vial from inside his coat and holds it out. He does not stand up from his bow until you take it. (+1 potion)';}},
+     {label:'Walk past',desc:'Leave him to his post',run:p=>'You walk past the door. The doorman bows lower as you go. He stays that way long after you have stopped looking back.'},
+   ]},
+  {id:'rooks',title:'THE TWO ROOKS',zone:0,sprite:{src:'assets/monsters/bloodbat.png',tint:'tint-shadow'},art:"  ^   ^\n ( ) ( )\n  v   v",
+   text:'Two black birds sit on a tomb watching you. Between them is a small flat stone with a single die on it.',
+   options:[
+     {label:'Roll the die',desc:'Small wager &middot; one way or the other',run:p=>{const r=rnd(6)+1;if(r<=2){const c=6+rnd(6);selfHurt(p,c,'hazard');return `A two. One of the birds opens its beak. The other does not. Something nips you in the dark (-${c} HP).`;}if(r<=4){const g=14+rnd(12);p.gold+=g;return `A four. Both birds tip their heads. A small coin pouch is where the die was. (+${g} gold)`;}p.crit+=4;return 'A six. Both birds bow. You feel a small sharpening behind your eyes that does not leave. (+4 CRIT)';}},
+     {label:'Take the die',desc:'Keep the wager closed',run:p=>{p.gold+=4;return 'You pocket the die. The birds do not stop you. The die is warm. There is a small coin underneath where it was. (+4 gold)';}},
+     {label:'Leave them to their game',desc:'Pass without rolling',run:p=>'You step around the tomb. As you pass, you hear the die clatter. You do not look back to see what they rolled it for.'},
+   ]},
+  {id:'wellboy',title:'THE BOY AT THE WELL',zone:0,sprite:{src:'assets/monsters/child.png',tint:'tint-grey'},art:"   o\n  /|\\\n  /=\\\n  |.|",
+   text:'A boy sits on the lip of a dry well, kicking his heels. He raises a hand to you in the small, formal wave a child uses for a stranger.',
+   options:[
+     {label:'"Are you alone down here?"',desc:'Ask',run:p=>'"My da is fetching water." He looks down into the dry well. "He has been a while." He kicks his heels again. He does not seem worried. That is the part that stays with you.'},
+     {label:'Drop a coin in (-5 gold)',desc:'Make a wish',run:p=>{if(p.gold<5)return 'He watches your empty fingers go over the lip. He nods, like he understands. "Next time, then."';p.gold-=5;heal(p,Math.round(p.maxHp*0.15));return 'You drop the coin. It does not make a sound landing. The boy smiles at you for the first time. Something in your chest loosens. (heal)';}},
+     {label:'Lift him down and walk on',desc:'Leave the well alone',run:p=>'You go to lift him. He is not there to lift. He waves at you again, from where he is still sitting on the lip, and you walk on.'},
+   ]},
+  // Zone 1 — Furnace: heat-themed, fire as lock/warning, the dragon under everything.
+  {id:'bellman',title:'THE BELL THAT WILL NOT RING',zone:1,sprite:{src:'assets/monsters/flameknight.png',tint:'tint-amber'},art:"   /-\\\n  |   |\n  | o |\n   \\-/\n    |",
+   text:'A great brass bell hangs at the end of the corridor. A man in scorched armour is pulling on the rope. The bell does not move. He looks at you the way a tired man looks at help arriving late.',
+   options:[
+     {label:'Pull with him',desc:'Lend your weight',run:p=>{const c=8;selfHurt(p,c,'hazard');addHeat(4);p.atk+=2;return `You set your shoulder under the rope. Heat boils off the bell as you pull. It still does not ring &mdash; but something in your arms learns the weight (-${c} HP, +4 Heat, +2 ATK).`;}},
+     {label:'"What were you ringing for?"',desc:'Ask',run:p=>{discoverLore('l3');return '"To warn them." He keeps pulling. "I do not remember which them. I have been at it long enough that it does not matter." A breath. <span class="shout-red">"The bell stopped working the day the fire took. I have not stopped pulling, in case it starts."</span>';}},
+     {label:'Walk past',desc:'Leave him to the rope',run:p=>'You step around him. He does not look up. The rope creaks. The bell does not.'},
+   ]},
+  {id:'salaman',title:'THE SALAMANDER COURT',zone:1,sprite:{src:'assets/monsters/hellhound.png',tint:'tint-red'},art:"  ~.~.~\n  ( o )\n  ~~v~~",
+   text:'A circle of small fire-lizards sit watching a larger one die. The larger one is curled around something bright. None of them move when you enter.',
+   options:[
+     {label:'Take what it is guarding',desc:'Approach the dying one',run:p=>{const c=14;selfHurt(p,c,'hazard');addHeat(8);const r=grantRandomRelic(p);return r?`The small ones hiss but do not move. You take the bright thing from under the dying one. It cools in your hands. ${r}. (-${c} HP, +8 Heat)`:`The small ones hiss but do not move. The bright thing is something you already carry. The dying one closes its eyes anyway. (-${c} HP, +8 Heat)`;}},
+     {label:'Sit with them a while',desc:'Wait',run:p=>{addHeat(3);p.maxHp+=8;return 'You sit on the edge of the circle. The big one breathes out. The little ones breathe in. By the time the big one is finished, your chest is moving with theirs, and something in you has gone steadier. (+8 max HP, +3 Heat)';}},
+     {label:'Walk past',desc:'Leave the court',run:p=>'You step around them. None of the small ones turn their heads. They are not looking at you. They have already lost interest in everything but the one they are watching.'},
+   ]},
+  {id:'bellows',title:'THE BELLOWS ROOM',zone:1,sprite:{src:'assets/events/forge_run.png',tint:'tint-red'},art:"  )/\\(\n  )||(\n  )/\\(\n  ====",
+   text:'A chamber of huge leather bellows works itself. Each breath of them sends a wave of hot wind down the corridor behind you. There is no operator. Something deeper down is breathing through them.',
+   options:[
+     {label:'Cut the lines',desc:'Stop whatever is breathing',run:p=>{p.atk+=2;p.def+=2;return 'You slash the cords. The bellows sag like lungs going still. The corridor behind you cools. Somewhere further down, something does not get its next breath. You feel taller for it. (+2 ATK, +2 DEF)';}},
+     {label:'Climb inside one',desc:'Ride the breath down',run:p=>{const c=18;selfHurt(p,c,'hazard');addHeat(12);const g=30+rnd(30);p.gold+=g;return `You step into a bellows on the upstroke. It compresses around you and spits you out the other end into a chamber the maps do not have. You crawl back coughing, with what you found. (-${c} HP, +12 Heat, +${g} gold)`;}},
+     {label:'Leave the room to its work',desc:'Walk on',run:p=>'You back out into the corridor. The hot wind catches you in the back as you go. Something further down keeps breathing.'},
+   ]},
+  {id:'effigy',title:'THE BURNING EFFIGY',zone:1,sprite:{src:'assets/events/campfire.png',tint:'tint-red'},art:"   /-\\\n  | o |\n  |fire|\n   \\-/",
+   text:'A straw figure the rough size of a man burns slowly in the middle of the chamber. It has been burning a long time. The straw is not getting any shorter.',
+   options:[
+     {label:'"Who is it meant to be?"',desc:'Ask the empty room',run:p=>{discoverLore('l4');addHeat(3);return 'The straw turns its head a little toward your voice. It does not have a face. It does not need one. You understand, with the clarity of a thing told to you when you were very small, that it is meant to be the Warden. (+3 Heat)';}},
+     {label:'Throw your cloak on it',desc:'Smother it &middot; -1 potion',run:p=>{if(!p.potions)return 'You have nothing to spare to smother it with. The effigy keeps burning.';p.potions--;coolHeat(10);p.def+=2;return 'You pull a cloth from your pack and bury the effigy in it. The flame goes out. Whatever the effigy was meant to do, it stops doing it. (-15 Heat undone, +2 DEF, -1 potion)';}},
+     {label:'Add a stick to the fire',desc:'Feed it',run:p=>{addHeat(8);p.atk+=3;return 'You feed the straw man a piece of wood. He takes it gratefully. The wood goes immediately. The straw is not getting any shorter. Your arms feel a great deal heavier on the way out. (+3 ATK, +8 Heat)';}},
+     {label:'Walk past',desc:'Do not touch it',run:p=>'You step around the effigy. As you pass, you feel its straw head turn to follow you. You do not look back.'},
+   ]},
+  {id:'ashking',title:'THE KING IN ASH',zone:1,sprite:{src:'assets/monsters/fallenchampion.png',tint:'tint-amber'},art:"  ,---,\n  | + |\n  )===( \n  /|=|\\\n   ash",
+   text:'A crowned figure sits at the bottom of a low pit of warm ash, up to his chest. He does not look up when you arrive. He is sifting the ash through his fingers as if looking for something.',
+   options:[
+     {label:'"What did you lose?"',desc:'Ask',run:p=>'"My hands." He shows them to you. They are still attached. "Not these. The other ones." He goes back to sifting. He does not explain.'},
+     {label:'Reach in and help him search',desc:'-12 HP, find something for yourself',run:p=>{const c=12;selfHurt(p,c,'hazard');addHeat(5);const e=22+rnd(20);p.essence+=e;return `You kneel and put your arms into the ash. It is the temperature of an animal. You do not find what he is looking for, but you find something. (-${c} HP, +${e} ${ESS}, +5 Heat)`;}},
+     {label:'Take his crown',desc:'He will not stop you',run:p=>{p.atk+=2;p.maxHp-=10;p.hp=clamp(p.hp,1,p.maxHp);return 'You lift the crown off his head. He does not look up. He does not seem to notice. It is heavier than a crown should be. Wearing it costs you something you do not get back. (+2 ATK, -10 max HP)';}},
+     {label:'Leave him to sift',desc:'Walk on',run:p=>'You leave the king in his ash. He keeps sifting. You hear him a long way down the corridor.'},
+   ]},
+  // Zone 2 — Frozen Below: miasma-themed, things the cold has done to people who were once people.
+  {id:'snowfield',title:'THE BLOOD ON THE SNOW',zone:2,sprite:{src:'assets/events/trap.png',tint:'tint-blue'},art:"  . . . .\n  . x . .\n  . . . .\n  . . x .",
+   text:'A patch of frost has frozen red. The pattern is wrong &mdash; the spatter goes outward from the centre, but there is nothing in the centre. Just clean stone.',
+   options:[
+     {label:'Kneel and read it',desc:'Track who was here',run:p=>{discoverLore('l6');addMiasma(4);p.crit+=4;return 'You read the spatter the way the rangers in town read deer-runs. Whatever happened here happened to someone the cold ate before they finished happening. Your eye sharpens on the lesson. (+4 CRIT, the cold thickens)';}},
+     {label:'Press your palm to the stone',desc:'Listen',run:p=>{addMiasma(6);heal(p,Math.round(p.maxHp*0.12));return 'The stone is colder than the air. Something passes through you, soft as a name nearly remembered. Your wounds close a little out of pity. (heal, the cold thickens)';}},
+     {label:'Step around it',desc:'Disturb nothing',run:p=>'You step around the patch. The red does not move. The red is the only thing in the room that ever was anyone.'},
+   ]},
+  {id:'duet',title:'THE TWO WHO ARE THE SAME',zone:2,sprite:{src:'assets/monsters/zombie.png',tint:'tint-purple'},art:"  o o\n /|=|\\\n  | |\n /| |\\",
+   text:'Two figures stand back to back in the centre of the room. They are wearing the same face. They are wearing yours.',
+   options:[
+     {label:'"Which of you is real?"',desc:'Ask',run:p=>{addMiasma(6);return 'Both of them speak. They do not say the same word. <span class="shout-purple">"I am."</span> One of them looks at the other and goes still. The still one was not there a moment ago. There has only ever been one. (the cold thickens)';}},
+     {label:'Strike the one on the left',desc:'-10 HP, learn something',run:p=>{const c=10;selfHurt(p,c,'hazard');p.crit+=6;p.dodge+=6;addMiasma(4);return `Your hand passes through the left one. The right one staggers as if you had hit her. She is still smiling. You will not make that mistake again. (-${c} HP, +6 CRIT, +6 DODGE, the cold thickens)`;}},
+     {label:'Walk between them',desc:'Refuse the riddle',run:p=>{addMiasma(3);return 'You walk straight through the gap between them. Neither one turns to follow you. Neither one was there. You will not check whether your shadow is still where you left it. (the cold thickens)';}},
+   ]},
+  {id:'unwedding',title:'THE UNWEDDING',zone:2,sprite:{src:'assets/monsters/ghost.png',tint:'tint-blue'},art:"  o   o\n /|---|\\\n  |   |\n / \\ / \\",
+   text:'Two figures in old wedding clothes stand at either end of a frozen aisle. They are facing away from each other. Between them, a third figure is taking the rings back off their fingers, one by one, and dropping them in the snow.',
+   options:[
+     {label:'"What is being undone?"',desc:'Ask the third figure',run:p=>{discoverLore('l10');addMiasma(6);return 'The third figure does not look up. <span class="shout-purple">"They had a day. The day got taken. We are taking the rest of it back, ring by ring, so it does not hang here unbalanced."</span> A pause. <span class="shout-purple">"It is easier than you would think to unmake a day."</span> (the cold thickens)';}},
+     {label:'Pick up a ring from the snow',desc:'Pocket what was theirs',run:p=>{addMiasma(8);p.gold+=22+rnd(18);p.maxHp-=4;p.hp=clamp(p.hp,1,p.maxHp);return `You bend and take a ring. It is colder than the snow it was lying in. None of the three figures look at you. Something in you that you cannot quite name goes thinner. (+gold, -4 max HP, the cold thickens)`;}},
+     {label:'Step out of the aisle',desc:'Do not stand between them',run:p=>'You move to the wall. The third figure keeps taking rings off. The two figures keep facing away. You realize, halfway down the next corridor, that you have already forgotten what they looked like.'},
+   ]},
+  {id:'iceharp',title:'THE HARP UNDER THE ICE',zone:2,sprite:{src:'assets/events/spring.png',tint:'tint-blue'},art:"   .--.\n  /||||\\\n  ||||||\n  \\||||/",
+   text:'A great harp is set into the floor under a sheet of clear ice. Something just below the ice is plucking the strings, slowly. The notes come through the floor more than the air.',
+   options:[
+     {label:'Break the ice',desc:'Let it out',run:p=>{const c=14;selfHurt(p,c,'hazard');addMiasma(6);p.maxMana+=12;p.mana=clamp(p.mana+12,0,p.maxMana);return `The ice goes in one strike. The hand under it does not stop playing. The note it makes when the air finally reaches it lodges in your skull and does not leave. (-${c} HP, +12 max mana, the cold thickens)`;}},
+     {label:'Lie down and listen',desc:'Take the song in',run:p=>{addMiasma(4);p.regen+=4;p.maxHp+=6;return 'You lie on the ice. The notes come up through your ribs. You stay there longer than you meant to. When you stand up, something about you is steadier than it was. (+6 max HP, +4 regen, the cold thickens)';}},
+     {label:'Walk on the ice carefully',desc:'Cross without breaking it',run:p=>'You step over the harp without putting your weight in any one place. The hand under the ice does not falter. You hear the song for a long time after the chamber is behind you.'},
+   ]},
+  {id:'mothers',title:'THE ROOM OF MOTHERS',zone:2,sprite:{src:'assets/monsters/broodmother.png',tint:'tint-purple'},art:"  o o o\n / | | \\\n  | | |\n /  |  \\",
+   text:'A long room of women sit on benches against the walls. Each holds a bundle of cloth. None of the bundles are moving. The women are not crying. They are waiting.',
+   options:[
+     {label:'"Who are you waiting for?"',desc:'Ask',run:p=>{discoverLore('l10');addMiasma(8);return 'The nearest one looks up. <span class="shout-purple">"You."</span> She does not smile. <span class="shout-purple">"All of you. We are mothers of champions. We sit here until you come back up. We have been sitting a long time."</span> She looks back at her bundle. (the cold thickens)';}},
+     {label:'Take one of the bundles',desc:'-12 HP, gain something heavy',run:p=>{const c=12;selfHurt(p,c,'hazard');addMiasma(6);p.maxHp+=20;heal(p,20);return `The mother nearest the door lets you take her bundle without a word. It is heavier than a bundle should be. The cold settles in you the way a child settles. (+20 max HP, -${c} HP, the cold thickens)`;}},
+     {label:'Walk the centre of the room',desc:'Do not touch them',run:p=>{addMiasma(3);return 'You walk down the centre of the room. None of them lift their heads. By the door at the far end, you realize you cannot remember whether your own mother saw you off. (the cold thickens)';}},
+   ]},
+  // Zone 3 — Silent Deep: unsettling, Pale-adjacent, the floor of the world.
+  {id:'unwriter',title:'THE UNWRITER',zone:3,sprite:{src:'assets/monsters/paledevourer.png',tint:'tint-shadow'},art:"  ,---,\n  ( - )\n  )___( \n  /pen\\",
+   text:'A figure sits at a small table erasing a page. There is no ink. They are not crossing things out. They are taking words out of the paper one at a time. The paper is getting thinner.',
+   options:[
+     {label:'"What was on the page?"',desc:'Ask',run:p=>{discoverLore('l10');addMiasma(6);return '<span class="shout-purple">"A name."</span> They do not look up. <span class="shout-purple">"I do not remember whose. That is the point. I am very good at my work."</span> A pause. <span class="shout-purple">"There were three pages this morning. There will be two by tonight. I am efficient."</span> (the cold thickens)';}},
+     {label:'Snatch the page away',desc:'Save what is left',run:p=>{const c=16;selfHurt(p,c,'hazard');addMiasma(4);p.maxHp+=14;return `You grab the page. The figure does not resist. The page is warm. There is one word left on it that you cannot read but cannot stop looking at. (-${c} HP, +14 max HP, the cold thickens)`;}},
+     {label:'Walk past the table',desc:'Do not interrupt the work',run:p=>{addMiasma(4);return 'You step around the table. The figure does not lift their head. When you are at the door, you realize you cannot remember what you came in through. You go on anyway. (the cold thickens)';}},
+   ]},
+  {id:'longstair',title:'THE STAIR THAT GOES UP',zone:3,sprite:{src:'assets/events/falseexit.png',tint:'tint-shadow'},art:"  /---\\\n  |   |\n  |---|\n  |   |\n  |---|",
+   text:'A flight of stone steps rises into the dark above you. You did not come down them. They do not lead to anywhere on any map you have walked. The air at the top of them is warmer.',
+   options:[
+     {label:'Climb a few steps',desc:'See where it ends',run:p=>{addMiasma(5);heal(p,Math.round(p.maxHp*0.25));p.maxHp-=6;p.hp=clamp(p.hp,1,p.maxHp);return 'You climb. Eight, twelve, twenty steps. The warmth gets closer. It never arrives. You come back down. You do not remember turning around. (heal, -6 max HP, the cold thickens)';}},
+     {label:'Sit on the bottom step',desc:'Rest',run:p=>{p.mana=p.maxMana;heal(p,Math.round(p.maxHp*0.35));addMiasma(3);return 'You sit. Warmth comes down the steps from above and settles around you. You do not stand up for what feels like a very long time. Nothing comes down to find you. (heal, full mana, the cold thickens)';}},
+     {label:'Walk past the staircase',desc:'Refuse the climb',run:p=>'You keep going along the corridor. The staircase stays in the corner of your eye until the corridor bends. You do not look back to see whether it bent with you.'},
+   ]},
+  {id:'palefire',title:'THE FIRE THAT IS NOT THERE',zone:3,sprite:{src:'assets/events/campfire.png',tint:'tint-shadow'},art:"   ...\n  .   .\n   ...\n   ...",
+   text:'A campfire is laid in the centre of the floor. Logs, kindling, a ring of stones. Above it, the air moves the way it would over flame. There is no flame. The logs are not warm.',
+   options:[
+     {label:'Sit at the fire',desc:'Warm yourself',run:p=>{addMiasma(8);p.maxHp-=8;p.hp=clamp(p.hp,1,p.maxHp);p.atk+=3;p.def+=2;return 'You hold your hands out. Your hands believe the fire. Some other part of you does not, and goes quiet to make room. You stand up sharper than you sat down. (+3 ATK, +2 DEF, -8 max HP, the cold thickens)';}},
+     {label:'Light a real fire over it',desc:'-1 potion &middot; chase the wrongness off',run:p=>{if(!p.potions)return 'You have nothing to start a fire with that would convince anything.';p.potions--;addMiasma(2);grantRandomRelic(p);return 'You pour a flask over the kindling and strike a spark. The real flame catches. The not-fire above it gutters out as if hurt. Something inside the stone ring is left behind. (relic, -1 potion, the cold thickens)';}},
+     {label:'Walk past the fire',desc:'Do not warm yourself',run:p=>{addMiasma(2);return 'You step around the ring of stones. The air over it keeps moving. The logs stay cold. You realize halfway down the next corridor that your hands are colder than they were. (the cold thickens)';}},
+   ]},
+  // Any-zone — small, portable, the crypt anywhere.
+  {id:'shedskin',title:'THE SHED SKIN',sprite:{src:'assets/monsters/sandwurm.png',tint:'tint-grey'},art:"  ~~~~~~\n  ~ () ~\n  ~~~~~~",
+   text:'A long curl of pale skin lies across the floor. It is your shape. It is your size. The fingers are still curled.',
+   options:[
+     {label:'Step inside it',desc:'Wear what was yours',run:p=>{p.def+=2;p.dodge+=6;const c=6;selfHurt(p,c,'hazard');return `You lie down in the skin. It fits. Of course it fits. You stand up moving a little easier than you did, and a little less sure of where you end. (+2 DEF, +6 DODGE, -${c} HP)`;}},
+     {label:'Burn it',desc:'-1 potion &middot; refuse the spare',run:p=>{if(!p.potions)return 'You have nothing to burn it with that you are willing to spend.';p.potions--;p.atk+=3;return 'You pour a flask over the skin and strike it. It goes up clean. Whatever it would have been the start of, is not now. Your arms feel like your arms again. (+3 ATK, -1 potion)';}},
+     {label:'Walk around it',desc:'Touch nothing',run:p=>'You step around the curl of skin. It does not move. You do not check, on the way out, whether your own hands are exactly the right shape.'},
+   ]},
+  {id:'fishbowl',title:'THE GOLDFISH',sprite:{src:'assets/monsters/sahagin.png',tint:'tint-gold'},art:"  .-~~~-.\n ( ()    )\n  '~~~~~'",
+   text:'A glass bowl sits on a small table in the middle of the corridor. There is a goldfish in it. The bowl is full of clean, cold water. The goldfish looks at you.',
+   options:[
+     {label:'Take the bowl',desc:'Carry it with you',run:p=>{p.maxMana+=10;p.mana=clamp(p.mana+10,0,p.maxMana);heal(p,Math.round(p.maxHp*0.15));return 'You lift the bowl. The fish does not panic. It watches you. Walking with it is harder than you expected, and easier than you expected, in different ways. (+10 max mana, heal)';}},
+     {label:'Tip the bowl over',desc:'Free it &middot; +gold',run:p=>{const g=18+rnd(20);p.gold+=g;return `You upend the bowl. The water goes. The fish goes with it, somewhere it shouldn't be able to go. There are coins under where the bowl was sitting. (+${g} gold)`;}},
+     {label:'Walk past the table',desc:'Leave the fish be',run:p=>'You step around the table. The fish turns to keep facing you the entire way past. You stop checking after a while.'},
+   ]},
+  {id:'inkpool',title:'THE INK ON THE FLOOR',sprite:{src:'assets/events/pit.png',tint:'tint-shadow'},art:"   .----.\n  ( .... )\n   '----'",
+   text:'A circle of black ink the size of a shield is on the stone in front of you. It is perfectly round. Nothing is leaking out of it. Nothing is dripping into it.',
+   options:[
+     {label:'Dip a finger in it',desc:'Test it',run:p=>{const c=8;selfHurt(p,c,'hazard');p.crit+=6;return `Your finger comes out clean. The ink does not stick to skin. Whatever it stuck to, you are now slightly more sure of where to put a blade. (-${c} HP, +6 CRIT)`;}},
+     {label:'Write your name in it',desc:'-15 gold for a steady hand',run:p=>{if(p.gold<15)return 'You start to and stop. You are not certain enough of your name to spend nothing on it.';p.gold-=15;p.maxHp+=12;heal(p,12);return 'You kneel and write. The ink takes your finger gently. Something about you settles, the way a thing settles when it has been written down properly. (+12 max HP, -15 gold)';}},
+     {label:'Step around the circle',desc:'Do not test it',run:p=>'You walk around the ink. It does not follow you with anything you can see. It does not need to.'},
+   ]},
 ];
 
 /* ============================================================
@@ -2409,17 +2566,17 @@ const ASCENSION=[
   // the player gets a real difficulty bump per unlock. Existing saves with ASC > 4 are clamped
   // down silently by loadAscension().
   {n:1, name:'Tougher Hide',
-    desc:'Enemies have +8% HP. Merchant prices +25%.',
-    apply:m=>{ m.eHp*=1.08; m.priceMul*=1.25; }},
+    desc:'Enemies have +8% HP. Merchant prices +18%.',
+    apply:m=>{ m.eHp*=1.08; m.priceMul*=1.18; }},
   {n:2, name:'Restless Halls',
-    desc:'+1 enemy in every pack. Start each run with 1 fewer potion.',
-    apply:m=>{ m.packBonus+=1; m.potionPenalty+=1; }},
+    desc:'Start each run with 1 fewer potion. Enemies deal +5% damage.',
+    apply:m=>{ m.potionPenalty+=1; m.eDmg*=1.05; }},
   {n:3, name:'The Crypt Sharpens',
-    desc:'Enemies deal +10% damage. Elites always carry a Counter to your build.',
-    apply:m=>{ m.eDmg*=1.10; m.eliteCounter=1; }},
+    desc:'+1 enemy in every pack. Enemies deal +8% damage. Elites always carry a Counter aimed at your second-strongest axis.',
+    apply:m=>{ m.packBonus+=1; m.eDmg*=1.08; m.eliteCounter=1; }},
   {n:4, name:'The Hungering Crypt',
-    desc:'Far more elites prowl. 15% less gold. Enemies gain +12% HP and +12% damage.',
-    apply:m=>{ m.eliteMul*=1.45; m.goldMul*=0.85; m.eHp*=1.12; m.eDmg*=1.12; }},
+    desc:'Far more elites prowl. 12% less gold. Enemies gain +9% HP and +9% damage.',
+    apply:m=>{ m.eliteMul*=1.32; m.goldMul*=0.88; m.eHp*=1.09; m.eDmg*=1.09; }},
 ];
 const ASC_MAX = ASCENSION.length-1;   // 4
 function loadAscension(){ try{ return Math.max(0, Math.min(ASC_MAX, parseInt(localStorage.getItem('crypt_ascension')||'0',10)||0)); }catch(e){ return 0; } }
@@ -3447,6 +3604,10 @@ const PEEKS={
     'Stillness, the wrong kind — the stillness of something holding very still.',
     'Iron and salt. Whatever is past this door is bleeding.',
     'You hear knuckles drumming on stone.',
+    'A clawmark scored into the lintel, fresh enough to still smell like wood.',
+    'A slow exhale, drawn out, with a wet edge to it.',
+    'The dust on the threshold has been disturbed, recently, by something with weight.',
+    'You can taste something living, somewhere past the cold.',
   ],
   chest:[
     'The smell of old gold and oiled cloth.',
@@ -3454,6 +3615,10 @@ const PEEKS={
     'Hinges. The unmistakable sound of hinges that have not moved in a long time.',
     'Coins scattered near the threshold, as if dropped on the way out.',
     'A heavy wooden corner, just visible past the dark.',
+    'Velvet, somewhere. The crypt does not have velvet, and yet.',
+    'A glint, deep in the dark. It does not move when you do.',
+    'The threshold is faintly warm, the way a long-closed room is warm.',
+    'A breath of dry dust, the kind that settles slowly onto soft things.',
   ],
   event:[
     'You hear voices. Or something that wants to be voices.',
@@ -3462,6 +3627,10 @@ const PEEKS={
     'A door covered in old wax seals — every one of them broken.',
     'Sobbing. Or a kind of laughter that has forgotten how to be either.',
     'The room is lit. Someone has been here recently. Someone is still here.',
+    'A chair scrapes, somewhere, and then nothing at all.',
+    'The door is warm at chest height, cold below — as if someone is leaning against it.',
+    'A page turning. Slowly. Then again.',
+    'The smell of melted candle wax, and a low murmur underneath.',
   ],
   relic:[
     'A faint pressure in the air. Old power, badly stored.',
@@ -3471,24 +3640,39 @@ const PEEKS={
     'Your teeth ache, faintly, the way they do near lightning.',
     'The torchlight bends toward the door, very slightly, like water finding a drain.',
     'A taste of copper that is not blood. Older than blood.',
+    'A weight on the threshold, the way a heavy stone bends a floorboard.',
+    'The torch sputters as you near the wood. It does not like this door.',
+    'A low note holds in the doorframe. You hear it through your sternum.',
   ],
   merchant:[
     'A warm glow leaks through the cracks. Something down here is still lit.',
     'Quiet humming. Someone at work, ignoring the dark.',
     'Lamplight, and the clink of coins being counted by patient fingers.',
     'Something is laid out in rows past the dark. Wares, or bones.',
+    'A shape moves past the lantern-light, unhurried.',
+    'Folded cloth, leather strap, the tap of something being set down with care.',
+    'A throat cleared, politely, on the other side of the wood.',
+    'The dry rustle of pages. Someone is keeping a tally.',
   ],
   forge:[
     'A hammer ringing on metal that should not exist any more.',
     'Heat rolls out under the door. Not the crypt\'s cold for once.',
     'Sparks falling from somewhere overhead. Someone is at an anvil.',
     'The smell of quenched iron. Someone is finishing a blade.',
+    'A dull red light, low at the floor. Something there has been hot a long time.',
+    'Air pulls toward the door, then back, in a slow even draw.',
+    'A taste of soot at the back of your throat.',
+    'Something scrapes against a whetstone, patient, not in a hurry.',
   ],
   shrine:[
     'A faint glow, low and patient. Something here has been still a long time.',
     'A cracked altar, dark from old offerings.',
     'Old incense. Something here still listens. Barely.',
     'A statue, face worn smooth from too many forehead-touches.',
+    'Old wax, cold now, smelling of nothing in particular.',
+    'A draught carries dry petals. They have been dry a long time.',
+    'The stone under your boot is worn smooth in a narrow path to the door.',
+    'A hush, the kind a room holds when it has been spoken to for years.',
   ],
   fountain:[
     'The smell of clean cold water, where there should be none.',
@@ -3497,6 +3681,9 @@ const PEEKS={
     'Glassy ripples, with no wind. No movement. No reason.',
     'A single drip, keeping perfect time. It has been keeping it for centuries.',
     'The air past the door is washed. Everything else down here is dust.',
+    'A breath of cool, clean air. It does not belong this deep.',
+    'A faint chime, like a glass set down on stone.',
+    'The dust here is damp. Damp, this far down.',
   ],
   empty:[
     'Cold stone. No sound. A moment to remember you are alive.',
@@ -3507,22 +3694,35 @@ const PEEKS={
     'Footprints in the dust. They stop in the middle of the room.',
     'The ceiling is higher here than it has any right to be. Nothing uses the space.',
     'Someone swept this room once. The thought is somehow worse than the dust.',
+    'A draught from nowhere. It goes through you and keeps going.',
+    'The torch in the bracket has burnt low and not been changed.',
+    'A long, even silence. Nothing on the other side has anything to say to you.',
+    'The wood of the door is plain. Nothing has been carved into it.',
   ],
   echo:[
     'A figure slumps against the far wall. It does not breathe.',
     'Someone is sitting in there. They have been sitting a long time.',
     'A familiar silhouette. You cannot place it.',
     'A champion stopped here. They never started again.',
+    'A weight settled against the inside of the door. It has been settled a while.',
+    'A glint of metal at floor level, not moving.',
+    'The cold past this door is patient, the way grief is patient.',
+    'Something is leaning against the wood. You do not knock.',
   ],
   boss:[
     'The air past this door is heavier. Something in there has weight.',
     'A pressure on your chest, and no reason for it. The cold here has a shape.',
     'No sound at all. The kind of silence that has teeth.',
     'A presence — bored, patient, terrible.',
+    'The wood is gouged in long parallel lines. From the inside.',
+    'Your torch dims as you near it, and you cannot tell why.',
+    'A cold deeper than the cold. Whatever is inside has been waiting.',
   ],
   bossFinal:[
     'A world-ending sound. Whatever is past this is older than the cold.',
     'A presence so large the air bends around it. You should be more afraid than you are.',
+    'The stone underfoot hums, very faintly, the way ground hums before a storm.',
+    'A silence so total it sounds like a held breath. Not yours.',
   ],
   echoPeek:'A figure slumps against the far wall. It does not breathe.',
 };
@@ -4057,6 +4257,10 @@ const PEEK_GROUP=[
   'Something inside goes still the moment you listen.',
   'A draught carries a smell of iron and old breath.',
   'The dark past the frame does not hold quite still.',
+  'A nail dragged across stone, somewhere, then stopped.',
+  'A patch of damp on the lintel that smells faintly of meat.',
+  'The latch is greasy. You did not touch it.',
+  'A muffled clatter, like something dropped and not picked up.',
 ];
 const PEEK_GROUP_HEAVY=[
   'The floor trembles, faintly, in no particular rhythm.',
@@ -4064,6 +4268,9 @@ const PEEK_GROUP_HEAVY=[
   'The air past the door is thick, and close, and waiting.',
   'Something shifts its weight, and the dust comes down from the lintel.',
   'A smell of blood that is not yours. Not yet.',
+  'A breath, slow and large, that does not stop where a breath should.',
+  'The wood of the door is bowed outward, very slightly.',
+  'Something on the other side settles, and the settling takes a long time.',
 ];
 function groupPeek(g){
   const heavy = g.length>=3 || g.some(u=>u.affix);
@@ -4083,7 +4290,7 @@ function doorHint(room){
 function nextCorridor(){ G.depth++;
   G._discRolled=0;   // one rare-discovery attempt per corridor
   if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
-  if(G._forceCollector){ G._forceCollector=0; noteCollector(); G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
+  if(G._forceCollector){ G._forceCollector=0; noteCollector(); G._worldMsg='&#9760; THE COLLECTOR walks the corridor toward you. The toll has come due.'; flashWorld(); G.doors=[{type:'collector',peek:'A toll-keeper waits. Your debt has come due.'}]; return; }
   if(G.abyss){ const floor=G.depth-RUN_LENGTH;
     if(floor%4===0){
       let key, peek;
@@ -4887,8 +5094,10 @@ function renderForge(){ const p=G.player; discoverLore('l11');
   const up=slots.map(s=>{const it=p.equip[s];if(!it)return '';const c=14+it.ilvl*2;
     return fb(`Upgrade ${s.toUpperCase()}: ${itemLabel(it)}`,c,`+2 item levels &middot; ${itemStatsText(it)}`,`fUpgrade('${s}')`,p.essence>=c);}).join('');
   const im=p.weapon.proc?'':fb('Imbue weapon with an element',24,'add a random on-hit effect (BURN / POISON / VULN)',`fImbue()`,p.essence>=24);
+  // Roadmap line on each Reforge button: sum of remaining reforge costs from current rarity up to Legendary.
   const re=slots.map(s=>{const it=p.equip[s];if(!it||it.rarity>=4)return '';const c=30+it.rarity*16;
-    return fb(`Reforge ${s.toUpperCase()}: <span class="${RARITY[it.rarity].cls}">${RARITY[it.rarity].name}</span> &rarr; <span class="${RARITY[it.rarity+1].cls}">${RARITY[it.rarity+1].name}</span>`,c,'raise rarity; may grant a passive',`fReforge('${s}')`,p.essence>=c);}).join('');
+    let path=0; for(let i=it.rarity;i<=3;i++) path+=30+i*16;
+    return fb(`Reforge ${s.toUpperCase()}: <span class="${RARITY[it.rarity].cls}">${RARITY[it.rarity].name}</span> &rarr; <span class="${RARITY[it.rarity+1].cls}">${RARITY[it.rarity+1].name}</span>`,c,`raise rarity; may grant a passive<br><span class="muted" style="font-size:8px">Path to Legendary: ${path} essence more.</span>`,`fReforge('${s}')`,p.essence>=c);}).join('');
   // Pour essence into your PATH — the late-game essence sink that feeds affinity (Wrath/Guile/Veil).
   const at=['w','g','v'].map(k=>{const meta=AFF_META[k];
     return fb(`Attune to ${meta.name}`,40,`+2 ${meta.name} affinity (toward the tier capstones)`,`fAttune('${k}')`,p.essence>=40);}).join('');
@@ -5437,7 +5646,9 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   stormfury(c,isExtra); }
 function stormfury(crit,isExtra){ const p=G.player,b=G.battle;
   if(crit&&p.flags.synStorm&&!isExtra&&living().length){ blog('Stormfury — the crit echoes!','crit'); ensureTarget(); basicHit(b.target,true); } }
-function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math.round(n*1.4); else n=Math.round(n*0.70);
+// Champion's Resolve halved (was 1.4 -> 2.0x baseline; now 1.05 -> 1.5x baseline) — the omen was a
+// runaway outlier in the bot data (65% win-rate vs the 38–52% spread of every other omen).
+function gainCharge(n){ const b=G.battle; if(!b)return; if(G.mods.ultFast)n=Math.round(n*1.05); else n=Math.round(n*0.70);
   // Miasma chokes the ultimate — the crypt does not want you to be remembered.
   const mt=miasmaActive()?miasmaTier():0; if(mt>=3) n=Math.round(n*(1-Math.min(0.40,mt*0.07)));
   const was=b.charge||0;
@@ -5504,8 +5715,12 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       } else { b.guardDown=1; blog('...but you are left EXPOSED!','info'); } break;}
     case 'aim':{SFX.play('arrow'); if(p.flags.kSplit){ blog('THOUSAND ARROWS rain down on every foe!','info'); aoeHit(i=>{let d=(p.atk+p.weapon.dmg)*1.50;let c=chance(effCrit(p)+22);if(c)d*=2.0;dealToEnemy(i,d,'Arrow skewers',c);const e=b.enemies[i];if(e.hp>0)addPoison(e.st,5,3);}); }
       else { let d=(p.atk+p.weapon.dmg)*1.70;let c=chance(effCrit(p)+30);if(c)d*=1.95;dealToEnemy(b.target,d,'Aimed Shot pierces',c);const e=b.enemies[b.target];if(e&&e.hp>0)addPoison(e.st,6,3); } break;}
-    case 'evade':{SFX.play('skill');b.evade=45;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');break;}
-    case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows!','info');const shots=living().length>1?4:3;for(let k=0;k<shots;k++){const liv=living();if(!liv.length)break;const idx=b.enemies.indexOf(pick(liv));let d=(p.atk*0.6+p.weapon.dmg)+Math.round(p.level*0.5)+rnd(3);let c=rollCrit();if(c)d*=1.7;dealToEnemy(idx,d,'Arrow hits',c);} break;}
+    case 'evade':{SFX.play('skill');b.evade=45;b.evadeTurns=2;blog('Wind Step! Dodge greatly increased.','info');
+      // Parting shot: a small guaranteed hit on cast so Evade isn't a pure skip-turn. No crit, no scaling — just a thematic answer-blow that gives the skill offensive utility for defensive/balanced playstyles. Aggressive rarely casts evade, so this barely shifts that strategy.
+      const liv0=living(); if(liv0.length){ const tIdx=(b.enemies[b.target]&&b.enemies[b.target].hp>0)?b.target:b.enemies.indexOf(liv0[0]); let pd=Math.round((p.atk+p.weapon.dmg)*0.55)+rnd(3); dealToEnemy(tIdx,pd,'A parting shot answers',false); } break;}
+    case 'volley':{SFX.play('arrow');blog('You loose a volley of arrows across the room!','info');
+      // Old volley: 3-4 random shots, per-shot worse than a basic. Made the skill strictly inferior to spamming Aimed Shot in any single-target case and unreliable in AOE. Now: deterministic per-foe AOE at modest scaling, with a per-foe poison chance. Single-target damage is intentionally LOWER than a basic attack (so it doesn't replace Aimed Shot — keeps aggressive build identity intact), but AOE scales linearly with foe count and reliably applies poison spread.
+      aoeHit(i=>{let d=Math.round((p.atk*0.55+p.weapon.dmg)*1.0)+rnd(4);let c=rollCrit();if(c)d*=1.7;dealToEnemy(i,d,'Volley pierces',c);const e=b.enemies[i];if(e&&e.hp>0&&chance(45))addPoison(e.st,5,3);}); break;}
     // === MEMORY SKILLS ===
     case 'glass':{SFX.play('skill');const c=Math.max(1,Math.round(p.hp*0.15));selfHurt(p,c,'self');b.glassNext=1;blog(`Glass Sigil etched in your own blood (-${c} HP). Your next skill will SHATTER.`,'crit');break;}
     case 'ember':{SFX.play('fire'); b.emberTurns=3; blog('Furnace Ember — your weapon catches with eternal flame for 3 turns!','crit'); break;}
@@ -6116,11 +6331,28 @@ function causeOfDeathHtml(){
       <span class="muted" style="font-size:8px;letter-spacing:.5px">KILLING BLOW</span><br><b style="color:${kbColor}">${kbLabel}</b>${press?`<br><span class="muted" style="font-size:8px;letter-spacing:.5px">CONTRIBUTING PRESSURE</span><br><span style="color:${colors[press[0]]}">${labels[press[0]]||press[0]}</span>`:''}</div>` : '';
   // The bar chart shows the WHY; we trust the player to draw the lesson themselves.
   return `<h3 class="red center" style="font-size:11px;margin:10px 0 4px">CAUSE OF DEATH</h3><div class="slot" style="border-left-color:var(--red)">${rows}${kbBlock}</div>`; }
+// ABYSS EPITAPHS — when the player dies BELOW the throne (G.abyss && depth past RUN_LENGTH), the
+// crypt's last word should acknowledge they went somewhere most never reach. Terse, present-tense.
+const ABYSS_EPITAPHS = [
+  'You reached depth %D% before the cold knew your name.',
+  'The deep took you in pieces. The largest piece kept walking another two chambers.',
+  'You did not come up. The crypt counts you as something else now.',
+  'Past the throne, the dark stops keeping records. Yours ends at chamber %D%.',
+  'You went further than the door was built to close behind. It closed anyway.',
+  'The throne is above you now. So is everything else you used to call yours.'
+];
 // EPITAPH HOOK — at the end of every run, the crypt remembers ONE new thing about you. The data
 // already exists (loadRecords + crypt_npc + per-run memoir flags); this just surfaces it as the last
 // breath before the player decides whether to start again. Push, not closure.
 function deathEpitaphHtml(p, win){
   const m = G._memoir || memoir(); const r = loadRecords();
+  // Abyss deaths get their own pool — the standard "the crypt remembers" beats are tuned for the
+  // surface run; below the throne we want a register that acknowledges what they did, not what they
+  // collected. Win short-circuits both pools (legend line always wins).
+  if(!win && G.abyss && G.depth > RUN_LENGTH){
+    const ap = ABYSS_EPITAPHS[Math.floor(Math.random()*ABYSS_EPITAPHS.length)].replace(/%D%/g,G.depth);
+    return `<div class="epitaph"><div class="ep-tag">THE CRYPT REMEMBERS</div><p>${ap}</p></div>`;
+  }
   const lines = []; const npcNames = {lantern:'The Lantern Keeper', cartog:'The Cartographer', cardinal:'The Cardinal', scholar:'The Frozen Scholar', wsmith:'The Weeping Smith', watcher:'The Watchful Prisoner'};
   // Priority pool — strongest beat first; we pick ONE so it lands.
   if(win) lines.push('The crypt has a new legend tonight. It does not forget legends.');
