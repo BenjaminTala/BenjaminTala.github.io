@@ -195,6 +195,9 @@
     mix-blend-mode:screen;animation:abyssDrift 9s ease-in-out infinite alternate}
   @keyframes abyssDrift{from{opacity:.55;transform:translateY(-2px)}to{opacity:.95;transform:translateY(2px)}}
   body.abyss .panel{border-color:#5a4080;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 28px rgba(100,60,160,.10)}
+  /* the global desaturate+dim pushes the affinity pills under comfortable contrast in deep runs —
+     brighten them back up so the build readout stays legible at the bottom of the world */
+  body.abyss .aff-pill{background:#161028;filter:brightness(1.25)}
   body.abyss .panel::before{content:'';position:absolute;inset:-1px;pointer-events:none;
     border:1px solid rgba(192,168,230,.18);box-shadow:inset 0 0 0 1px rgba(80,50,140,.4)}
   body.abyss .panel{position:relative}
@@ -292,7 +295,7 @@
   .best-row{display:flex;justify-content:space-between;align-items:center;border:2px solid var(--line);background:#00000055;padding:7px 9px;margin:5px 0;font-size:9px;gap:8px}
   .best-bar{flex:0 0 78px;height:9px;background:#000;border:2px solid var(--line)}
   .best-bar>i{display:block;height:100%;background:linear-gradient(var(--red),#a82f3a)}
-  .c-burn{border-color:var(--amber);color:var(--amber);background:rgba(60,28,8,.6);box-shadow:0 0 6px rgba(255,140,40,.4)}
+  .c-burn{border-color:#ff8a3c;color:#ff9a4c;background:rgba(60,28,8,.6);box-shadow:0 0 6px rgba(255,140,40,.4)}
   .c-pois{border-color:var(--green);color:var(--green);background:rgba(12,40,16,.6);box-shadow:0 0 6px rgba(92,255,143,.4)}
   .c-weak{border-color:var(--purple);color:var(--purple);background:rgba(36,16,56,.6);box-shadow:0 0 6px rgba(192,108,255,.4)}
   .c-vuln{border-color:var(--red);color:var(--red);background:rgba(48,8,12,.6);box-shadow:0 0 6px rgba(255,80,80,.45)}
@@ -2693,7 +2696,7 @@ function rollRarity(depth){ let w=[Math.max(3,42-depth*2.2),30,13+depth*0.7,4+de
   let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<5;i++){ if(r<w[i])return i; r-=w[i]; } return 0; }
 function rollIlvl(depth){ return clamp(depth+rnd(3)-1,1,30); }
 const WEAPON_TRAITS={
-  bleed:  {name:'Bleeding',  short:'POISON', desc:'Crits apply heavy POISON.',           color:'red',    fxKind:'poison'},
+  bleed:  {name:'Festering', short:'POISON', desc:'Crits apply heavy POISON.',           color:'green',  fxKind:'poison'},
   cursed: {name:'Cursed',    short:'CURSED', desc:'+25% DMG. Each strike adds +1 Miasma.',color:'purple', fxKind:'arcane'},
   soul:   {name:'Soulbound', short:'SOUL',   desc:'+0.4% DMG per kill this run (cap 32%).',color:'amber',fxKind:'crit'},
   furnace:{name:'Furnace-forged',short:'FURNACE',desc:'+0.5% DMG per Heat point (cap 50%).',color:'red',fxKind:'fire'},
@@ -2715,7 +2718,7 @@ const WEAPON_TRAIT_KEYS=Object.keys(WEAPON_TRAITS);
    something different. Nobody explains why this works.
    ============================================================ */
 const DEVOUR_FAMILIES={
-  Ooze:     {label:'Ooze',     trait:'poison', ico:'&#9763;',   desc:'your blows leave them dripping with rot'},
+  Ooze:     {label:'Ooze',     trait:'poison', ico:'&#9879;',   desc:'your blows leave them dripping with rot'},
   Demon:    {label:'Infernal', trait:'burn',   ico:'&#128293;', desc:'your strikes catch them on fire'},
   Beast:    {label:'Feral',    trait:'bleed',  ico:'&#129704;', desc:'you cut deeper — wounds that take longer to close'},
   Vermin:   {label:'Swarm',    trait:'multi',  ico:'&#128001;', desc:'one strike becomes two'},
@@ -2813,7 +2816,7 @@ function applyDevourEffects(e, d, b){
   (d.effects||[]).forEach(eff=>{
     if(eff==='poison'){ addPoison(e.st, 5+d.stage, 3); blog(`${e.name} is POISONED!`,'info'); }
     else if(eff==='burn'){ addBurn(e.st, 5+d.stage, 3); blog(`${e.name} BURNS!`,'info'); }
-    else if(eff==='bleed'){ addPoison(e.st, 6+d.stage, 4); blog(`${e.name} is POISONED!`,'info'); }
+    else if(eff==='bleed'){ addPoison(e.st, 6+d.stage, 4); blog(`${e.name}'s wounds fester — they will not close!`,'info'); }
     else if(eff==='weaken'){ addWeak(e.st, 2); blog(`${e.name} is WEAKENED!`,'info'); }
     else if(eff==='vuln'){ addVuln(e.st, 2); blog(`${e.name} is VULNERABLE!`,'info'); }
     else if(eff==='stun' && chance(35)){ addStun(e.st, 1); blog(`${e.name} is STUNNED!`,'crit'); }
@@ -3465,6 +3468,9 @@ const PEEKS={
     'Something rests on a plinth. It looks valuable. It looks like it is owed.',
     'A humming, very quiet, in a key you do not know.',
     'A cold weight in the air. Whatever rests here remembers being worshipped.',
+    'Your teeth ache, faintly, the way they do near lightning.',
+    'The torchlight bends toward the door, very slightly, like water finding a drain.',
+    'A taste of copper that is not blood. Older than blood.',
   ],
   merchant:[
     'A warm glow leaks through the cracks. Something down here is still lit.',
@@ -3489,6 +3495,8 @@ const PEEKS={
     'A shimmer. The smell of wet stone, very clean.',
     'A bowl of water, too still. It does not catch the torchlight properly.',
     'Glassy ripples, with no wind. No movement. No reason.',
+    'A single drip, keeping perfect time. It has been keeping it for centuries.',
+    'The air past the door is washed. Everything else down here is dust.',
   ],
   empty:[
     'Cold stone. No sound. A moment to remember you are alive.',
@@ -3496,6 +3504,9 @@ const PEEKS={
     'Quiet. The crypt is taking a breath.',
     'A long corridor, too quiet, too open. Your skin says ambush. Your skin is often wrong.',
     'Nothing here. So why does it feel like something is here.',
+    'Footprints in the dust. They stop in the middle of the room.',
+    'The ceiling is higher here than it has any right to be. Nothing uses the space.',
+    'Someone swept this room once. The thought is somehow worse than the dust.',
   ],
   echo:[
     'A figure slumps against the far wall. It does not breathe.',
@@ -3931,7 +3942,7 @@ function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoo
       <button class="btn center" onclick="echoChoice('leave')"><span class="k">&#10551;</span>BACK AWAY</button>`;
   } else {
     opts=`<button class="btn" onclick="echoChoice('speak')"><span class="k teal">[1]</span>Speak<small>hear its last words (the dead misremember)</small></button>
-      ${ec.item?`<button class="btn" onclick="echoChoice('take')"><span class="k amber">[2]</span>Take its gear<small>equip ${gearTxt} &middot; disturbs the dead (+miasma, -HP)</small></button>`:''}
+      ${ec.item?`<button class="btn" onclick="echoChoice('take')"><span class="k amber">[2]</span>Take its gear<small>equip ${gearTxt}<br>${gearCompareHtml(ec.item,p.equip[ec.item.slot])} &middot; disturbs the dead (+miasma, -HP)</small></button>`:''}
       ${ec.relic?`<button class="btn" onclick="echoChoice('trade')"><span class="k purple">[3]</span>Take its relic: ${ec.relic}<small>the dead do not give freely (+miasma)</small></button>`:''}
       <button class="btn" onclick="echoChoice('attack')"><span class="k red">[4]</span>Lay it to rest<small>fight the echo for its hoard</small></button>
       <button class="btn muted" onclick="echoChoice('leave')"><span class="k">&#10551;</span>Leave it in peace</button>`;
@@ -4574,7 +4585,7 @@ function renderRoom(){
       <h3 class="center blue" style="margin:8px 0">SHIMMERING FOUNTAIN</h3>
       <p class="muted center" style="font-size:9px">The water glows. It could heal you greatly... or curse you. A gamble.</p>
       <div class="row" style="margin-top:12px">
-        <button class="btn center blue" onclick="drinkFountain()"><span class="k">&#9760;</span>DRINK</button>
+        <button class="btn center blue" onclick="drinkFountain()"><span class="k">&#128167;</span>DRINK</button>
         <button class="btn center" onclick="leaveRoom()"><span class="k">&#10551;</span>WALK AWAY</button></div>`;
   } else {
     body=`<pre class="sprite muted">  . . . .\n .       .\n  empty\n .       .\n  . . . .</pre>
@@ -4722,7 +4733,9 @@ function renderMerchant(){
   const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
   const relicBtn=st.relic?item('Relic: '+st.relic.name,mc(70),st.relic.note,"buy('relic')",p.gold>=mc(70)):'';
   const gcost=st.gear?mc(40+st.gear.rarity*22):0;
-  const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,itemStatsText(st.gear),"buy('gear')",p.gold>=gcost):'';
+  // Show the delta against what's equipped in that slot (same readout as the reward screen) so
+  // the player can judge the buy without detouring through the inventory.
+  const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,gearCompareHtml(st.gear,p.equip[st.gear.slot]),"buy('gear')",p.gold>=gcost):'';
   const arrangement = (buys>=5) ? `<p class="muted center" style="font-size:8px;opacity:.75;margin-top:4px">&#9670; he has our arrangement &middot; ${spent}g spent here, across ${met} visits</p>` : '';
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p,true)}
     <div class="panel fade room-in shop-panel">
@@ -4953,7 +4966,7 @@ const INTENT_DISPLAY={
   charge: {ico:'&#9889;', cls:'i-charge'},
   unleash:{ico:'&#9760;', cls:'i-danger'},
   burn:   {ico:'&#128293;', cls:'i-cast'},
-  poison: {ico:'&#9763;', cls:'i-cast'},
+  poison: {ico:'&#9879;', cls:'i-cast'},   // alembic — ☣ is reserved for MIASMA so the two DoT systems don't read as one
   weak:   {ico:'&#8595;', cls:'i-cast'},
   vuln:   {ico:'&#10687;', cls:'i-cast'},
   stun:   {ico:'&#9889;', cls:'i-cast'},
@@ -6244,7 +6257,7 @@ const INFO_TEXT={
   intent:{title:'ENEMY INTENT', body:`Every enemy telegraphs its next move at the top of its cell:<br>&bull; <b class="red">ATK / HEAVY</b> with a projected damage number.<br>&bull; <b class="purple">CAST / STATUS</b> — burn, poison, weak, vulnerable.<br>&bull; <b class="amber">CHARGE / UNLEASH</b> — multi-turn windups.<br>&bull; <b class="amber">DOZING / ENRAGED</b> — your free turn or a cornered foe.<br><br>The intent shows the EXPECTED damage to you, accounting for your DEF and any buff/debuff active. Use it to decide who to focus, when to guard, when to potion.`},
   statuses:{title:'STATUS EFFECTS', body:`&bull; <b class="red">BURN</b> — damage at end of every turn for N turns.<br>&bull; <b class="green">POISON</b> — damage at end of every turn for N turns.<br>&bull; <b>WEAK</b> — target deals reduced damage.<br>&bull; <b>VULNERABLE</b> — target takes +25% damage.<br>&bull; <b>STUN</b> — target skips its next turn.<br><br>Re-applying a status takes the MAX of the old and new durations — never the SUM. Guile II lengthens the statuses you apply.`},
   ultimate:{title:'ULTIMATE', body:`Charge fills as you attack, get hit, cast, and kill. At <b>100</b> the ULT button glows.<br><br>Each class has its own ULT:<br>&bull; <b class="red">Warrior — Earthshatter</b>: massive AoE that stuns survivors.<br>&bull; <b class="purple">Mage — Mind Bolt</b>: a single nuclear bolt.<br>&bull; <b class="teal">Ranger — Death Volley</b>: hits every foe twice.<br><br>Charge carries between fights — saving up for a boss is real.`},
-  stance:{title:'STANCE', body:`Three combat stances you can switch each turn (free, no cost):<br><br>&bull; <b style="color:#ff7c50">AGGRESSIVE</b> — +25% damage out, you take +15% damage. Burst windows when the enemy is stunned or weakened.<br>&bull; <b style="color:#9fbcff">BALANCED</b> — no modifier. The default; never wrong.<br>&bull; <b style="color:#5cff8f">GUARDED</b> — -15% damage out, you take -25% damage. Sit out a HEAVY intent without losing a turn to Shield Wall.<br><br>Each battle starts BALANCED. The stance you pick persists turn-to-turn until you switch — making "when to commit" the new combat decision.`},
+  stance:{title:'STANCE', body:`Three combat stances:<br><br>&bull; <b style="color:#ff7c50">AGGRESSIVE</b> — +25% damage out, you take +15% damage. Burst windows when the enemy is stunned or weakened.<br>&bull; <b style="color:#9fbcff">BALANCED</b> — no modifier. The default; never wrong.<br>&bull; <b style="color:#5cff8f">GUARDED</b> — -15% damage out, you take -25% damage. Sit out a HEAVY intent without losing a turn to Shield Wall.<br><br>Each battle starts BALANCED. Switching <b>commits you for 2 of your own turns</b> — the active stance shows a countdown badge, and the others stay locked until it expires. Read the intent, then commit.`},
   glossary:{title:'CRYPT GLOSSARY', body: buildGlossaryHtml() },
 };
 // Build the glossary card grid lazily (used in the GLOSSARY info card).
