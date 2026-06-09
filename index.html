@@ -99,6 +99,16 @@
   .saga-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
   .saga-col{min-width:0}
   @media (max-width:640px){ .saga-split{grid-template-columns:1fr;gap:4px} }
+  /* Inventory sub-tabs (used by SKILLS and SAGA views) — split walls of text into focused
+     pages. Inactive tabs are dim outlines; the active one gets a teal underline + filled
+     border so the player knows which page they're reading. */
+  .sub-tab-row{display:flex;gap:4px;margin:4px 0 10px;flex-wrap:wrap}
+  .sub-tab{flex:1;min-width:80px;padding:6px 8px;border:2px solid #2a2a40;background:#0a0a16;
+    color:#7a7a90;font-family:inherit;font-size:9px;letter-spacing:1.4px;cursor:pointer;
+    border-radius:3px;text-align:center}
+  .sub-tab:hover{color:#cbeaff;border-color:#3a4a70}
+  .sub-tab.on{color:#5cffd0;border-color:#1a6a60;background:#0d2026;
+    box-shadow:0 0 8px rgba(92,255,208,.18);border-bottom:2px solid #5cffd0}
   /* AFFINITY ROW — one compact line beneath the stats showing the three paths and their tier
      progress at a glance ("WRATH II 5/6 · GUILE 2/3 · VEIL —"). Eye scans it the same way it
      scans the stats, and never needs to open SKILLS just to check how close the next tier is. */
@@ -4120,6 +4130,8 @@ function openInventory(view){ view=view||'gear';
   G._invView=view; G.screen='inventory'; SFX.play('click'); render();
 }
 function closeInventory(){ if(G.screen!=='inventory')return; G.screen=_invReturn; render(); }
+function setPowersSub(k){ G._powersSub=k; SFX.play('click'); render(); }
+function setSagaSub(k){ G._sagaSub=k; SFX.play('click'); render(); }
 // =====================================================================================
 // THE SAGA TAB — surfaces the cross-run history that already exists in localStorage so the player
 // can FEEL the accumulation. No new state; just visualization. Sections:
@@ -4279,20 +4291,41 @@ function renderInventory(){ const p=G.player; const view=G._invView||'gear';
       <h3 class="teal ivh">SET COLLECTIONS${infoBtnHtml('sets')}</h3>${setProg}`;
   } else if(view==='powers'){
     heading='SKILLS';
-    const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
-      return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear & relics to build one.</div>';
-    const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
-    const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
-    const skills=p.skills.map(s=>`<div class="slot"><span class="blue">${s.name}</span> <span class="muted">(${Math.max(1,Math.round(s.cost*G.mods.skillCost))} MP${s.aoe?', AOE':''})</span><br><span class="muted" style="font-size:8px">${s.desc}</span></div>`).join('');
-    const ult=ultMeta(p.cls);
-    const ultRow=`<div class="slot" style="border-color:var(--purple)"><span class="purple">&#10022; ${ult.name}</span> <span class="muted">(ULTIMATE — charge in battle)</span><br><span class="muted" style="font-size:8px">${ult.desc}</span></div>`;
-    body=`<h3 class="blue ivh">SKILLS &amp; ULTIMATE</h3>${skills}${ultRow}
-      <h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}
-      <h3 class="ivh">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
-      <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
+    // Sub-tabs: SKILLS view used to dump skills + ult + paths + relics + synergies all on one
+    // page, which read as a wall. Now there are three smaller panels — the player asks ONE
+    // question at a time (what can I do? what is my build? what gear do I have?) and gets a
+    // page that answers it.
+    const sub=G._powersSub||'skills';
+    const stBtn=(k,lbl)=>`<button class="sub-tab${sub===k?' on':''}" onclick="setPowersSub('${k}')">${lbl}</button>`;
+    const tabs=`<div class="sub-tab-row">${stBtn('skills','SKILLS')}${stBtn('paths','PATHS')}${stBtn('items','RELICS &amp; SYNERGIES')}</div>`;
+    let sec='';
+    if(sub==='skills'){
+      const skills=p.skills.map(s=>`<div class="slot"><span class="blue">${s.name}</span> <span class="muted">(${Math.max(1,Math.round(s.cost*G.mods.skillCost))} MP${s.aoe?', AOE':''})</span><br><span class="muted" style="font-size:8px">${s.desc}</span></div>`).join('');
+      const ult=ultMeta(p.cls);
+      const ultRow=`<div class="slot" style="border-color:var(--purple)"><span class="purple">&#10022; ${ult.name}</span> <span class="muted">(ULTIMATE — charge in battle)</span><br><span class="muted" style="font-size:8px">${ult.desc}</span></div>`;
+      sec=`<h3 class="blue ivh">SKILLS &amp; ULTIMATE</h3>${skills}${ultRow}`;
+    } else if(sub==='paths'){
+      const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
+        return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear &amp; relics to build one.</div>';
+      sec=`<h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}`;
+    } else {
+      const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
+      const syn=p.synergies&&p.synergies.length?p.synergies.map(n=>`<span class="chip clickable" style="border-color:var(--teal);color:var(--teal)" title="${escAttr(synergyDescFor(n))}" data-info-synergy="${escAttr(n)}">&#10022; ${n}</span>`).join(''):'<span class="muted">none</span>';
+      sec=`<h3 class="ivh">RELICS${infoBtnHtml('relics')}</h3><div>${relics}</div>
+        <h3 class="ivh">SYNERGIES${infoBtnHtml('synergies')}</h3><div>${syn}</div>`;
+    }
+    body=tabs+sec;
   } else { // 'saga' — bestiary and the saga (+ codex) side by side
     heading='SAGA';
-    body=`<div class="saga-split"><div class="saga-col">${bestiaryBody()}</div><div class="saga-col">${renderSagaBody()}${loreBody()}</div></div>`;
+    // Sub-tabs mirror the SKILLS view for consistency on mobile, where the side-by-side
+    // saga-split was stacking anyway. On wide screens the BESTIARY tab and the SAGA tab both
+    // remain self-contained pages, but CODEX gets its own page rather than appearing as a
+    // long appendix under the run record.
+    const sub=G._sagaSub||'bestiary';
+    const stBtn=(k,lbl)=>`<button class="sub-tab${sub===k?' on':''}" onclick="setSagaSub('${k}')">${lbl}</button>`;
+    const tabs=`<div class="sub-tab-row">${stBtn('bestiary','BESTIARY')}${stBtn('saga','SAGA')}${stBtn('codex','CODEX')}</div>`;
+    const sec = sub==='bestiary' ? bestiaryBody() : sub==='saga' ? renderSagaBody() : loreBody();
+    body=tabs+sec;
   }
   app.innerHTML=`<div class="floortag">${heading} &middot; ${CLASSES[p.cls].name} LV${p.level}</div>${playerBar(p,true)}
     <div class="panel fade room-in">${cur}${body}
