@@ -2002,6 +2002,38 @@ const EVENTS=[
      {label:'"Break your chains?"',desc:'Free him &middot; +relic, +6 Miasma',run:p=>{const r=grantRandomRelic(p);addMiasma(6);return (r?`You snap the irons. He does not stand. He presses a small black relic into your hand &mdash; <b>${r}</b> &mdash; and closes his eyes. "Thank you. I have been here a long time."`:'You snap the irons. He does not stand. He presses something into your hand that you already carry, and closes his eyes.')+' (the cold thickens)';}},
      {label:'Walk past in silence',desc:'No reward, no cost',run:p=>'He watches you the whole way across the room. He does not call after you. He does not need to.'},
    ]},
+  // === REACTIVE — the crypt has a figure for every path the player commits to. Surfaces only when
+  // the player has actually picked a side (T1+ in a path) and shows them the road they DIDN'T take.
+  // The mechanical reward leans into the OTHER lesson — small but real, so refusing the build is a
+  // valid trade rather than a tax. Gated to once per run via id and zone, so the mirror does not
+  // become a trope.
+  {id:'opposite', title:'THE OPPOSITE NUMBER', zone:2,
+   available:p=> p.affTier.w>=1 || p.affTier.g>=1 || p.affTier.v>=1,
+   sprite:{src:'assets/monsters/cultist.png',tint:'tint-grey'}, art:"  ,---,\n  ( o )\n  )===( \n  /| |\\",
+   text:p=>{ const dom=dominantAff(p);
+     if(dom==='w') return 'A figure sits cross-legged in the centre of the chamber, eyes closed, hands open and empty. They speak without looking up. <span class="shout">"You taught yourself to break things. I taught myself to mend them. You are louder. I lasted longer."</span>';
+     if(dom==='g') return 'A heavy figure stands in the middle of the chamber, armoured to the eyes, one straight blade pointed at the floor. <span class="shout">"Tricks. Feints. Angles. So much work, all of it, to avoid the thing the rest of us learned to take."</span> A long breath through the helm. <span class="shout">"I walk in straight lines now. It is simpler."</span>';
+     if(dom==='v') return 'Someone has stripped to nothing in the cold. They are not shivering. <span class="shout">"You wear walls. You read the room before you enter it. I learned the opposite — I walk in first and worry about it after."</span> They smile. <span class="shout">"We are afraid of the same thing. We only picked different doors."</span>';
+     return 'Someone is sitting against the wall. They look up when you arrive. <span class="shout">"I never picked a path. I just kept walking. It got me here."</span> A pause. <span class="shout">"I am not sure what it got you."</span>';
+   },
+   options:[
+     {label:'Walk past in silence', desc:'+6 HP &middot; nothing changes',
+       run:p=>{ heal(p,6); return 'You step around them without slowing. They do not call after you. The cold gets a little less close. (+6 HP)'; }},
+     {label:'Take what they offer', desc:'Learn the OTHER lesson',
+       run:p=>{ const dom=dominantAff(p);
+         if(dom==='w'){ p.def+=2; addFlag(p,'combatRegen'); return 'They press their palm to your chest. Something settles where there was only weight. (+2 DEF; wounds close while the fight is still going on.)'; }
+         if(dom==='g'){ p.atk+=2; return 'They press the hilt of their blade into your hand and curl your fingers around it. <span class="shout">"Hit the centre. Less to remember."</span> (+2 ATK.)'; }
+         if(dom==='v'){ p.dodge+=8; p.crit+=4; return 'They smile, bare and cold. <span class="shout">"Stop tasting the air. Just step in."</span> (+8 DODGE, +4 CRIT.)'; }
+         p.maxHp+=8; heal(p,8); return 'They simply tell you to keep walking. Something tightens in your chest the rest of the way down. (+8 MAX HP.)';
+       }},
+     {label:'Ask why', desc:'A line you can carry',
+       run:p=>{ discoverLore('l18'); const dom=dominantAff(p);
+         if(dom==='w') return '<span class="shout-red">"Because there is one thing down here that does not bleed."</span> They open their eyes. <span class="shout-red">"Hurting it is not how it ends."</span>';
+         if(dom==='g') return '<span class="shout-red">"Because there is one thing down here you cannot read."</span> They tap the blade once. <span class="shout-red">"It has no intention. There is no feint that helps."</span>';
+         if(dom==='v') return '<span class="shout-red">"Because there is one thing down here that does not arrive."</span> They smile. <span class="shout-red">"Guarding against it is funny. It is already in the room."</span>';
+         return '<span class="shout-red">"Because every door I did not pick is still here."</span> They look at you, then away. <span class="shout-red">"I just had to come back to see them."</span>';
+       }},
+   ]},
   // ===== ORIGINAL EVENTS =====
   {id:'knight',title:'THE WOUNDED KNIGHT',sprite:{src:'assets/monsters/golem.png',tint:'tint-grey'},art:"  ,---,\n  (x_x)\n  /|cross|\\\n   |   |",
    text:'A dying knight slumps against the wall. "Please... mend me, and take my blade."',
