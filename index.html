@@ -1317,7 +1317,7 @@ function setMusicForScreen(){
    SPRITES  —  PNG art mapping (fallback to ASCII <pre>)
    ============================================================ */
 const ENEMY_SPRITE={
-  'Giant Rat':'slime','Goblin':'goblin','Cave Bat':'condor','Slime':'slime',
+  'Giant Rat':'imp','Goblin':'goblin','Cave Bat':'bloodbat','Slime':'slime',
   'Skeleton':'zombie','Ghoul':'zombie',
   'Venomspitter':'sahagin','Stone Golem':'golem',
   'Wraith':'ghost',
@@ -1332,8 +1332,8 @@ const ENEMY_SPRITE={
 };
 const BOSS_SPRITE={
   'GOBLIN KING':'goblin',
-  'THE NECROMANCER':'demonlord','STONE TITAN':'golem','CAVE TYRANT':'golem',
-  'DEMON LORD':'demonlord','THE LICH':'demonlord',
+  'THE NECROMANCER':'darkacolyte','STONE TITAN':'golem','CAVE TYRANT':'golem',
+  'DEMON LORD':'demonlord','THE LICH':'darkacolyte',
   'VHALRION, FIRST OF THE CHAINED':'dragon','VAREKH, THE KING BENEATH WINTER':'demonlord','AZH-RATH, KEEPER OF THE FURNACE DOOR':'dragon','THE DEVOURER':'demonlord',
   'THE THOUSANDTH CHAMPION':'thousandth','THE PALE DEVOURER':'paledevourer',
   // re-mapped wrong placeholders
@@ -1402,10 +1402,13 @@ function iconClassesFor(item){
     // Row is chosen by SLOT (head/chest/boots/legs each get their own row in
     // armr.png); the material keyword picks the column within that row so an
     // iron helm and a cloth hood look different but both still read as helmets.
-    const n=(item.name||'').toLowerCase();
+    // Match on the BASE name only — using the full prefixed name made things
+    // like "Bulwark Leather Vest" read as heavy iron because the BULWARK
+    // PASSIVE prefix triggered the heavy regex. The leather vest is leather.
+    const n=(item.baseName||item.name||'').toLowerCase();
     let mat='light';
-    if(/robe|archmage|\bmage\b|cloth|wizard|hood|silk|veil|shadowweave|weave/.test(n)) mat='robe';
-    else if(/plate|chain|iron|bloodforged|breast|steel|greave|sabaton|plated|bulwark|brigandine/.test(n)) mat='heavy';
+    if(/robe|cloth|wizard|hood|silk|veil/.test(n)) mat='robe';
+    else if(/plate|chain|iron|breast|steel|greave|sabaton|plated|brigandine/.test(n)) mat='heavy';
     return `iicon arm a-${item.slot}-${mat} ${r}`;
   }
   return null;
@@ -1950,7 +1953,7 @@ const EVENTS=[
      {label:'"I have never been here before."',desc:'Insist &middot; he may teach you',run:p=>{p.atk+=2;let extra='';if(!p.memory && chance(55)){grantMemory(p,'ember');extra=' He sketches a flame-sigil in the ash; you feel it lodge in your hands.';}return '"...of course you have not." His voice is gentle. He hands you the hilt of a snapped sword. (+2 ATK)'+extra;}},
      {label:'Leave him to his armor',desc:'Walk past',run:p=>'You step past. Behind you, you hear him laugh once, quietly, in disbelief.'},
    ]},
-  {id:'cultist',title:'THE DRAGON CULTIST',zone:1,sprite:{src:'assets/monsters/demon.png',tint:'tint-amber'},art:"  ,___,\n  ( ^ )\n  /\\=/\\\n  d   b",
+  {id:'cultist',title:'THE DRAGON CULTIST',zone:1,sprite:{src:'assets/monsters/cultist.png',tint:'tint-amber'},art:"  ,___,\n  ( ^ )\n  /\\=/\\\n  d   b",
    text:'A figure in scaled robes kneels at the lip of the Furnace, palms up. They do not turn to look at you.',
    options:[
      {label:'"What are you praying for?"',desc:'Listen',run:p=>'"That you will turn back." The cultist does not raise their head. "The Warden lets you pass eventually &mdash; that is the cruelty." A pause. "The first door is not the last door."'},
@@ -2052,7 +2055,7 @@ const EVENTS=[
      {label:'Rob him',desc:'Take his gold, leave him',run:p=>{const g=25+rnd(30);p.gold+=g;return `You take ${g} gold from his pack. His eyes follow you into the dark.`;}},
      {label:'Leave him be',desc:'Walk away',run:p=>`You leave the knight to his fate.`},
    ]},
-  {id:'imp',title:'THE GAMBLING IMP',sprite:{src:'assets/monsters/demon.png',tint:'tint-amber'},art:"  ^..^\n (?  ?)\n  )$$( ",
+  {id:'imp',title:'THE GAMBLING IMP',sprite:{src:'assets/monsters/imp.png',tint:'tint-amber'},art:"  ^..^\n (?  ?)\n  )$$( ",
    text:'A grinning imp rattles a cup of dice. "Double or nothing, champion?"',
    options:[
      {label:'Bet 30 gold',desc:'50/50: win 60 or lose 30',run:p=>{if(p.gold<30)return 'You jingle empty pockets. The imp cackles and vanishes.';p.gold-=30;if(chance(50)){p.gold+=60;return 'The dice come up sevens! You pocket 60 gold.';}return 'Snake eyes. The imp snatches your coins and giggles away.';}},
@@ -3000,7 +3003,7 @@ function makeItem(slot,cls,depth,opts){ opts=opts||{};
   if(rk.passive&&!set&&pp){ passive=pick(pp);
     if(passive.stat)for(const k in passive.stat)stats[k]=(stats[k]||0)+passive.stat[k];
     name=(passive.prefix||'')+name+(passive.suffix||''); }
-  const item={slot,name,type:base.type,rarity,ilvl,stats,aff:base.aff||null,set:set||base.set||null};
+  const item={slot,name,baseName:base.name,type:base.type,rarity,ilvl,stats,aff:base.aff||null,set:set||base.set||null};
   if(slot==='weapon'){ item.dmg=stats.dmg||0; if(passive&&passive.proc)item.proc=passive.proc;
     // WEAPON ARCHETYPE TRAIT — late-game weapons grow weird, tempting bad decisions.
     if(opts.trait){ item.trait=opts.trait; }
@@ -3869,7 +3872,10 @@ function pickEcho(depth){ const pool=G._echoPool||[]; if(!pool.length)return nul
   let tot=w.reduce((a,b)=>a+b,0),r=Math.random()*tot; for(let i=0;i<pool.length;i++){ if(r<w[i])return pool[i]; r-=w[i]; } return pool[0]; }
 function renderEcho(){ const p=G.player,ec=G.room.echo; if(!ec){ return leaveRoom(); } discoverLore('l7');
   const cls=CLASSES[ec.cls]?CLASSES[ec.cls].name:'CHAMPION';
-  const sprite=`<div class="sprite-player ${ec.cls} dead" style="filter:grayscale(1) brightness(.6) drop-shadow(0 0 10px rgba(120,110,180,.6))"></div>`;
+  // Echo sprite was the player's own class, greyscaled — which read as "a poor copy of my
+  // character" instead of a wraith. The ghost monster sprite is what a fallen champion actually
+  // looks like in this dark, and the purple tint matches the panel's mourning palette.
+  const sprite=`<img class="ev-sprite tint-shadow" src="assets/monsters/ghost.png" alt="A fallen champion" draggable="false" style="filter:brightness(.55) drop-shadow(0 0 12px rgba(140,110,200,.6));max-height:120px">`;
   const gearTxt=ec.item?`${RARITY[ec.item.rarity]?'<span class="'+RARITY[ec.item.rarity].cls+'">'+ec.item.name+'</span>':ec.item.name} Lv${ec.item.ilvl}`:'rusted scraps';
   if(G.room.outcome){
     app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
