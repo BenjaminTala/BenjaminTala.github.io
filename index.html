@@ -5646,8 +5646,22 @@ function fleeBattle(){ const p=G.player,b=G.battle; if(battleBusy())return;
 
 function tickDoT(entity,st,name){ // returns false if entity died
   const isPlayer=(name==='you'); const ward=(!isPlayer&&entity.statusWard)?0.5:1;   // Warded enemies shrug off DoT
-  if(st.burnT>0){ const d=Math.max(1,Math.round(st.burn*ward)); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('burn',bf-entity.hp); blog(`Burn sears ${name} for ${d}.`,'dmg'); st.burnT--; }
-  if(st.poisonT>0){ const d=Math.max(1,Math.round(st.poison*ward)); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('poison',bf-entity.hp); blog(`Poison wracks ${name} for ${d}.`,'dmg'); st.poisonT--; }
+  // Phoenix Feather guard: if a DoT tick would kill the player and the relic is unused, leave
+  // them at 1 HP and burn the second-wind charge — same contract the physical-hit path honours
+  // in applyEnemyHit, just for the DoT timing window (burn/poison expiring at end-of-turn).
+  const phx=(rawDmg)=>{ if(!isPlayer||!entity.flags||!entity.flags.secondWind||entity._phoenixUsed)return rawDmg;
+    if(entity.hp-rawDmg>0) return rawDmg;
+    entity._phoenixUsed=1; const heal=Math.max(1,Math.round(entity.maxHp*0.30));
+    blog('PHOENIX FEATHER — the wound that would have closed your eyes leaves them open. (+'+heal+' HP)','crit');
+    setTimeout(()=>showInfo({title:'PHOENIX FEATHER',body:'<p class="shout-red" style="font-size:11px">The end came for you and your relic answered. You are at <b>1 HP</b>, and then the feather burns to dust and gives you <b>'+heal+' HP</b>.</p>'}),0);
+    return entity.hp-1;   // leave them at exactly 1 HP, then heal below
+  };
+  if(st.burnT>0){ let d=Math.max(1,Math.round(st.burn*ward)); d=phx(d); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('burn',bf-entity.hp); blog(`Burn sears ${name} for ${d}.`,'dmg'); st.burnT--; }
+  if(st.poisonT>0){ let d=Math.max(1,Math.round(st.poison*ward)); d=phx(d); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('poison',bf-entity.hp); blog(`Poison wracks ${name} for ${d}.`,'dmg'); st.poisonT--; }
+  // If Phoenix fired, restore the heal now (player sits at 1 HP after the tick, jump to ~30% maxHp).
+  if(isPlayer && entity._phoenixUsed && entity.hp<=1 && entity.flags && entity.flags.secondWind){
+    entity.hp=Math.min(entity.maxHp, 1+Math.max(1,Math.round(entity.maxHp*0.30)));
+  }
   if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
   return entity.hp>0;
 }
