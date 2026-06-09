@@ -2720,12 +2720,12 @@ const WEAPON_TRAIT_KEYS=Object.keys(WEAPON_TRAITS);
 const DEVOUR_FAMILIES={
   Ooze:     {label:'Ooze',     trait:'poison', ico:'&#9879;',   desc:'your blows leave them dripping with rot'},
   Demon:    {label:'Infernal', trait:'burn',   ico:'&#128293;', desc:'your strikes catch them on fire'},
-  Beast:    {label:'Feral',    trait:'bleed',  ico:'&#129704;', desc:'you cut deeper — wounds that take longer to close'},
+  Beast:    {label:'Feral',    trait:'bleed',  ico:'&#128062;', desc:'you cut deeper — wounds that take longer to close'},
   Vermin:   {label:'Swarm',    trait:'multi',  ico:'&#128001;', desc:'one strike becomes two'},
   Construct:{label:'Stillness',trait:'stun',   ico:'&#128737;', desc:'your hits sometimes seize them in place'},
   Undead:   {label:'Grave',    trait:'weaken', ico:'&#9760;',   desc:'you sap the strength out of them'},
-  Humanoid: {label:'Cult',     trait:'vuln',   ico:'&#9728;',   desc:'you mark them — the next blows land softer for the world, harder for them'},
-  Dragon:   {label:'Draconic', trait:'heat',   ico:'&#128293;', desc:'the hotter the room, the more it hurts'},
+  Humanoid: {label:'Cult',     trait:'vuln',   ico:'&#128101;', desc:'you mark them — the next blows land softer for the world, harder for them'},
+  Dragon:   {label:'Draconic', trait:'heat',   ico:'&#128009;', desc:'the hotter the room, the more it hurts'},
 };
 const DEVOUR_FAMILY_KEYS=Object.keys(DEVOUR_FAMILIES);
 // Named EVOLVE combinations — two paths merging. Order doesn't matter; sorted alphabetically.
@@ -4969,7 +4969,7 @@ const INTENT_DISPLAY={
   poison: {ico:'&#9879;', cls:'i-cast'},   // alembic — ☣ is reserved for MIASMA so the two DoT systems don't read as one
   weak:   {ico:'&#8595;', cls:'i-cast'},
   vuln:   {ico:'&#10687;', cls:'i-cast'},
-  stun:   {ico:'&#9889;', cls:'i-cast'},
+  stun:   {ico:'&#128171;', cls:'i-cast'},   // dizzy-stars — was sharing lightning with CHARGE
   heal:   {ico:'&#10010;', cls:'i-heal'},
   armor:  {ico:'&#128737;', cls:'i-armor'},
   enrage: {ico:'!!', cls:'i-enrage'},
