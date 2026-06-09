@@ -2929,7 +2929,7 @@ function showMultiEssenceChoice(){
   const title=revealed?`FRAGMENTS AVAILABLE &mdash; Choose one`:`ESSENCES AVAILABLE &mdash; Choose one`;
   const intro=revealed?'Multiple fragments rise from the dead. Take ONE.':'Multiple essences rise from the dead. Take ONE.';
   const body=
-    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; ${intro}</p>`+
+    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#127744; ${intro}</p>`+
     fams.map(fam=>{ const fdef=DEVOUR_FAMILIES[fam];
       return `<button class="btn" onclick="pickMultiEssence('${fam}')" style="border-left:3px solid #c06cff"><span class="k purple">${fdef.ico}</span>${fdef.label} ${noun}<small>${fdef.desc}</small></button>`;
     }).join('');
@@ -2973,7 +2973,7 @@ function showFragmentChoice(){
   try{ if(combo && !localStorage.getItem('crypt_seen_combo')){ localStorage.setItem('crypt_seen_combo','1');
     comboHint=`<p class="amber" style="font-size:9px;line-height:1.7;margin:6px 0">&#10022; Two hungers can merge &mdash; feeding it a different family than the last forges a NAMED form, stronger than either alone.</p>`; } }catch(e){}
   const body=
-    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#9763; You ${verb} a <b>${fdef.label} ${noun}</b>.</p>`+
+    `<p class="shout-purple" style="font-size:11px;line-height:1.7">&#127744; You ${verb} a <b>${fdef.label} ${noun}</b>.</p>`+
     comboHint+
     `<p class="muted" style="font-size:9px;margin:8px 0">Current: <b>${d.name}</b> &middot; path: ${d.path.length?d.path.join(' &rarr; '):'(none)'}</p>`+
     `<button class="btn" onclick="pickFragment('${fam}','evolve')" style="margin-top:6px;border-left:3px solid #c06cff"><span class="k purple">&#9670;</span>EVOLVE &mdash; ${evolveLabel}<small>${evolveDesc}</small></button>`+
@@ -3004,7 +3004,7 @@ function revealDevour(){
   if(p.memory.desc==='Strike a weakened enemy and harvest its essence.')
     p.memory.desc='Heavy single strike. If this kills, you consume a FRAGMENT and the skill mutates.';
   popupBuild('THE WORD CHANGES',
-    `<p class="shout-red" style="font-size:12px;line-height:1.7">&#9763; You read the skill tooltip again. It does not say what it used to say.</p>`+
+    `<p class="shout-red" style="font-size:12px;line-height:1.7">&#127744; You read the skill tooltip again. It does not say what it used to say.</p>`+
     `<p class="evtext" style="font-size:10px;margin-top:10px"><b>HARVEST ESSENCE</b> &rarr; <b class="red" style="font-size:13px">DEVOUR</b></p>`+
     `<p class="muted" style="font-size:9px;margin-top:8px;line-height:1.6">You were never harvesting anything. You were never collecting power. <b>The word was honest the whole time.</b> Every kill that taught you a new way to strike &mdash; you were eating them.</p>`,
   'memory');
@@ -3880,7 +3880,7 @@ function dungeonMemoryLine(){
   if(killedBosses.includes('dragon')) cands.push(`The dragon-bones in the eighth chamber were once warm. You made them cold.`);
   if(killedBosses.includes('king')) cands.push(`The King's chair is empty because of you. The chair will be filled again. It always is.`);
   if(!cands.length) cands.push(`You have been here before. The walls have not.`);
-  return '&#9763; ' + pick(cands);
+  return '&#127744; ' + pick(cands);
 }
 function deathReturnHtml(){
   const d = loadLastDeath(); if(!d) return '';
@@ -3888,7 +3888,7 @@ function deathReturnHtml(){
   // The greeting header changes if the player WON the previous run vs DIED.
   const heading = d.won
     ? '<span class="amber">&#9819; THE CRYPT REMEMBERS YOUR VICTORY.</span>'
-    : '<span class="purple">&#9763; THE CRYPT REMEMBERS YOUR DEATH.</span>';
+    : '<span class="purple">&#127744; THE CRYPT REMEMBERS YOUR DEATH.</span>';
   const where = d.won
     ? (d.abyss?`fell at depth ${d.depth}, beyond the throne`:`retired at chamber ${d.depth}`)
     : `died at chamber ${d.depth}`;
@@ -4150,8 +4150,8 @@ function drainBanners(max){
   if(G._zoneMsg){ push(100,'panel tight fade','font-size:9px;line-height:1.9','<span class="muted">&#9670; </span>'+G._zoneMsg); G._zoneMsg=null; }
   if(G._loreMsg){ push(90,'panel tight center amber fade','font-size:9px',G._loreMsg); G._loreMsg=null; }
   if(G._affMsg){ push(85,'panel tight center teal fade','font-size:9px','&#10022; '+G._affMsg); G._affMsg=null; }
-  if(G._memoryMsg){ push(95,'panel tight center purple fade','font-size:9.5px;letter-spacing:.6px;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(80,30,140,.18),rgba(40,16,80,.10))','&#9763; '+G._memoryMsg); G._memoryMsg=null; }
-  if(G._flashbackMsg){ push(80,'panel tight center purple fade','font-size:9px;letter-spacing:.6px','&#9763; '+G._flashbackMsg); G._flashbackMsg=null; }
+  if(G._memoryMsg){ push(95,'panel tight center purple fade','font-size:9.5px;letter-spacing:.6px;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(80,30,140,.18),rgba(40,16,80,.10))','&#127744; '+G._memoryMsg); G._memoryMsg=null; }
+  if(G._flashbackMsg){ push(80,'panel tight center purple fade','font-size:9px;letter-spacing:.6px','&#127744; '+G._flashbackMsg); G._flashbackMsg=null; }
   if(G._worldMsg){ push(70,'panel tight center red fade','font-size:9px',G._worldMsg); G._worldMsg=null; }
   if(G._heatTickMsg){ push(60,'panel tight center fade','font-size:9px;line-height:1.7;color:#ffcf4d;border-color:#b54818;background:linear-gradient(180deg,rgba(255,120,40,.08),rgba(255,90,20,.04))',G._heatTickMsg); G._heatTickMsg=null; }
   if(G._miasmaTickMsg){ push(58,'panel tight center fade','font-size:9px;line-height:1.7;color:#d9b8ff;border-color:#6c3cbf;background:linear-gradient(180deg,rgba(180,100,255,.10),rgba(140,70,220,.04))',G._miasmaTickMsg); G._miasmaTickMsg=null; }
@@ -5214,8 +5214,8 @@ function renderBattle(){
   const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm)); const enabled=p.mana>=cost;
     return `<button class="cmd" ${enabled?'':'disabled'} onclick="playerSkill('${s.id}')"><span class="k blue">&#10070;</span><span class="lbl">${s.name} <span class="muted">(${cost}MP)</span>${s.aoe?' <span class="amber" title="Strikes every enemy">&#9650; all</span>':''}${enabled?skillProjChip(p,s,!!s.aoe):''}<small>${s.desc}</small></span></button>`;}).join('')
     +(p.memory
-      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm)); const enabled=p.mana>=cost; return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${enabled?'':'disabled'} onclick="playerSkill('${m.id}')"><span class="k purple">&#9763;</span><span class="lbl">${m.name} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber" title="Strikes every enemy">&#9650; all</span>':''}${enabled?skillProjChip(p,m,!!m.aoe):''}<small>${m.desc}</small></span></button>`;})()
-      :'<button class="cmd" disabled style="opacity:.45;border-style:dashed"><span class="k purple">&#9763;</span><span class="lbl">MEMORY (empty)<small>find an Echo, a king, a dragon, a priest... they remember things you do not.</small></span></button>');
+      ?(()=>{const m=p.memory,cost=Math.max(1,Math.round(m.cost*cm)); const enabled=p.mana>=cost; return `<button class="cmd" style="border-color:#6c3cbf;color:#d6b8ff" ${enabled?'':'disabled'} onclick="playerSkill('${m.id}')"><span class="k purple">&#127744;</span><span class="lbl">${m.name} <span class="muted">(${cost}MP)</span>${m.aoe?' <span class="amber" title="Strikes every enemy">&#9650; all</span>':''}${enabled?skillProjChip(p,m,!!m.aoe):''}<small>${m.desc}</small></span></button>`;})()
+      :'<button class="cmd" disabled style="opacity:.45;border-style:dashed"><span class="k purple">&#127744;</span><span class="lbl">MEMORY (empty)<small>find an Echo, a king, a dragon, a priest... they remember things you do not.</small></span></button>');
   const fleeEnabled=!b.hadBoss;
   const pSprite=playerSpriteHtml(p,{dead:p.hp<=0})||`<pre class="sprite" style="font-size:9px;color:var(--${p.color})">${p.sprite}</pre>`;
   const um=ultMeta(p.cls);
@@ -5280,7 +5280,7 @@ let _fxKind=null;   // set by the current attack so dealToEnemy tags the right e
 const FX_COLOR={hit:['#ffffff','#ffe6a0'],crit:['#ffd54a','#c06cff'],fire:['#ff8a3c','#ffd23c'],
   frost:['#9fe0ff','#ffffff'],poison:['#7cff6b','#aaff00'],arcane:['#c06cff','#e6b3ff'],
   arrow:['#dfe6ff','#9fb0d0'],pdmg:['#ff5c6a','#ff9aa0'],heal:['#5cff8f','#aaffcc']};
-const FX_GLYPH={hit:'&#10006;',crit:'&#10022;',fire:'&#10042;',frost:'&#10052;',poison:'&#9763;',
+const FX_GLYPH={hit:'&#10006;',crit:'&#10022;',fire:'&#10042;',frost:'&#10052;',poison:'&#9879;',
   arcane:'&#10038;',arrow:'&#10142;',pdmg:'&#10006;',heal:'&#10010;'};
 function fxHtml(kind){ const cols=FX_COLOR[kind]||FX_COLOR.hit; const n=kind==='crit'?10:6; let parts='';
   for(let k=0;k<n;k++){ const a=Math.random()*6.283,dist=16+Math.random()*24,dx=Math.round(Math.cos(a)*dist),dy=Math.round(Math.sin(a)*dist-6),c=cols[k%cols.length],sz=kind==='crit'?6:5;
@@ -5296,9 +5296,9 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
   // ---- DUAL ARTIFACTS — on-kill triggers ----
   if(p.flags.boneCrown){ p._boneCrownStacks=(p._boneCrownStacks||0)+1; p.atk+=1;
-    blog(`&#9763; BONE CROWN &mdash; the kill makes you sharper (+1 ATK this battle).`,'crit'); }
+    blog(`&#9670; BONE CROWN &mdash; the kill makes you sharper (+1 ATK this battle).`,'crit'); }
   if(p.flags.cinderHeart && (p.potions||0)<5 && chance(50)){
-    p.potions=(p.potions||0)+1; blog(`&#9763; CINDER HEART &mdash; the ember refills a vial (+1 potion).`,'heal'); }
+    p.potions=(p.potions||0)+1; blog(`&#9670; CINDER HEART &mdash; the ember refills a vial (+1 potion).`,'heal'); }
   // First-kill Devour explainer — gated by localStorage so it shows once across all runs.
   // On the very first run we ADDITIONALLY hold it until chamber 8+, so it doesn't pile onto the
   // attack / potion / intent-reading teaching in the first few chambers.
@@ -5399,20 +5399,20 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   // Mirror Veil: first basic hit each combat is guaranteed crit + applies VULNERABLE.
   if(p._mirrorPrimed && !isExtra){ p._mirrorPrimed=0;
     if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); }
-    const e0=b.enemies[idx]; if(e0&&e0.hp>0){ addVuln(e0.st,2); blog('&#9763; MIRROR VEIL &mdash; the first strike rings true. VULNERABLE!','crit'); SFX.play('crit'); }
+    const e0=b.enemies[idx]; if(e0&&e0.hp>0){ addVuln(e0.st,2); blog('&#9670; MIRROR VEIL &mdash; the first strike rings true. VULNERABLE!','crit'); SFX.play('crit'); }
   }
   // Sealed Compact: every 5th hit YOU TAKE primes a free crit on your next strike.
   if(p._sealedNextCrit && !isExtra){ p._sealedNextCrit=0;
-    if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); blog('&#9763; SEALED COMPACT &mdash; the answering strike CRITS.','crit'); SFX.play('crit'); }
+    if(!c){ c=true; d=Math.round((p.atk+p.weapon.dmg)*critMult()); blog('&#9670; SEALED COMPACT &mdash; the answering strike CRITS.','crit'); SFX.play('crit'); }
   }
   SFX.play(c?'crit':'hit');
   const done=dealToEnemy(idx,d,`You strike with ${p.weapon.name}`,c);
   // Witch's Tongue: crits apply a random status (handled here so it fires for basics; skills handle their own).
   if(c && p.flags.witchTongue && !isExtra){ const e1=b.enemies[idx]; if(e1&&e1.hp>0){
-    const r=rnd(4); if(r===0){addBurn(e1.st,5,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit BURNS.','info');}
-    else if(r===1){addPoison(e1.st,5,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit POISONS.','info');}
-    else if(r===2){addWeak(e1.st,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit WEAKENS.','info');}
-    else {addVuln(e1.st,2);blog('&#9763; WITCH&rsquo;S TONGUE &mdash; the crit makes them VULNERABLE.','info');}
+    const r=rnd(4); if(r===0){addBurn(e1.st,5,2);blog('&#9670; WITCH&rsquo;S TONGUE &mdash; the crit BURNS.','info');}
+    else if(r===1){addPoison(e1.st,5,2);blog('&#9670; WITCH&rsquo;S TONGUE &mdash; the crit POISONS.','info');}
+    else if(r===2){addWeak(e1.st,2);blog('&#9670; WITCH&rsquo;S TONGUE &mdash; the crit WEAKENS.','info');}
+    else {addVuln(e1.st,2);blog('&#9670; WITCH&rsquo;S TONGUE &mdash; the crit makes them VULNERABLE.','info');}
   }}
   const e=b.enemies[idx];
   // WEAPON TRAITS — cursed pollutes, bleed cuts on crit
@@ -5702,7 +5702,7 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
   if(chance(dodgeChance)){ SFX.play('dodge'); blog(`You dance aside &mdash; ${e.name} misses!`,'info'); if(p.flags.shadowDodge)b.shadowCrit=1;
     // Pale Reading (GUILE+VEIL): dodging restores 5 MP and 5% max HP.
     if(p.flags.paleReading){ const hh=Math.max(2,Math.round(p.maxHp*0.05)); heal(p,hh); p.mana=clamp(p.mana+5,0,p.maxMana);
-      blog(`&#9763; PALE READING &mdash; the dodge feeds you (+${hh} HP, +5 MP).`,'heal');
+      blog(`&#9670; PALE READING &mdash; the dodge feeds you (+${hh} HP, +5 MP).`,'heal');
       (b.floats=b.floats||[]).push({idx:-1,text:'+'+hh,cls:'heal'}); }
     return; }
   // RANGER SURVIVAL FLOOR — Wind Step (Evade) also grazes the blows that DO land. The fairness
@@ -5743,7 +5743,7 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
       if(p.flags.sealedCompact && dmg>0){ p._sealedHits=(p._sealedHits||0)+1;
         if(p._sealedHits>=5){ p._sealedHits=0; p._sealedNextCrit=1;
           const hh=Math.max(3,Math.round(p.maxHp*0.08)); heal(p,hh);
-          blog(`&#9763; SEALED COMPACT &mdash; the fifth blow opens a door (+${hh} HP, next strike CRITS).`,'crit');
+          blog(`&#9670; SEALED COMPACT &mdash; the fifth blow opens a door (+${hh} HP, next strike CRITS).`,'crit');
           (b.floats=b.floats||[]).push({idx:-1,text:'+'+hh,cls:'heal'}); } }
       // Tri-Star Brand: +2% damage reduction per affinity tier reached (caps softly via dmg=1 floor).
       // Applied retroactively here so the floats already reflect the reduction below.
@@ -5757,7 +5757,7 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
       if(p._heatHits>=2){ p._heatHits=0; addHeat(1); } }
     // VEIL I — STEADY HEART: every 3rd hit you absorb folds back into you (dominant-path only).
     if(dmg>0 && p.hp>0 && dominantAff(p)==='v'){ p._veilHits=(p._veilHits||0)+1;
-      if(p._veilHits>=3){ p._veilHits=0; const h=Math.max(2,Math.round(p.maxHp*0.06)); heal(p,h); blog(`&#9774; STEADY HEART — the wound seals (+${h} HP).`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); } } }   // enemy/boss landed the final blow — remember WHO
+      if(p._veilHits>=3){ p._veilHits=0; const h=Math.max(2,Math.round(p.maxHp*0.06)); heal(p,h); blog(`&#10010; STEADY HEART — the wound seals (+${h} HP).`,'heal'); (b.floats=b.floats||[]).push({idx:-1,text:'+'+h,cls:'heal'}); } } }   // enemy/boss landed the final blow — remember WHO
   if(e.leech){ const h=Math.max(1,Math.round(dmg*0.4)); e.hp=clamp(e.hp+h,0,e.maxHp); blog(`${e.name} drains ${h} HP.`,'heal'); }
   if(e.poison&&chance(e.poison[2])){ addPoison(b.pst,e.poison[0],e.poison[1]); blog(`You are POISONED!`,'info'); }
   if(e.burnAtk&&chance(e.burnAtk[2])){ addBurn(b.pst,e.burnAtk[0],e.burnAtk[1]); blog(`You are set ABLAZE!`,'info'); }
@@ -6390,7 +6390,7 @@ function playerBar(p,full){
   const invBtns = `<div class="hud-actions">
     <button class="hud-btn${act('gear')}" onclick="openInventory('gear')" title="Your gear &amp; sets (i)"><span>&#9776;</span> INVENTORY <span class="hud-k">i</span></button>
     <button class="hud-btn hud-skills${act('powers')}" onclick="openInventory('powers')" title="Your skills, paths, relics &amp; synergies"><span>&#10022;</span> SKILLS</button>
-    <button class="hud-btn hud-saga${act('saga')}" onclick="openInventory('saga')" title="Bestiary &amp; your Saga"><span>&#9774;</span> SAGA</button>
+    <button class="hud-btn hud-saga${act('saga')}" onclick="openInventory('saga')" title="Bestiary &amp; your Saga"><span>&#128220;</span> SAGA</button>
     <button class="hud-btn hud-help" onclick="showGlossary()" title="Glossary &mdash; learn every system">?</button>
   </div>`;
   // Potion pips — Slay-the-Spire-style explicit slot view.  Show up to 5 pips;
