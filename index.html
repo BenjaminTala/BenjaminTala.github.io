@@ -3193,6 +3193,7 @@ function renderClassSelect(){
 }
 function stepAsc(d){ const unlocked=loadAscension(); G._ascSel=clamp((G._ascSel||0)+d,0,unlocked); renderClassSelect(); }
 function chooseClass(key){ G.player=makePlayer(key); G.depth=0; G.mods=defaultMods(); G._echoPool=loadEchoes(); G._memoir=null; G._earlyEliteSeen=0; memoir();   // fresh per-run page for the death-screen epitaph
+  if(G.player){ G.player._forgeSharpen=0; G.player._forgeWard=0; G.player._forgeDread=0; }   // forge depth counters reset each run
   // Lock in the selected Ascension for this run and stack its modifiers onto G.mods.
   G.ascension = clamp(G._ascSel!=null?G._ascSel:loadAscension(), 0, loadAscension());
   applyAscension(G.ascension);
@@ -4754,6 +4755,24 @@ function forgeImbue(){ const p=G.player,w=p.weapon,cost=24; if(p.essence<cost||w
 // SOUL ESSENCE -> AFFINITY: a late-game sink that feeds the identity system instead of capping out.
 function forgeAttune(path){ const p=G.player,cost=40; if(p.essence<cost)return false; p.essence-=cost;
   addAffinity(p,{[path]:2}); checkAffinityTiers(p); return true; }
+// FORGE DEPTH — three new cheap-and-fast options so the Forge isn't just "upgrade your best gear":
+//   SHARPEN  — escalating tiny weapon dmg bumps. 5 stacks per run, cost climbs each time.
+//   WARD     — escalating tiny chest def + max-HP. 3 stacks per run, cost climbs each time.
+//   DREAD    — REVERSE economy: pay 25% of CURRENT HP to gain 60 essence. Once per Forge visit.
+//              Lets a high-essence build trade HP it doesn't need for more essence; pushes a
+//              low-essence run into the red but lets you keep upgrading. Real choice.
+function forgeSharpen(){ const p=G.player; const n=p._forgeSharpen||0; if(n>=5)return false;
+  const cost=10+n*4; if(p.essence<cost)return false; p.essence-=cost;
+  p.weapon.dmg=(p.weapon.dmg||0)+1; p.weapon.stats.dmg=(p.weapon.stats.dmg||0)+1;
+  p._forgeSharpen=n+1; return true; }
+function forgeWard(){ const p=G.player; const n=p._forgeWard||0; if(n>=3)return false;
+  const cost=14+n*6; if(p.essence<cost)return false; p.essence-=cost;
+  const chest=p.equip.chest; if(chest){ chest.stats.def=(chest.stats.def||0)+1; chest.stats.maxHp=(chest.stats.maxHp||0)+6; }
+  p.def=(p.def||0)+1; p.maxHp+=6; heal(p,6);
+  p._forgeWard=n+1; return true; }
+function forgeDread(){ const p=G.player; if(p._forgeDread)return false;
+  const sacrifice=Math.max(8,Math.round(p.hp*0.25)); if(p.hp<=sacrifice+1)return false;
+  selfHurt(p,sacrifice,'self'); p.essence+=60; p._forgeDread=1; return true; }
 // FORGE MOMENT — every successful action carries a one-line in-fiction reaction shown as a brief
 // banner above the panel + a "clang" body shake. The forge stops being a spreadsheet and starts
 // being a smith taking your blade out of your hands and giving it back hotter.
@@ -4774,6 +4793,18 @@ const FORGE_LINES={
     'The forge&rsquo;s heat moves through you toward the path you have chosen. You stand a little straighter.',
     'A door opens somewhere in your shoulders. You do not need to know to which path.',
     'He nods, once. You did not know smiths approved of anything.'],
+  sharpen:[
+    'A few strokes on the edge. The blade does not look different; it cuts a little less politely.',
+    'He takes a stone from a tin and works it across the edge in silence. He gives it back faster than it left.',
+    'Sparks. A single fine spark, and your weapon weighs the same and means more.'],
+  ward:[
+    'He hammers a new hollow into the chest plate. You feel less hollow yourself.',
+    'A row of rivets goes into your armour that were not there. You can feel them holding.',
+    'The cloth under your plate dries to a kind of resin. It will hold longer this run.'],
+  dread:[
+    'He does not ask. You open your hand. The blood goes into the anvil. The anvil sings.',
+    'The smith works with your blood in the iron. The work is faster than it should be.',
+    'Some of you is now in the forge. It is paying you back in souls. You are not sure that is fair.'],
   fail:[
     'The smith does not look up. There is not enough essence on the anvil to interest him.',
     'A line is drawn. Your weapon is already as good as it knows how to be tonight.']
@@ -4797,6 +4828,9 @@ function forgeResultPopup(it,snap,kind){ if(!it||!snap)return;
     body:`${rows}${extra}${(rows||extra)?'':'<p class="muted" style="font-size:10px">The forge does its work.</p>'}`});
 }
 function fAttune(path){ const ok=forgeAttune(path); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'attune':'fail'); renderForge(); }
+function fSharpen(){ const ok=forgeSharpen(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'sharpen':'fail'); renderForge(); }
+function fWard(){ const ok=forgeWard(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'ward':'fail'); renderForge(); }
+function fDread(){ const ok=forgeDread(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'dread':'fail'); renderForge(); }
 function fUpgrade(s){ const p=G.player; const snap=forgeSnap(p.equip[s]); const ok=forgeUpgrade(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'upgrade':'fail'); renderForge(); if(ok)forgeResultPopup(p.equip[s],snap,'upgrade'); }
 function fReforge(s){ const p=G.player; const snap=forgeSnap(p.equip[s]); const ok=forgeReforge(s); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'reforge':'fail'); renderForge(); if(ok)forgeResultPopup(p.equip[s],snap,'reforge'); }
 function fImbue(){ const p=G.player; const snap=forgeSnap(p.weapon); const ok=forgeImbue(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'imbue':'fail'); renderForge(); if(ok)forgeResultPopup(p.weapon,snap,'imbue'); }
@@ -4812,6 +4846,13 @@ function renderForge(){ const p=G.player; discoverLore('l11');
   // Pour essence into your PATH — the late-game essence sink that feeds affinity (Wrath/Guile/Veil).
   const at=['w','g','v'].map(k=>{const meta=AFF_META[k];
     return fb(`Attune to ${meta.name}`,40,`+2 ${meta.name} affinity (toward the tier capstones)`,`fAttune('${k}')`,p.essence>=40);}).join('');
+  // NEW: three small/fast options so the Forge has more than one rhythm.
+  const sharpN=p._forgeSharpen||0, sharpCost=10+sharpN*4;
+  const sharp = sharpN>=5 ? '' : fb(`Sharpen weapon (+1 DMG)`, sharpCost, `${sharpN}/5 this run &middot; small, repeatable, the cost climbs each time`, `fSharpen()`, p.essence>=sharpCost);
+  const wardN=p._forgeWard||0, wardCost=14+wardN*6;
+  const ward = wardN>=3 ? '' : fb(`Ward armor (+1 DEF, +6 HP)`, wardCost, `${wardN}/3 this run &middot; chest is reinforced, your frame holds a little more`, `fWard()`, p.essence>=wardCost);
+  const dreadDmg=Math.max(8,Math.round(p.hp*0.25));
+  const dread = p._forgeDread ? '' : fb(`Bleed for the forge (+60 ${ESS})`, 0, `pay ${dreadDmg} HP &middot; once per visit &middot; the smith takes what you have to give`, `fDread()`, p.hp>dreadDmg+1);
   const flash = G._forgeFlash ? `<div class="forge-flash">${G._forgeFlash}</div>` : '';
   G._forgeFlash = null;
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
@@ -4819,7 +4860,7 @@ function renderForge(){ const p=G.player; discoverLore('l11');
       <h3 class="center amber" style="margin:2px 0 2px">&#128296; THE SOUL FORGE</h3>
       <p class="muted center" style="font-size:8px">A phantom smith hammers starlight. Spend <span class="teal">${p.essence} ${ESS}</span> to grow stronger.</p>
       ${flash}
-      ${up}${im}${re}${at}
+      ${up}${im}${re}${at}${sharp}${ward}${dread}
       <button class="btn muted center" onclick="leaveForge()"><span class="k">&#10551;</span>LEAVE THE FORGE</button></div>`;
 }
 
