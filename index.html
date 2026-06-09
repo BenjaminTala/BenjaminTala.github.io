@@ -2790,22 +2790,24 @@ function unlockAffinity(p,k,t){
   const stageColor = {w:'red', g:'teal', v:'blue'}[k];
   // Extract the bolded path-name from the flavour string (it's the prefix before " — ")
   const pathName = (msg.split('—')[0]||'').trim();
+  // STAGE IS the moment — no detail popup after. The flavour line (msg) sits in the stage body
+  // alongside the path-tier brand name (Rending Edge / Trickster / Warden). The body also
+  // includes the "road deepens / road ends" line that the popup used to carry.
+  const tail = t<3
+    ? `<br><span style="opacity:.7">The ${AFF_META[k].name} road runs deeper still.</span>`
+    : `<br><span style="opacity:.7">You have walked this road as far as it goes.</span>`;
+  // The flavour line is "PATHNAME — body sentence"; we already pulled pathName above, so strip
+  // it from the body so we don't repeat it under the title.
+  const bodyText = msg.includes('—') ? msg.split('—').slice(1).join('—').trim() : msg;
   stageReveal({
     kicker: AFF_META[k].name+' '+roman + (capstone?' &mdash; CAPSTONE':''),
     title: pathName || (AFF_META[k].name+' '+roman),
-    body: msg,
+    body: bodyText + tail,
     color: stageColor,
-    duration: capstone?3400:2400,
+    duration: capstone?3600:2600,
     sfx: capstone?'crit':'levelup',
   });
-  // Build popup — players should see and feel every tier unlock.  The flavour line
-  // (msg) carries the meaning; the old "you have N points, next tier at X" tracker
-  // read like a progress bar in a dev console, so it's gone — the path deepening
-  // is felt, not counted.
-  popupBuild(title,
-    `<p class="shout" style="font-size:11px;line-height:1.7">${msg}</p>`+
-    (t<3?`<p class="muted" style="font-size:9px;margin-top:8px">The ${AFF_META[k].name} road runs deeper still.</p>`:`<p class="muted" style="font-size:9px;margin-top:8px">You have walked this road as far as it goes.</p>`),
-  'aff'); }
+}
 function recomputeSynergies(p){ p.synergies=[];
   SYNERGIES.forEach(s=>{ if(s.need.every(n=>p.relics.includes(n))){ p.synergies.push(s.name);
     if(!p.flags[s.flag]){ addFlag(p,s.flag); if(s.onForm)s.onForm(p);
@@ -3207,12 +3209,13 @@ function pickFragment(fam, choice){
       color: 'purple',
       sfx: 'crit',
     });
+  } else {
+    // Empower / Replace are refinements, not transformations — they keep the popup-only flow.
+    popupBuild((revealed?'DEVOUR EVOLVES':'ESSENCE GATHERS')+' &mdash; '+p.memory.name,
+      `<p class="shout-purple" style="font-size:11px;line-height:1.7">${p.memory.desc}</p>`+
+      `<p class="muted" style="font-size:9px;margin-top:8px">Path: ${p.memory.path.length?p.memory.path.join(' &rarr; '):'(empty)'} &middot; stage ${p.memory.stage||0}</p>`,
+    'memory');
   }
-  // Honest vs hidden language.
-  popupBuild((revealed?'DEVOUR EVOLVES':'ESSENCE GATHERS')+' &mdash; '+p.memory.name,
-    `<p class="shout-purple" style="font-size:11px;line-height:1.7">${p.memory.desc}</p>`+
-    `<p class="muted" style="font-size:9px;margin-top:8px">Path: ${p.memory.path.length?p.memory.path.join(' &rarr; '):'(empty)'} &middot; stage ${p.memory.stage||0}</p>`,
-  'memory');
   // Close the current fragment modal; drainBuildQueue will auto-fire the popup, and the next fragment if any
   const modal=document.getElementById('info-modal'); if(modal)modal.classList.add('hidden');
   setTimeout(()=>{ if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); } else { drainBuildQueue(); } }, 220);
@@ -3227,21 +3230,15 @@ function revealDevour(){
   if(p.memory.name==='Harvest Essence') p.memory.name='Devour';
   if(p.memory.desc==='Strike a weakened enemy and harvest its essence.')
     p.memory.desc='Heavy single strike. If this kills, you consume a FRAGMENT and the skill mutates.';
-  // STAGE — the game's thesis moment used to land as a build popup. Now it stops the world.
+  // STAGE — the game's thesis moment. The stage IS the moment; no detail popup follows.
   stageReveal({
     kicker: 'THE WORD CHANGES',
     title: 'HARVEST ESSENCE &rarr; DEVOUR',
-    body: 'You were never harvesting anything. You were never collecting power. <b>The word was honest the whole time.</b>',
+    body: 'You were never harvesting anything. You were never collecting power. <b>The word was honest the whole time.</b><br><br><span style="opacity:.75">Every kill that taught you a new way to strike — you were eating them.</span>',
     color: 'red',
-    duration: 3600,   // longer than the others — this is the once-per-run reveal
+    duration: 4200,   // the once-per-run reveal — give it room to land
     sfx: 'crit',
   });
-  // Detail popup still queues for the player who wants to re-read after the stage.
-  popupBuild('THE WORD CHANGES',
-    `<p class="shout-red" style="font-size:12px;line-height:1.7">&#127744; You read the skill tooltip again. It does not say what it used to say.</p>`+
-    `<p class="evtext" style="font-size:10px;margin-top:10px"><b>HARVEST ESSENCE</b> &rarr; <b class="red" style="font-size:13px">DEVOUR</b></p>`+
-    `<p class="muted" style="font-size:9px;margin-top:8px;line-height:1.6">You were never harvesting anything. You were never collecting power. <b>The word was honest the whole time.</b> Every kill that taught you a new way to strike &mdash; you were eating them.</p>`,
-  'memory');
 }
 function grantMemory(p,key){
   // Devour superseded the old Memory Skill grants. Legacy hooks still fire (priest, knight,
