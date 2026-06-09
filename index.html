@@ -2395,23 +2395,24 @@ function defaultMods(){ return {eDmg:1.06,eHp:1.06,pDmg:1.00,goldMul:1,skillCost
    ============================================================ */
 const ASCENSION=[
   null, // index 0 = no ascension
-  // Tuned via /tmp/bal_sim.js BAL_MODE=asc sweeps.  Goal: A0-A3 stay in the
-  // 40-60% bot-win band; A6 onward is a meaningful step (the elite-counter
-  // tier).  Earliest tiers were too harsh in the first ladder ship — the
-  // bot lost ~20% win rate at A2-A3.  Order now: HP/pack bumps first,
-  // resource squeeze mid, counter and elite-density last.
-  {n:1, name:'Tougher Hide',      desc:'Enemies have +8% HP.',                            apply:m=>{ m.eHp*=1.08; }},
-  {n:2, name:'Restless Dead',     desc:'+1 enemy in every pack.',                         apply:m=>{ m.packBonus+=1; }},
-  {n:3, name:'Lean Provisions',   desc:'Start each run with 1 fewer potion.',             apply:m=>{ m.potionPenalty+=1; }},
-  {n:4, name:'Greedy Stone',      desc:'Merchant prices +25%.',                           apply:m=>{ m.priceMul*=1.25; }},
-  {n:5, name:'Crueler Blows',     desc:'Enemies deal +10% damage.',                       apply:m=>{ m.eDmg*=1.10; }},
-  {n:6, name:'The Crypt Sharpens',desc:'Elites always carry a Counter to your build.',    apply:m=>{ m.eliteCounter=1; }},
-  {n:7, name:'Tougher Still',     desc:'Enemies have another +10% HP.',                   apply:m=>{ m.eHp*=1.10; }},
-  {n:8, name:'Teeming Halls',     desc:'Far more elites prowl the crypt.',                apply:m=>{ m.eliteMul*=1.45; }},
-  {n:9, name:'Thin Veins',        desc:'15% less gold from every source.',                apply:m=>{ m.goldMul*=0.85; }},
-  {n:10,name:'The Hungering Crypt',desc:'Enemies gain +12% HP and +12% damage.',          apply:m=>{ m.eHp*=1.12; m.eDmg*=1.12; }},
+  // Trimmed from 10 tiers to 4 (reviewer feedback: long ladders cap engagement; each tier should
+  // FEEL like a step, not a half-percent nudge). Each tier now combines 2–3 of the old steps so
+  // the player gets a real difficulty bump per unlock. Existing saves with ASC > 4 are clamped
+  // down silently by loadAscension().
+  {n:1, name:'Tougher Hide',
+    desc:'Enemies have +8% HP. Merchant prices +25%.',
+    apply:m=>{ m.eHp*=1.08; m.priceMul*=1.25; }},
+  {n:2, name:'Restless Halls',
+    desc:'+1 enemy in every pack. Start each run with 1 fewer potion.',
+    apply:m=>{ m.packBonus+=1; m.potionPenalty+=1; }},
+  {n:3, name:'The Crypt Sharpens',
+    desc:'Enemies deal +10% damage. Elites always carry a Counter to your build.',
+    apply:m=>{ m.eDmg*=1.10; m.eliteCounter=1; }},
+  {n:4, name:'The Hungering Crypt',
+    desc:'Far more elites prowl. 15% less gold. Enemies gain +12% HP and +12% damage.',
+    apply:m=>{ m.eliteMul*=1.45; m.goldMul*=0.85; m.eHp*=1.12; m.eDmg*=1.12; }},
 ];
-const ASC_MAX = ASCENSION.length-1;   // 10
+const ASC_MAX = ASCENSION.length-1;   // 4
 function loadAscension(){ try{ return Math.max(0, Math.min(ASC_MAX, parseInt(localStorage.getItem('crypt_ascension')||'0',10)||0)); }catch(e){ return 0; } }
 function saveAscension(n){ try{ localStorage.setItem('crypt_ascension', String(Math.max(0,Math.min(ASC_MAX,n)))); }catch(e){} }
 // Bump the unlocked ceiling by one (called on Triumph).  Returns the new ceiling.
@@ -2719,45 +2720,65 @@ const DEVOUR_FAMILIES={
 };
 const DEVOUR_FAMILY_KEYS=Object.keys(DEVOUR_FAMILIES);
 // Named EVOLVE combinations — two paths merging. Order doesn't matter; sorted alphabetically.
+// Each combo can carry an `fx` field whose properties drive cast behaviour. Without `fx`, the
+// combo just does the base AOE/strike count and any inherited damage profile. Available fx keys
+// (all optional, declarative): {
+//   critBonusPct       per-strike +N% crit chance      (Hellbeast 30, Wolf Pack 15)
+//   execAtPct          execute targets under this HP%  (Night Hunter 0.35)
+//   firstHitStatus     {poison:[dmg,turns], vuln:[t], stun:[t], weak:[t]} applied on first AOE wave
+//   lifestealPct       heal% of damage dealt           (Toxic Maw .30, Wraithfire .20, Grave Voice .18)
+//   barrierPct         barrier% of damage              (Molten 0.25, Living 0.30, Caustic 0.20)
+//   addHeat            N heat to player post-cast      (Hellforge 8, Cinder Brood 4, World Eater 12)
+//   addMiasma          N miasma post-cast              (Soul Winter 4)
+//   targetStun         stun TARGET only (1 turn)       (Living, Caustic, Bonelord, Iron Cult)
+//   targetWeak         weaken TARGET (Bonelord 2)
+//   targetVuln         VULN every foe (Iron Cult 2)
+//   nextCrit           next basic strike CRITs         (Wolfstone, Werewolf Form)
+//   postDefBuff        +N def, M turns                 (Wolfstone {def:30%, turns:1})
+//   nextBasicBuff      next basic +50%                 (Mob Rule)
+//   burningArmor       +8 def + retaliate burn         (Heart of Iron Flame)
+//   evadeBuff          {dodge, turns}                  (Plague Swarm 8/2)
+//   selfHpPctCost      pay N% maxHp post-cast          (Black Sacrament 0.12)
+// }
 const DEVOUR_EVOLUTIONS={
-  'Beast|Ooze':     {name:'Toxic Maw',       desc:'Heavy bite + heavy POISON; you HEAL for 30% of damage dealt.'},
+  'Beast|Ooze':     {name:'Toxic Maw',       desc:'Heavy bite + heavy POISON; you HEAL for 30% of damage dealt.', fx:{lifestealPct:0.30}},
   'Demon|Ooze':     {name:'Caustic Flame',   desc:'AOE inferno — every foe takes damage, BURN, and POISON.', aoe:true},
-  'Beast|Demon':    {name:'Hellbeast',       desc:'Massive single hit + POISON + BURN; +30% crit chance on this strike.'},
-  'Construct|Demon':{name:'Molten Bastion',  desc:'Heavy hit + BURN. You gain a BARRIER equal to 25% of damage dealt.'},
-  'Humanoid|Undead':{name:'Soul Winter',     desc:'Hits ALL foes for cold damage. WEAKEN + VULN them. +4 Miasma to YOU.', aoe:true},
-  'Beast|Undead':   {name:'Night Hunter',    desc:'Crit-locked single hit. Executes any target under 35% HP.'},
-  'Dragon|Humanoid':{name:'Cult of Embers',  desc:'AOE fire breath. +6 Heat. Damage scales with Heat already on you.', aoe:true},
-  'Construct|Dragon':{name:'Heart of Iron Flame',desc:'You become BURNING ARMOR — +8 DEF and BURN the attacker on every hit for 3 turns.'},
+  'Beast|Demon':    {name:'Hellbeast',       desc:'Massive single hit + POISON + BURN; +30% crit chance on this strike.', fx:{critBonusPct:30}},
+  'Construct|Demon':{name:'Molten Bastion',  desc:'Heavy hit + BURN. You gain a BARRIER equal to 25% of damage dealt.', fx:{barrierPct:0.25}},
+  'Humanoid|Undead':{name:'Soul Winter',     desc:'Hits ALL foes for cold damage. WEAKEN + VULN them. +4 Miasma to YOU.', aoe:true, fx:{addMiasma:4}},
+  'Beast|Undead':   {name:'Night Hunter',    desc:'Crit-locked single hit. Executes any target under 35% HP.', fx:{execAtPct:0.35, killScalePct:0.008}},
+  'Dragon|Humanoid':{name:'Cult of Embers',  desc:'AOE fire breath. +6 Heat. Damage scales with Heat already on you.', aoe:true, fx:{addHeat:6, heatScalePct:0.012}},
+  'Construct|Dragon':{name:'Heart of Iron Flame',desc:'You become BURNING ARMOR — +8 DEF and BURN the attacker on every hit for 3 turns.', fx:{burningArmor:true}},
   'Ooze|Vermin':    {name:'The Swarm',       desc:'Three small strikes across the field. Each one POISONS.', aoe:true, strikes:3},
-  'Dragon|Undead':  {name:'Pyre of the Forgotten',desc:'Single nuclear hit. Kill-scaling. +10 Heat. Locks BURN 5/4.'},
-  'Beast|Construct':{name:'Wolfstone',       desc:'Heavy hit. You gain +5 DEF until next turn AND your next basic strike CRITS.'},
-  'Demon|Humanoid': {name:'Black Sacrament', desc:'Pay 12% HP for a single devastating strike. +Miasma to target. BURN 6/4.'},
+  'Dragon|Undead':  {name:'Pyre of the Forgotten',desc:'Single nuclear hit. Kill-scaling. +10 Heat. Locks BURN 5/4.', fx:{addHeat:10, heatScalePct:0.012, killScalePct:0.008}},
+  'Beast|Construct':{name:'Wolfstone',       desc:'Heavy hit. You gain +5 DEF until next turn AND your next basic strike CRITS.', fx:{nextCrit:true, postDefBuff:{def:0.30, turns:1}}},
+  'Demon|Humanoid': {name:'Black Sacrament', desc:'Pay 12% HP for a single devastating strike. +Miasma to target. BURN 6/4.', fx:{selfHpPctCost:0.12}},
   // === REMAINING CROSS-FAMILY PAIRS — every two-family combo now resolves to a named result ===
-  'Construct|Ooze': {name:'Caustic Bulwark', desc:'Heavy hit + POISON + STUN; you gain a BARRIER equal to 20% of damage dealt.'},
+  'Construct|Ooze': {name:'Caustic Bulwark', desc:'Heavy hit + POISON + STUN; you gain a BARRIER equal to 20% of damage dealt.', fx:{barrierPct:0.20, targetStun:true}},
   'Ooze|Undead':    {name:'Bog Wight',       desc:'AOE poison cloud. POISONS and WEAKENS every foe.', aoe:true},
   'Humanoid|Ooze':  {name:"Alchemist's Brew",desc:'Heavy single strike. POISONS and VULNs the target.'},
-  'Dragon|Ooze':    {name:'Acid Wyrm',       desc:'AOE corrosive flame &mdash; POISON every foe; damage scales with HEAT.', aoe:true},
+  'Dragon|Ooze':    {name:'Acid Wyrm',       desc:'AOE corrosive flame &mdash; POISON every foe; damage scales with HEAT.', aoe:true, fx:{heatScalePct:0.012}},
   'Demon|Vermin':   {name:'Imp Swarm',       desc:'Three small strikes across the field. Each one BURNS.', aoe:true, strikes:3},
-  'Demon|Undead':   {name:'Wraithfire',      desc:'Heavy hit + BURN + WEAKEN. You HEAL for 20% of damage dealt.'},
-  'Demon|Dragon':   {name:'Hellfire Storm',  desc:'AOE inferno. Damage scales with HEAT. +6 Heat to YOU.', aoe:true},
+  'Demon|Undead':   {name:'Wraithfire',      desc:'Heavy hit + BURN + WEAKEN. You HEAL for 20% of damage dealt.', fx:{lifestealPct:0.20}},
+  'Demon|Dragon':   {name:'Hellfire Storm',  desc:'AOE inferno. Damage scales with HEAT. +6 Heat to YOU.', aoe:true, fx:{addHeat:6, heatScalePct:0.012}},
   'Beast|Vermin':   {name:'Bloodpack',       desc:'Three savage strikes across the field. Each one POISONS.', aoe:true, strikes:3},
-  'Beast|Humanoid': {name:'Werewolf Form',   desc:'Heavy single hit + POISON + VULN. Your next basic strike CRITS.'},
-  'Beast|Dragon':   {name:'Wyvern Strike',   desc:'Single nuclear strike + heavy POISON. Damage scales with HEAT.'},
+  'Beast|Humanoid': {name:'Werewolf Form',   desc:'Heavy single hit + POISON + VULN. Your next basic strike CRITS.', fx:{nextCrit:true}},
+  'Beast|Dragon':   {name:'Wyvern Strike',   desc:'Single nuclear strike + heavy POISON. Damage scales with HEAT.', fx:{heatScalePct:0.012}},
   'Construct|Vermin':{name:'Brass Locusts',  desc:'Three small strikes across the field. Each one may STUN.', aoe:true, strikes:3},
   'Undead|Vermin':  {name:'Carrion Swarm',   desc:'AOE wail &mdash; hits every foe twice. WEAKENS every foe.', aoe:true, strikes:2},
   'Humanoid|Vermin':{name:'Plague Mob',      desc:'AOE riot &mdash; hits every foe twice. POISON + VULN.', aoe:true, strikes:2},
-  'Dragon|Vermin':  {name:'Cinder Brood',    desc:'Three small fire strikes across the field. +4 Heat to YOU.', aoe:true, strikes:3},
-  'Construct|Undead':{name:'Bonelord',       desc:'Heavy single hit + STUN target + WEAKEN every foe.'},
-  'Construct|Humanoid':{name:'Iron Cult',    desc:'AOE strike &mdash; STUN target + VULN every foe.', aoe:true},
+  'Dragon|Vermin':  {name:'Cinder Brood',    desc:'Three small fire strikes across the field. +4 Heat to YOU.', aoe:true, strikes:3, fx:{addHeat:4}},
+  'Construct|Undead':{name:'Bonelord',       desc:'Heavy single hit + STUN target + WEAKEN every foe.', fx:{targetStun:true, targetWeak:2}},
+  'Construct|Humanoid':{name:'Iron Cult',    desc:'AOE strike &mdash; STUN target + VULN every foe.', aoe:true, fx:{firstStrikeTargetStun:true, targetVuln:2}},
   // === SAME-FAMILY DOUBLINGS — feeding the skill more of the same kind hardens its identity ===
-  'Ooze|Ooze':           {name:'Acid Tide',       desc:'AOE poison cloud. Every foe takes damage and stacks POISON twice.', aoe:true},
-  'Demon|Demon':         {name:'Hellforge',       desc:'Massive BURN nuke. +8 Heat to YOU. The fire is yours now.'},
-  'Beast|Beast':         {name:'Wolf Pack',       desc:'Two savage strikes across the field. Each one POISONS.', aoe:true, strikes:2},
-  'Vermin|Vermin':       {name:'Plague Swarm',    desc:'AOE; hits every foe twice. Spreads POISON. You become harder to hit (+8% dodge 2T).', aoe:true, strikes:2},
-  'Construct|Construct': {name:'Living Bulwark',  desc:'Heavy hit + STUN target + you gain a BARRIER equal to 30% of damage dealt.'},
-  'Undead|Undead':       {name:'Grave Voice',     desc:'AOE wail — WEAKEN + VULN every foe. Heals you for 18% of damage dealt.', aoe:true},
-  'Humanoid|Humanoid':   {name:'Mob Rule',        desc:'AOE — marks every foe VULN. Your next BASIC strike deals +50% damage.', aoe:true},
-  'Dragon|Dragon':       {name:'World Eater',     desc:'Pure HEAT nuke. Damage scales massively with current Heat. +12 Heat to YOU.'},
+  'Ooze|Ooze':           {name:'Acid Tide',       desc:'AOE poison cloud. Every foe takes damage and stacks POISON twice.', aoe:true, fx:{firstHitStatus:{poison:[7,3]}}},
+  'Demon|Demon':         {name:'Hellforge',       desc:'Massive BURN nuke. +8 Heat to YOU. The fire is yours now.', fx:{addHeat:8, heatScalePct:0.012}},
+  'Beast|Beast':         {name:'Wolf Pack',       desc:'Two savage strikes across the field. Each one POISONS.', aoe:true, strikes:2, fx:{critBonusPct:15}},
+  'Vermin|Vermin':       {name:'Plague Swarm',    desc:'AOE; hits every foe twice. Spreads POISON. You become harder to hit (+8% dodge 2T).', aoe:true, strikes:2, fx:{firstHitStatus:{poison:[5,3]}, evadeBuff:{dodge:8, turns:2}}},
+  'Construct|Construct': {name:'Living Bulwark',  desc:'Heavy hit + STUN target + you gain a BARRIER equal to 30% of damage dealt.', fx:{barrierPct:0.30, targetStun:true}},
+  'Undead|Undead':       {name:'Grave Voice',     desc:'AOE wail — WEAKEN + VULN every foe. Heals you for 18% of damage dealt.', aoe:true, fx:{lifestealPct:0.18, firstHitLifestealOnly:true}},
+  'Humanoid|Humanoid':   {name:'Mob Rule',        desc:'AOE — marks every foe VULN. Your next BASIC strike deals +50% damage.', aoe:true, fx:{nextBasicBuff:0.50}},
+  'Dragon|Dragon':       {name:'World Eater',     desc:'Pure HEAT nuke. Damage scales massively with current Heat. +12 Heat to YOU.', fx:{addHeat:12, heatScalePct:0.040}},
 };
 function devourComboKey(a,b){ return [a,b].sort().join('|'); }
 function makeDevourBase(){
@@ -5482,40 +5503,50 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       // 'multi' (Vermin) trait grants an extra strike even on the no-combo bind path.
       const strikes=Math.max(1,(d&&d.strikes)||1) + ((d&&(d.effects||[]).includes('multi'))?1:0);
       SFX.play('crit');
-      const heatScaled=d && ((d.effects||[]).includes('heat') || /World Eater|Hellforge|Cult of Embers|Pyre|Hellfire Storm|Acid Wyrm|Wyvern Strike/.test(d.name||''));
-      const heatScale=heatScaled?(1+(G.heat||0)*( /World Eater/.test(d.name||'')?0.040:0.012 )):1;
-      const killScale=d && d.name && /Pyre|Curse|Night Hunter/.test(d.name)?1+Math.min(0.60,(p.kills||0)*0.008):1;
+      // Heat / kill scaling is now data-driven via d.fx.heatScalePct and d.fx.killScalePct.
+      // Without those, the combo's damage is flat. (effects array still respected for the legacy
+      // 'heat'-effect path used by some Curse skills.)
+      const fxScale=(d&&d.fx)||{};
+      const heatScalePct = fxScale.heatScalePct || (((d&&d.effects)||[]).includes('heat') ? 0.012 : 0);
+      const heatScale = heatScalePct ? (1+(G.heat||0)*heatScalePct) : 1;
+      const killScalePct = fxScale.killScalePct || 0;
+      const killScale = killScalePct ? (1+Math.min(0.60,(p.kills||0)*killScalePct)) : 1;
       // Devour while Saturated still works on bosses (they bypass Saturated), but the damage is
       // throttled to *0.6 so the player can't trivially spam Devour on a boss after a kill.
       const satDebuff = (p._saturated>0) ? 0.6 : 1;
+      // FX driven entirely by d.fx (data) — no more name-regex tests. Renaming a combo no longer
+      // breaks its mechanics; new combos just declare what they do as fields.
+      const fx = (d && d.fx) || {};
       const doHit=(idx,strikeIdx)=>{
-        // Multi-strike follow-ups deal 0.55x (was 0.70). A 3-strike combo like Wolf Pack now
-        // totals 1 + 0.55 + 0.55 = 2.1x base, down from 2.4x — still hard, no longer one-shot.
+        // Multi-strike follow-ups deal 0.55x. A 3-strike combo totals 1 + 0.55 + 0.55 = 2.1x.
         let dmg=(p.atk+p.weapon.dmg)*dmgMult*heatScale*killScale*satDebuff; if(strikeIdx>0) dmg*=0.55;
-        // Hellbeast/Wolf Pack used to auto-crit on every strike. That combined with 3 strikes
-        // and stacked dmgMult was one-shotting rooms (and one-shotting the player back if it
-        // didn't clear). Now: Hellbeast gets a real +30% crit chance per its description; Wolf
-        // Pack gets a smaller +15% on each strike since it fires three of them.
-        const critBonus = (d && /Hellbeast/.test(d.name)) ? 30 : (d && /Wolf Pack/.test(d.name)) ? 15 : 0;
+        // Per-strike crit bonus (Hellbeast +30, Wolf Pack +15, etc.)
+        const critBonus = fx.critBonusPct || 0;
         let c = critBonus ? chance(effCrit(p)+critBonus) : rollCrit();
         if(c)dmg*=critMult();
         const e=b.enemies[idx]; const before=e?e.hp:0;
-        // Night Hunter execute: compensate for the upcoming DEF cut in dealToEnemy
-        // (min(def, raw*0.5)) so the execute actually executes on high-armor enemies.
-        if(d && /Night Hunter/.test(d.name) && e && e.hp<=e.maxHp*0.35) dmg=Math.max(dmg, e.hp + (e.def||0) + 2);
+        // Execute (Night Hunter): compensate for the upcoming DEF cut in dealToEnemy so the execute
+        // actually executes on high-armor enemies.
+        if(fx.execAtPct && e && e.hp<=e.maxHp*fx.execAtPct) dmg=Math.max(dmg, e.hp + (e.def||0) + 2);
         const done=dealToEnemy(idx,dmg,`${d.name} rends`,c);
         if(e && e.hp>0) applyDevourEffects(e,d,b);
-        // Acid Tide / Grave Voice / Plague Swarm — apply trait twice on first strike for big AOE pulse
-        if(strikeIdx===0 && d && /Acid Tide/.test(d.name) && e && e.hp>0){ addPoison(e.st,7,3); }
-        if(strikeIdx===0 && d && /Plague Swarm/.test(d.name) && e && e.hp>0){ addPoison(e.st,5,3); }
-        if(strikeIdx===0 && d && /Grave Voice/.test(d.name) && done>0){ heal(p,Math.round(done*0.18)); }
-        // Combo-specific extras
-        if(d && /Toxic Maw/.test(d.name) && done>0){ heal(p,Math.round(done*0.30)); blog(`You drink the wound (+${Math.round(done*0.30)} HP).`,'heal'); }
-        if(d && /Wraithfire/.test(d.name) && done>0){ const h=Math.round(done*0.20); heal(p,h); blog(`Wraithfire feeds you (+${h} HP).`,'heal'); }
-        if(d && /Molten Bastion|Living Bulwark|Caustic Bulwark/.test(d.name) && done>0){ const ab=Math.round(done*( /Living Bulwark/.test(d.name)?0.30:/Caustic Bulwark/.test(d.name)?0.20:0.25)); b.barrier=(b.barrier||0)+ab; blog(`A burning barrier rises (+${ab}).`,'info'); }
-        if(d && /Living Bulwark|Caustic Bulwark|Bonelord/.test(d.name) && e && e.hp>0){ addStun(e.st,1); blog(`${e.name} is STUNNED!`,'crit'); }
-        if(d && /Bonelord/.test(d.name) && e && e.hp>0){ addWeak(e.st,2); }
-        if(d && /Iron Cult/.test(d.name) && e && e.hp>0){ if(strikeIdx===0 && e===b.enemies[b.target]) addStun(e.st,1); addVuln(e.st,2); }
+        // First-hit status burst (Acid Tide / Plague Swarm)
+        if(strikeIdx===0 && fx.firstHitStatus && e && e.hp>0){ const fh=fx.firstHitStatus;
+          if(fh.poison) addPoison(e.st, fh.poison[0], fh.poison[1]);
+          if(fh.vuln)   addVuln(e.st,   fh.vuln);
+          if(fh.stun)   addStun(e.st,   fh.stun);
+          if(fh.weak)   addWeak(e.st,   fh.weak);
+        }
+        // Lifesteal — most combos lifesteal on every hit; Grave Voice only on the first AOE pulse.
+        if(fx.lifestealPct && done>0 && (!fx.firstHitLifestealOnly || strikeIdx===0)){
+          const h=Math.round(done*fx.lifestealPct); if(h>0){ heal(p,h); blog(`You drink the wound (+${h} HP).`,'heal'); }
+        }
+        // Barrier — Molten Bastion / Living Bulwark / Caustic Bulwark all share this shape now.
+        if(fx.barrierPct && done>0){ const ab=Math.round(done*fx.barrierPct); b.barrier=(b.barrier||0)+ab; blog(`A burning barrier rises (+${ab}).`,'info'); }
+        // Target stun (Living, Caustic, Bonelord, Iron Cult-on-first-strike).
+        if((fx.targetStun || (fx.firstStrikeTargetStun && strikeIdx===0 && e===b.enemies[b.target])) && e && e.hp>0){ addStun(e.st,1); blog(`${e.name} is STUNNED!`,'crit'); }
+        if(fx.targetWeak && e && e.hp>0){ addWeak(e.st, fx.targetWeak); }
+        if(fx.targetVuln && e && e.hp>0){ addVuln(e.st, fx.targetVuln); }
         if(before>0 && e.hp<=0) devourKillFragment(p,e);
       };
       if(aoe){
@@ -5524,19 +5555,14 @@ function playerSkill(id){ const p=G.player,b=G.battle; const s=allSkills(p).find
       } else {
         for(let s=0;s<strikes;s++){ if(living().length===0)break; ensureTarget(); doHit(b.target,s); }
       }
-      // Special post-cast effects
-      if(d && /Black Sacrament/.test(d.name)){ const c2=Math.round(p.maxHp*0.12); selfHurt(p,c2,'self'); blog(`The sacrament demands -${c2} HP.`,'info'); }
-      if(d && /Heart of Iron Flame/.test(d.name)){ if(!p._burningArmor)p.def=(p.def||0)+8; p._burningArmor=3; blog('You are clad in burning armor (+8 DEF, sears attackers) for 3 turns.','crit'); }
-      if(d && /Plague Swarm/.test(d.name)){ b.evade=8; b.evadeTurns=Math.max(b.evadeTurns||0,2); blog('The swarm shrouds you (+8 dodge, 2T).','info'); }
-      if(d && /Mob Rule/.test(d.name)){ p._mobBuffNextHit=1; blog('Mob Rule — your next basic strike deals +50% damage.','crit'); }
-      if(d && /Wolfstone/.test(d.name)){ b.shadowCrit=1; b.pdef=0.30; b.pdefTurns=Math.max(b.pdefTurns||0,1); blog('Wolfstone — your next strike CRITS, +30% defense this turn.','info'); }
-      if(d && /Werewolf Form/.test(d.name)){ b.shadowCrit=1; blog('Werewolf Form — your next basic strike CRITS.','info'); }
-      if(d && /Cult of Embers|Hellforge/.test(d.name)) addHeat( /Hellforge/.test(d.name)?8:6 );
-      if(d && /Hellfire Storm/.test(d.name)) addHeat(6);
-      if(d && /Cinder Brood/.test(d.name)) addHeat(4);
-      if(d && /World Eater/.test(d.name)) addHeat(12);
-      if(d && /Pyre of the Forgotten/.test(d.name)) addHeat(10);
-      if(d && /Soul Winter/.test(d.name)) addMiasma(4);
+      // POST-CAST effects — also data-driven.
+      if(fx.selfHpPctCost){ const c2=Math.round(p.maxHp*fx.selfHpPctCost); selfHurt(p,c2,'self'); blog(`The sacrament demands -${c2} HP.`,'info'); }
+      if(fx.burningArmor){ if(!p._burningArmor)p.def=(p.def||0)+8; p._burningArmor=3; blog('You are clad in burning armor (+8 DEF, sears attackers) for 3 turns.','crit'); }
+      if(fx.evadeBuff){ b.evade=fx.evadeBuff.dodge; b.evadeTurns=Math.max(b.evadeTurns||0,fx.evadeBuff.turns); blog(`The swarm shrouds you (+${fx.evadeBuff.dodge} dodge, ${fx.evadeBuff.turns}T).`,'info'); }
+      if(fx.nextBasicBuff){ p._mobBuffNextHit=fx.nextBasicBuff; blog(`Your next basic strike deals +${Math.round(fx.nextBasicBuff*100)}% damage.`,'crit'); }
+      if(fx.nextCrit){ b.shadowCrit=1; if(fx.postDefBuff){ b.pdef=fx.postDefBuff.def; b.pdefTurns=Math.max(b.pdefTurns||0,fx.postDefBuff.turns); blog(`Your next strike CRITS, +${Math.round(fx.postDefBuff.def*100)}% defense this turn.`,'info'); } else { blog('Your next basic strike CRITS.','info'); } }
+      if(fx.addHeat)    addHeat(fx.addHeat);
+      if(fx.addMiasma)  addMiasma(fx.addMiasma);
       // SATURATED RULE — at most one fragment per cast (bosses excepted). Multi-kills offer a choice.
       processDevourCast(p, b);
       b._devourActive=0;
