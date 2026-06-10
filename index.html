@@ -1957,12 +1957,33 @@ const RELICS=[
   {id:'duo_lock',name:'Sealed Compact',dual:{w:3,v:3},legendary:true,note:'DUAL · WRATH III+VEIL III — every fifth wound is a gift. The next thing you do hurts.',apply:p=>{addFlag(p,'sealedCompact');}},
 ];
 /* ---------- affinity paths (escalating build identities) ---------- */
-const AFF_THRESH=[3,6,9];
+// Affinity tier thresholds. Gaps between tiers are 3, 3, 5, 10 — the jump from T3 to T4 is
+// deliberately large so reaching T4 in all three paths in one run is hard. Most runs will end
+// at T2-T3 in one or two paths; T4 should feel like a serious commitment, not a default.
+const AFF_THRESH=[3,6,11,21];
+const AFF_TIER_MAX=AFF_THRESH.length;   // 4 tiers, indexed 1..4
 const AFF_META={w:{key:'w',name:'WRATH',color:'red'},g:{key:'g',name:'GUILE',color:'teal'},v:{key:'v',name:'VEIL',color:'blue'}};
+// Per-tier descriptions — plain English, lead with the effect, no flavour brand-name.
+// T1-T3 reflect the existing mechanics; T4 reflects the new T4 mechanics wired in this commit.
 const AFF_TIER_TITLE={
-  w:['','RENDING EDGE — your blows land harder, and every third one sinks deep enough to make them scream.','RISING FURY — harder still, and your eye finds the killing gap more often.','AVATAR OF WRATH — you hit like a landslide, and the blow carries through to whatever stands beside them.'],
-  g:['','FEINT — quicker, harder to touch, and the strike right after you guard finds its mark every time.','LONG SHADOW — the wounds you leave linger, and your aim keeps sharpening.','TRICKSTER — every plain blow leaves something behind, and a clean hit gives back what it cost you.'],
-  v:['','STEADY HEART — harder to break, and every third wound you take only steadies you.','SLOW MENDING — the wounds close on their own, even mid-fight.','WARDEN — you walk into every fight already shielded against the first blows.'],
+  w:['',
+    '+12% damage. Every 3rd basic strike hits 60% harder.',
+    '+25% total damage and +8% crit chance.',
+    '+44% total damage. Your hits cleave 30% splash to neighbouring foes.',
+    '+70% total damage. Every kill explodes for 40% damage to all foes.',
+  ],
+  g:['',
+    '+12% crit, +10% dodge. The strike after Shield Wall always crits.',
+    '+20% crit total. Statuses you apply last one extra turn.',
+    'Basic hits apply a random status. Crits refund 5 mana.',
+    '+32% crit, +18% dodge. Every basic hit applies all four statuses.',
+  ],
+  v:['',
+    '+18 max HP, +12 mana. Every 3rd hit you take heals 6% of max HP.',
+    'Regenerate 4.5% max HP at the end of every combat turn.',
+    'Begin each battle with a barrier worth 22% of your max HP.',
+    'Start with a 44% barrier. Every kill refreshes it (+22%, cap 44%). Regen rises to 6.5%.',
+  ],
 };
 /* ---------- synergies (named relic-combo payoffs) ---------- */
 const SYNERGIES=[
@@ -3065,33 +3086,24 @@ function recomputeAffinity(p){
   checkAffinityTiers(p);
 }
 function affTagText(aff){ if(!aff)return''; const t=[]; if(aff.w)t.push('Wrath +'+aff.w); if(aff.g)t.push('Guile +'+aff.g); if(aff.v)t.push('Veil +'+aff.v); return t.join(', '); }
-function checkAffinityTiers(p){ ['w','g','v'].forEach(k=>{ while(p.affTier[k]<3 && p.aff[k]>=AFF_THRESH[p.affTier[k]]){ p.affTier[k]++; unlockAffinity(p,k,p.affTier[k]); } }); }
+function checkAffinityTiers(p){ ['w','g','v'].forEach(k=>{ while(p.affTier[k]<AFF_TIER_MAX && p.aff[k]>=AFF_THRESH[p.affTier[k]]){ p.affTier[k]++; unlockAffinity(p,k,p.affTier[k]); } }); }
 function unlockAffinity(p,k,t){
   if(k==='v'&&t===1){ p.maxHp+=18; heal(p,18); p.maxMana+=12; p.mana+=12; }
   const msg=AFF_TIER_TITLE[k][t];
-  const roman=['','I','II','III'][t];
-  const title=AFF_META[k].name+' '+roman+(t===3?' &mdash; CAPSTONE':'');
+  const roman=['','I','II','III','IV'][t];
+  const capstone = (t>=AFF_TIER_MAX);
   if(G.screen==='battle') blog(`${AFF_META[k].name} ${roman} — you feel the path open.`,'lvl'); else G._affMsg=msg;
-  // STAGE — the build identity audibly clicking in. The capstone (T3) is louder than T1/T2:
-  // longer hold, "CAPSTONE" kicker. The path-tier name (Rending Edge / Trickster / Warden)
-  // shows above the AFF_TIER_TITLE flavour so the player gets the brand name they earned.
-  const capstone = (t===3);
+  // STAGE — the build identity clicking in. The capstone (T4) gets a longer hold + "CAPSTONE"
+  // kicker. The new T1-T4 strings are pure stat readouts (no em-dash brand prefix), so the
+  // title is just the path-tier badge and the body is the readout verbatim.
   const stageColor = {w:'red', g:'teal', v:'blue'}[k];
-  // Extract the bolded path-name from the flavour string (it's the prefix before " — ")
-  const pathName = (msg.split('—')[0]||'').trim();
-  // STAGE IS the moment — no detail popup after. The flavour line (msg) sits in the stage body
-  // alongside the path-tier brand name (Rending Edge / Trickster / Warden). The body also
-  // includes the "road deepens / road ends" line that the popup used to carry.
-  const tail = t<3
+  const tail = t<AFF_TIER_MAX
     ? `<br><span style="opacity:.7">The ${AFF_META[k].name} road runs deeper still.</span>`
     : `<br><span style="opacity:.7">You have walked this road as far as it goes.</span>`;
-  // The flavour line is "PATHNAME — body sentence"; we already pulled pathName above, so strip
-  // it from the body so we don't repeat it under the title.
-  const bodyText = msg.includes('—') ? msg.split('—').slice(1).join('—').trim() : msg;
   stageReveal({
     kicker: AFF_META[k].name+' '+roman + (capstone?' &mdash; CAPSTONE':''),
-    title: pathName || (AFF_META[k].name+' '+roman),
-    body: bodyText + tail,
+    title: AFF_META[k].name+' '+roman,
+    body: msg + tail,
     color: stageColor,
     duration: capstone?3600:2600,
     sfx: capstone?'crit':'levelup',
@@ -3115,12 +3127,12 @@ function gainRelic(p,rl){ if(!rl||p.relics.includes(rl.name))return false; rl.ap
   isKey?'synergy':'relic', isKey?'your class skill is transformed':'');
   return true; }
 function gainUpgrade(p,up){ up.apply(p); addAffinity(p,up.aff); }
-function affCritBonus(p){ let c=0; if(p.affTier.g>=1)c+=12; if(p.affTier.g>=2)c+=8; if(p.affTier.w>=2)c+=8; return c; }
+function affCritBonus(p){ let c=0; if(p.affTier.g>=1)c+=12; if(p.affTier.g>=2)c+=8; if(p.affTier.g>=4)c+=12; if(p.affTier.w>=2)c+=8; return c; }
 // The DOMINANT affinity path — the single path whose T1 RHYTHM hook is live. Only one fires at a
 // time, so a build has ONE identity instead of three half-identities stacking. Requires T1 (aff>=3);
 // ties broken w > v > g. Returns null when no path has reached T1.
 function dominantAff(p){ let best=null,bv=0; ['w','v','g'].forEach(k=>{ if(p.affTier[k]>=1 && p.aff[k]>bv){ bv=p.aff[k]; best=k; } }); return best; }
-function affDodgeBonus(p){ return p.affTier.g>=1?10:0; }
+function affDodgeBonus(p){ let d=0; if(p.affTier.g>=1)d+=10; if(p.affTier.g>=4)d+=8; return d; }
 function effCrit(p){ return p.crit+affCritBonus(p); }
 function effDodge(p){ return p.dodge+affDodgeBonus(p); }
 function statusBonusTurns(st){ if(G.battle&&st===G.battle.pst) return 0; return G.player&&G.player.affTier.g>=2?1:0; }
@@ -3629,9 +3641,9 @@ function rewardSynergyFlags(o,p){
     const tBefore=affTierOf(before), tAfter=affTierOf(after);
     const nm=AFF_META[k].name, col=AFF_META[k].color;
     if(tAfter>tBefore){
-      flags.push(`<span class="syn syn-tier ${col}">&#10022; ${nm} ${['I','II','III'][tAfter-1]} &mdash; TIER UP!</span>`);
+      flags.push(`<span class="syn syn-tier ${col}">&#10022; ${nm} ${['I','II','III','IV'][tAfter-1]} &mdash; TIER UP!</span>`);
     } else {
-      const nextThresh = tAfter<3 ? AFF_THRESH[tAfter] : null;
+      const nextThresh = tAfter<AFF_TIER_MAX ? AFF_THRESH[tAfter] : null;
       if(nextThresh!=null && after>before){
         flags.push(`<span class="syn ${col}">&#10022; ${nm} ${after}/${nextThresh}</span>`);
       }
@@ -3653,7 +3665,7 @@ function rewardSynergyFlags(o,p){
   }
   return flags.length ? `<span class="syn-row">${flags.join(' ')}</span>` : '';
 }
-function affTierOf(pts){ let t=0; while(t<3 && pts>=AFF_THRESH[t]) t++; return t; }
+function affTierOf(pts){ let t=0; while(t<AFF_TIER_MAX && pts>=AFF_THRESH[t]) t++; return t; }
 function itemLabel(it){ return `<span class="${RARITY[it.rarity].cls}">${it.name}</span> <span class="muted">Lv${it.ilvl}</span>`; }
 function itemStatsText(it){ const parts=[];
   for(const k in it.stats){ parts.push(`+${it.stats[k]}${PCT_STAT[k]?'%':''} ${STAT_LBL[k]||k}`); }
@@ -4940,8 +4952,8 @@ function renderInventory(){ const p=G.player; const view=G._invView||'gear';
       const ultRow=`<div class="slot" style="border-color:var(--purple)"><span class="purple">&#10022; ${ult.name}</span> <span class="muted">(ULTIMATE — charge in battle)</span><br><span class="muted" style="font-size:8px">${ult.desc}</span></div>`;
       sec=`<h3 class="blue ivh">SKILLS &amp; ULTIMATE</h3>${skills}${ultRow}`;
     } else if(sub==='paths'){
-      const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<3?AFF_THRESH[t]:null;
-        return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear &amp; relics to build one.</div>';
+      const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<AFF_TIER_MAX?AFF_THRESH[t]:null;
+        return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III','IV'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear &amp; relics to build one.</div>';
       sec=`<h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}`;
     } else {
       const relics=p.relics.length?p.relics.map(r=>`<span class="chip clickable" style="border-color:var(--purple);color:var(--purple)" title="${escAttr(relicNoteFor(r))}" data-info-relic="${escAttr(r)}">&#9670; ${r}</span>`).join(''):'<span class="muted">none</span>';
@@ -5511,8 +5523,8 @@ function startBattle(intro){
     _bonusFragmentFired:0,        // non-boss bonus-engagement fragments capped at one per fight
     pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:!G.abyss&&enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
-  if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
-  let bar=0; if(p.affTier.v>=3)bar+=Math.round(p.maxHp*0.22); if(p.flags.gearBarrier)bar+=Math.round(p.maxHp*0.12); G.battle.barrier=bar;
+  if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=4?0.065:p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
+  let bar=0; if(p.affTier.v>=3)bar+=Math.round(p.maxHp*(p.affTier.v>=4?0.44:0.22)); if(p.flags.gearBarrier)bar+=Math.round(p.maxHp*0.12); G.battle.barrier=bar;
   // If the player walks in already under 25% HP, fire the heartbeat now so the warning isn't
   // skipped just because no incoming hit crossed the boundary.
   checkLowHpHeartbeat(p);
@@ -5839,7 +5851,7 @@ function playerDamageMult(e){ const p=G.player,f=p.flags; let m=G.mods.pDmg;
   // The old 0.30/0.45 stacked with Wrath capstones to a sustained 5-7x.
   const et=f.synReaper?0.30:0.20;
   if(f.executioner&&!G._noExecute&&e.hp<=e.maxHp*et)m*=2;   // ult sets _noExecute so it doesn't double-dip its own missing-HP scaling
-  if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15;
+  if(p.affTier.w>=1)m*=1.12; if(p.affTier.w>=2)m*=1.12; if(p.affTier.w>=3)m*=1.15; if(p.affTier.w>=4)m*=1.18;
   m*=slayerMult(e);
   m*=weaponTraitMult(p);
   if(e.st.vulnT>0)m*=1.25;
@@ -5874,6 +5886,26 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   if(e.boss){ const sc=$('scene'); if(sc){ sc.classList.remove('bosskill-fx'); void sc.offsetWidth; sc.classList.add('bosskill-fx'); } }
   blog(`${e.name} is defeated!`,'info');
   p.kills++; const ups=gainXp(p,e.xp||6); if(ups>0)blog(`LEVEL UP! Now level ${p.level}.`,'lvl');
+  // WRATH T4 on-kill explosion — deals 40% of (atk + weapon.dmg) to all OTHER living enemies,
+  // ignoring DEF. _inWrathBlast guards against the recursion (a blast that kills another
+  // enemy shouldn't chain into more blasts in the same death event).
+  if(p.affTier.w>=4 && G.battle && !G._inWrathBlast){
+    G._inWrathBlast=1;
+    const blast=Math.max(1, Math.round((p.atk+p.weapon.dmg)*0.40));
+    let any=false;
+    G.battle.enemies.forEach((o,i)=>{ if(o!==e && o.hp>0){ any=true; dealToEnemy(i, blast, 'WRATH BLAST', false); } });
+    if(any) blog(`&#10042; WRATH BLAST &mdash; the kill explodes outward for ${blast}.`,'crit');
+    G._inWrathBlast=0;
+  }
+  // VEIL T4 on-kill barrier refresh — re-grants 22% maxHp of barrier per kill, capped at 44%
+  // of maxHp (the doubled T4 start-of-battle ceiling). Stacks on top of any leftover barrier.
+  if(p.affTier.v>=4 && G.battle){
+    const cap=Math.round(p.maxHp*0.44);
+    const cur=G.battle.barrier||0;
+    if(cur<cap){ const add=Math.min(cap-cur, Math.round(p.maxHp*0.22));
+      if(add>0){ G.battle.barrier=cur+add; blog(`&#10042; WARDEN'S WALL &mdash; the kill mends your barrier (+${add}).`,'heal'); }
+    }
+  }
   // ---- DUAL ARTIFACTS — on-kill triggers ----
   if(p.flags.boneCrown){ p._boneCrownStacks=(p._boneCrownStacks||0)+1; p.atk+=1;
     blog(`&#9670; BONE CROWN &mdash; the kill makes you sharper (+1 ATK this battle).`,'crit'); }
@@ -6019,7 +6051,11 @@ function basicHit(idx,isExtra){ const p=G.player,b=G.battle;
   if(p.flags.sunder){addVuln(e.st,2);}
   if(p.flags.concuss&&chance(18)){addStun(e.st,1);blog(`${e.name} is STUNNED!`,'info'); if(p.flags.synViru){addPoison(e.st,7,3);blog(`Virulent venom courses through ${e.name}!`,'info');}}
   // Trickster: basic hits inflict a random status
-  if(p.affTier.g>=3){ const r=rnd(4); if(r===0)addBurn(e.st,5,2); else if(r===1)addPoison(e.st,5,2); else if(r===2)addWeak(e.st,2); else addVuln(e.st,2); }
+  // Guile T3: random status on every basic hit. Guile T4: every basic hit applies ALL FOUR
+  // statuses — short durations, respect the existing Math.max in addX so re-applying never
+  // shortens. The T3 gamble becomes T4 certainty.
+  if(p.affTier.g>=4){ addBurn(e.st,5,2); addPoison(e.st,5,2); addWeak(e.st,2); addVuln(e.st,2); }
+  else if(p.affTier.g>=3){ const r=rnd(4); if(r===0)addBurn(e.st,5,2); else if(r===1)addPoison(e.st,5,2); else if(r===2)addWeak(e.st,2); else addVuln(e.st,2); }
   stormfury(c,isExtra); }
 function stormfury(crit,isExtra){ const p=G.player,b=G.battle;
   if(crit&&p.flags.synStorm&&!isExtra&&living().length){ blog('Stormfury — the crit echoes!','crit'); ensureTarget(); basicHit(b.target,true); } }
@@ -6767,7 +6803,7 @@ function renderEnd(win){ const p=G.player;
   const emptySlots=SLOTS.filter(s=>!p.equip[s]);
   const gear=equipped.map(s=>{const it=p.equip[s];return `<div class="slot">${itemIconHtml(it,true)}<span class="muted">${s.toUpperCase()}</span> ${itemLabel(it)}<br><span class="muted" style="font-size:8px">${itemStatsText(it)}</span></div>`;}).join('')
     + (emptySlots.length?`<div class="slot muted" style="font-size:8px">Empty: ${emptySlots.map(s=>s.toUpperCase()).join(' &middot; ')}</div>`:'');
-  const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III'][p.affTier[k]-1]}`).join(', ')||'none';
+  const paths=['w','g','v'].filter(k=>p.affTier[k]>0).map(k=>`${AFF_META[k].name} ${['I','II','III','IV'][p.affTier[k]-1]}`).join(', ')||'none';
   const wonAbyss=!win&&p.won; const head=win?'VICTORY!':(wonAbyss?'THE ABYSS TAKES YOU':'YOU DIED'); const col=win?'green':(wonAbyss?'purple':'red');
   const tellTale=win?'You conquered the Crypt of the Champion and retired a legend!':(wonAbyss?`You broke the crypt's throne, then plunged into the Abyss and reached <b class="purple">depth ${G.depth-RUN_LENGTH}</b> before the dark closed over you.`:'Your journey ends in the dark.');
   app.innerHTML=`<h1 class="title" style="color:var(--${col})">${head}</h1>
@@ -7001,7 +7037,7 @@ function synergyDescFor(name){const s=SYNERGIES.find(x=>x.name===name);return s?
 function affinityTipFor(p,k){
   const m=AFF_META[k],t=p.affTier[k];
   let s=`${m.name} — ${p.aff[k]} points.\n`;
-  for(let tier=1;tier<=3;tier++){
+  for(let tier=1;tier<=AFF_TIER_MAX;tier++){
     const reached=t>=tier;
     const marker=reached?'[✓]':(tier===t+1?'[next]':'[ ]');
     const at=tier<=AFF_THRESH.length?` (${AFF_THRESH[tier-1]} pts)`:'';
@@ -7021,8 +7057,8 @@ function infoBtnHtml(key){
 function affinityBar(p){
   const earned=['w','g','v'].filter(k=>p.aff[k]>0);
   if(!earned.length && !(p.synergies&&p.synergies.length)) return '';
-  const seg=k=>{ const m=AFF_META[k],t=p.affTier[k]; const roman=t>0?['I','II','III'][t-1]:'';
-    const next=t<3?AFF_THRESH[t]:null; const prog=next?` ${p.aff[k]}/${next}`:' MAX';
+  const seg=k=>{ const m=AFF_META[k],t=p.affTier[k]; const roman=t>0?['I','II','III','IV'][t-1]:'';
+    const next=t<AFF_TIER_MAX?AFF_THRESH[t]:null; const prog=next?` ${p.aff[k]}/${next}`:' MAX';
     return `<span class="${m.color} tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}">${m.name}${t>0?' '+roman:''}${prog}</span>`; };
   let s=earned.length?`<div class="stats" style="font-size:8px">PATHS &middot; ${earned.map(seg).join(' &middot; ')}</div>`:'';
   if(p.synergies&&p.synergies.length) s+=`<div>${p.synergies.map(n=>
@@ -7042,10 +7078,10 @@ function playerBar(p,full){
   // Affinity pills — inline at the end of the stats line so the HUD reads as ONE row, not three.
   // A path you haven't entered (tier 0, no points) is hidden — the row only shows what the build is
   // actually doing, which is what the player needs to track.
-  const tierRoman=['','I','II','III'];
+  const tierRoman=['','I','II','III','IV'];
   const affEntry=k=>{ const meta=AFF_META[k]; const t=p.affTier[k]; const pts=p.aff[k];
     if(t===0 && pts===0) return '';   // dead path — don't crowd the strip with it
-    const next=t<3?AFF_THRESH[t]:null;
+    const next=t<AFF_TIER_MAX?AFF_THRESH[t]:null;
     const lbl = t>0?` <span class="muted">${tierRoman[t]}</span>`:'';
     const prog = next!=null ? `<span class="muted">${pts}/${next}</span>` : `<span class="amber">MAX</span>`;
     return `<span class="aff-pill aff-${meta.color}" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}" role="button" tabindex="0"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
