@@ -1954,14 +1954,18 @@ const RELICS=[
   {id:'duo_wv2',name:'Iron Memory',dual:{w:2,v:2},legendary:true,note:'DUAL · WRATH+VEIL — full and high, you hit harder; low and hurt, you take less.',apply:p=>{addFlag(p,'ironMemory');}},
   {id:'duo_gv2',name:'Pale Reading',dual:{g:2,v:2},legendary:true,note:'DUAL · GUILE+VEIL — every blow you slip costs them, and gives you back a little of what you spent.',apply:p=>{addFlag(p,'paleReading');}},
   {id:'duo_wgv',name:'Tri-Star Brand',dual:{w:1,g:1,v:1},legendary:true,note:'DUAL · ALL PATHS — every milestone you reach in any path makes you a little better at being all of you.',apply:p=>{addFlag(p,'triStar');}},
-  {id:'duo_lock',name:'Sealed Compact',dual:{w:3,v:3},legendary:true,note:'DUAL · WRATH III+VEIL III — every fifth wound is a gift. The next thing you do hurts.',apply:p=>{addFlag(p,'sealedCompact');}},
+  {id:'duo_lock',name:'Sealed Compact',dual:{w:3,v:3},legendary:true,note:'DUAL · deep in both WRATH and VEIL — every fifth wound is a gift. The next thing you do hurts.',apply:p=>{addFlag(p,'sealedCompact');}},
 ];
 /* ---------- affinity paths (escalating build identities) ---------- */
-// Affinity tier thresholds. Gaps between tiers are 3, 3, 5, 10 — the jump from T3 to T4 is
-// deliberately large so reaching T4 in all three paths in one run is hard. Most runs will end
-// at T2-T3 in one or two paths; T4 should feel like a serious commitment, not a default.
-const AFF_THRESH=[3,6,11,21];
-const AFF_TIER_MAX=AFF_THRESH.length;   // 4 tiers, indexed 1..4
+// Affinity tier thresholds — PER PATH, tuned against measured accumulation (1176-run sweeps).
+// Veil points flow ~1.7x faster than Wrath/Guile (armor carries v; 4 armor slots vs 1 weapon
+// slot), so a flat threshold was simultaneously too low for Veil and unreachable for Wrath/Guile
+// (empirical: ALL organic T4s were Veil). Veil pays more per tier; Wrath/Guile pay what their
+// economy supplies. Measured outcomes at these values: exactly-one-T4 19% of runs (the committed
+// build), two+ T4 0.9%, all-three-T3+ 10.3% (was 100%-ish under the old 3/6/9 flat curve).
+const AFF_THRESH_BY={ w:[3,6,13,20], g:[3,6,13,20], v:[3,7,17,28] };
+function affThresh(k){ return AFF_THRESH_BY[k]||AFF_THRESH_BY.w; }
+const AFF_TIER_MAX=4;   // tiers indexed 1..4
 const AFF_META={w:{key:'w',name:'WRATH',color:'red'},g:{key:'g',name:'GUILE',color:'teal'},v:{key:'v',name:'VEIL',color:'blue'}};
 // Per-tier descriptions — plain English, lead with the effect, no flavour brand-name.
 // T1-T3 reflect the existing mechanics; T4 reflects the new T4 mechanics wired in this commit.
@@ -1982,7 +1986,7 @@ const AFF_TIER_TITLE={
     '+18 max HP, +12 mana. Every 3rd hit you take heals 6% of max HP.',
     'Regenerate 4.5% max HP at the end of every combat turn.',
     'Begin each battle with a barrier worth 22% of your max HP.',
-    'Start with a 44% barrier. Every kill refreshes it (+22%, cap 44%). Regen rises to 6.5%.',
+    'Start with a 44% barrier. Every kill refreshes it (+12%, cap 44%). Regen rises to 6.5%.',
   ],
 };
 /* ---------- synergies (named relic-combo payoffs) ---------- */
@@ -3086,7 +3090,7 @@ function recomputeAffinity(p){
   checkAffinityTiers(p);
 }
 function affTagText(aff){ if(!aff)return''; const t=[]; if(aff.w)t.push('Wrath +'+aff.w); if(aff.g)t.push('Guile +'+aff.g); if(aff.v)t.push('Veil +'+aff.v); return t.join(', '); }
-function checkAffinityTiers(p){ ['w','g','v'].forEach(k=>{ while(p.affTier[k]<AFF_TIER_MAX && p.aff[k]>=AFF_THRESH[p.affTier[k]]){ p.affTier[k]++; unlockAffinity(p,k,p.affTier[k]); } }); }
+function checkAffinityTiers(p){ ['w','g','v'].forEach(k=>{ while(p.affTier[k]<AFF_TIER_MAX && p.aff[k]>=affThresh(k)[p.affTier[k]]){ p.affTier[k]++; unlockAffinity(p,k,p.affTier[k]); } }); }
 function unlockAffinity(p,k,t){
   if(k==='v'&&t===1){ p.maxHp+=18; heal(p,18); p.maxMana+=12; p.mana+=12; }
   const msg=AFF_TIER_TITLE[k][t];
@@ -3638,12 +3642,12 @@ function rewardSynergyFlags(o,p){
     if(o.kind==='gear' && data.slot){ const cur=p.equip[data.slot]; if(cur&&cur.aff&&cur.aff[k]) net-=cur.aff[k]; }
     if(net===0) continue;
     const before=p.aff[k]||0, after=before+net;
-    const tBefore=affTierOf(before), tAfter=affTierOf(after);
+    const tBefore=affTierOf(before,k), tAfter=affTierOf(after,k);
     const nm=AFF_META[k].name, col=AFF_META[k].color;
     if(tAfter>tBefore){
       flags.push(`<span class="syn syn-tier ${col}">&#10022; ${nm} ${['I','II','III','IV'][tAfter-1]} &mdash; TIER UP!</span>`);
     } else {
-      const nextThresh = tAfter<AFF_TIER_MAX ? AFF_THRESH[tAfter] : null;
+      const nextThresh = tAfter<AFF_TIER_MAX ? affThresh(k)[tAfter] : null;
       if(nextThresh!=null && after>before){
         flags.push(`<span class="syn ${col}">&#10022; ${nm} ${after}/${nextThresh}</span>`);
       }
@@ -3665,7 +3669,7 @@ function rewardSynergyFlags(o,p){
   }
   return flags.length ? `<span class="syn-row">${flags.join(' ')}</span>` : '';
 }
-function affTierOf(pts){ let t=0; while(t<AFF_TIER_MAX && pts>=AFF_THRESH[t]) t++; return t; }
+function affTierOf(pts,k){ let t=0; const th=affThresh(k||'w'); while(t<AFF_TIER_MAX && pts>=th[t]) t++; return t; }
 function itemLabel(it){ return `<span class="${RARITY[it.rarity].cls}">${it.name}</span> <span class="muted">Lv${it.ilvl}</span>`; }
 function itemStatsText(it){ const parts=[];
   for(const k in it.stats){ parts.push(`+${it.stats[k]}${PCT_STAT[k]?'%':''} ${STAT_LBL[k]||k}`); }
@@ -4952,7 +4956,7 @@ function renderInventory(){ const p=G.player; const view=G._invView||'gear';
       const ultRow=`<div class="slot" style="border-color:var(--purple)"><span class="purple">&#10022; ${ult.name}</span> <span class="muted">(ULTIMATE — charge in battle)</span><br><span class="muted" style="font-size:8px">${ult.desc}</span></div>`;
       sec=`<h3 class="blue ivh">SKILLS &amp; ULTIMATE</h3>${skills}${ultRow}`;
     } else if(sub==='paths'){
-      const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<AFF_TIER_MAX?AFF_THRESH[t]:null;
+      const paths=['w','g','v'].filter(k=>p.aff[k]>0).map(k=>{const t=p.affTier[k];const nx=t<AFF_TIER_MAX?affThresh(k)[t]:null;
         return `<div class="slot tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}"><span class="${AFF_META[k].color}">${AFF_META[k].name}${t>0?' '+['I','II','III','IV'][t-1]:''} — ${p.aff[k]}${nx?'/'+nx:' (MAX)'}</span>${t>0?`<br><span class="muted" style="font-size:8px">${AFF_TIER_TITLE[k][t]}</span>`:''}</div>`;}).join('')||'<div class="slot muted">No path affinity earned yet — equip gear &amp; relics to build one.</div>';
       sec=`<h3 class="purple ivh">AFFINITY PATHS${infoBtnHtml('affinity')}</h3>${paths}`;
     } else {
@@ -5902,7 +5906,7 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
   if(p.affTier.v>=4 && G.battle){
     const cap=Math.round(p.maxHp*0.44);
     const cur=G.battle.barrier||0;
-    if(cur<cap){ const add=Math.min(cap-cur, Math.round(p.maxHp*0.22));
+    if(cur<cap){ const add=Math.min(cap-cur, Math.round(p.maxHp*0.12));
       if(add>0){ G.battle.barrier=cur+add; blog(`&#10042; WARDEN'S WALL &mdash; the kill mends your barrier (+${add}).`,'heal'); }
     }
   }
@@ -7040,7 +7044,7 @@ function affinityTipFor(p,k){
   for(let tier=1;tier<=AFF_TIER_MAX;tier++){
     const reached=t>=tier;
     const marker=reached?'[✓]':(tier===t+1?'[next]':'[ ]');
-    const at=tier<=AFF_THRESH.length?` (${AFF_THRESH[tier-1]} pts)`:'';
+    const at=tier<=AFF_TIER_MAX?` (${affThresh(k)[tier-1]} pts)`:'';
     s+=`\n${marker} ${AFF_TIER_TITLE[k][tier]}${at}`;
   }
   return s;
@@ -7058,7 +7062,7 @@ function affinityBar(p){
   const earned=['w','g','v'].filter(k=>p.aff[k]>0);
   if(!earned.length && !(p.synergies&&p.synergies.length)) return '';
   const seg=k=>{ const m=AFF_META[k],t=p.affTier[k]; const roman=t>0?['I','II','III','IV'][t-1]:'';
-    const next=t<AFF_TIER_MAX?AFF_THRESH[t]:null; const prog=next?` ${p.aff[k]}/${next}`:' MAX';
+    const next=t<AFF_TIER_MAX?affThresh(k)[t]:null; const prog=next?` ${p.aff[k]}/${next}`:' MAX';
     return `<span class="${m.color} tipline" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}">${m.name}${t>0?' '+roman:''}${prog}</span>`; };
   let s=earned.length?`<div class="stats" style="font-size:8px">PATHS &middot; ${earned.map(seg).join(' &middot; ')}</div>`:'';
   if(p.synergies&&p.synergies.length) s+=`<div>${p.synergies.map(n=>
@@ -7081,7 +7085,7 @@ function playerBar(p,full){
   const tierRoman=['','I','II','III','IV'];
   const affEntry=k=>{ const meta=AFF_META[k]; const t=p.affTier[k]; const pts=p.aff[k];
     if(t===0 && pts===0) return '';   // dead path — don't crowd the strip with it
-    const next=t<AFF_TIER_MAX?AFF_THRESH[t]:null;
+    const next=t<AFF_TIER_MAX?affThresh(k)[t]:null;
     const lbl = t>0?` <span class="muted">${tierRoman[t]}</span>`:'';
     const prog = next!=null ? `<span class="muted">${pts}/${next}</span>` : `<span class="amber">MAX</span>`;
     return `<span class="aff-pill aff-${meta.color}" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}" role="button" tabindex="0"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
