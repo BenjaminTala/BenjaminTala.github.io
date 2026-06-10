@@ -3481,8 +3481,9 @@ function pickFragment(fam, choice){
   devourMutate(p, fam, choice);
   const revealed=p.memory&&p.memory.revealed;
   // STAGE — only for EVOLVE picks that produced a new named combo (the build moment that
-  // used to land as a build popup). Empower and Replace keep the popup-only flow because
-  // they're refinements, not transformations.
+  // used to land as a build popup). Empower and Replace are refinements — they get an in-
+  // combat flash banner only (no queued modal), so a chained-fragment session doesn't leave
+  // a stale "ESSENCE GATHERS" modal sitting in the build queue to pop after the fight ends.
   const evolved = choice==='evolve' && p.memory && p.memory.name && p.memory.name!==beforeName && p.memory.name!=='Harvest Essence' && p.memory.name!=='Devour';
   if(evolved){
     // Derive the family formula from the last entries of the path.
@@ -3499,13 +3500,15 @@ function pickFragment(fam, choice){
       sfx: 'crit',
     });
   } else {
-    // Empower / Replace are refinements, not transformations — they keep the popup-only flow.
-    popupBuild((revealed?'DEVOUR EVOLVES':'ESSENCE GATHERS')+' &mdash; '+p.memory.name,
-      `<p class="shout-purple" style="font-size:11px;line-height:1.7">${p.memory.desc}</p>`+
-      `<p class="muted" style="font-size:9px;margin-top:8px">Path: ${p.memory.path.length?p.memory.path.join(' &rarr; '):'(empty)'} &middot; stage ${p.memory.stage||0}</p>`,
-    'memory');
+    // Empower / Replace — in-combat flash banner only. NOT queued as a modal: a chained
+    // session where the player picks REPLACE then EVOLVE was leaving the REPLACE's modal
+    // in _buildQueue to pop after end-of-battle, reading as a stale "old popup" after the
+    // stage's celebration. Flash banners auto-clear on the next player action.
+    flashBuild((revealed?'DEVOUR EVOLVES':'ESSENCE GATHERS')+' &mdash; '+p.memory.name, '', 'devour');
   }
-  // Close the current fragment modal; drainBuildQueue will auto-fire the popup, and the next fragment if any
+  // Close the current fragment modal; chain into the next fragment if any, then drain any
+  // unrelated queued build popups (stage-hold guard inside drainBuildQueue blocks it during
+  // the 2.8s takeover).
   const modal=document.getElementById('info-modal'); if(modal)modal.classList.add('hidden');
   setTimeout(()=>{ if(G._fragQueue && G._fragQueue.length){ showFragmentChoice(); } else { drainBuildQueue(); } }, 220);
 }
@@ -5505,6 +5508,7 @@ function startBattle(intro){
   G.battle={enemies,target:0,pdef:0,pdefTurns:0,evade:0,evadeTurns:0,guardDown:0,barrier:0,charge:carriedCharge,
     over:false,anim:'',animIdx:-1,usedSecond:false,floats:[],fx:[],
     stance:'bal', stanceLock:0,   // every fight starts neutral; switching commits you for 2 turns
+    _bonusFragmentFired:0,        // non-boss bonus-engagement fragments capped at one per fight
     pst:newStatus(),hadBoss:enemies.some(e=>e.boss),isFinal:!G.abyss&&enemies.some(e=>BOSSES.dragon.name===e.name||BOSSES.king.name===e.name)&&G.depth>=RUN_LENGTH};
   const p=G.player;
   if(p.flags.combatRegen||p.affTier.v>=2){ G.battle.pst.regen=Math.max(2,Math.round(p.maxHp*(p.affTier.v>=2?0.045:0.04))); G.battle.pst.regenT=999; }
@@ -5908,9 +5912,15 @@ function onEnemyDeath(e){ if(e._dead)return; e._dead=true; const p=G.player;
     if(!fromDevour){
       const path=p.memory.path||[];
       const newFamily = !path.includes(fam);
-      if(e.boss || (newFamily && chance(35))){
+      // Per-fight cap on non-boss bonus fragments. The bonus path previously stacked: a
+      // Harvest-touched-then-other-killed enemy could quietly queue a fragment that surfaced
+      // alongside a later Devour cast's fragment, reading as "a second fragment appeared
+      // instantly." Now: bosses still bypass; non-boss bonus fragments are capped at one per
+      // fight via b._bonusFragmentFired (cleared at startBattle).
+      const bonusBlocked = b && b._bonusFragmentFired;
+      if(e.boss || (newFamily && !bonusBlocked && chance(35))){
         queueFragmentChoice(p, fam);
-        if(!e.boss) p._saturated=2;   // shorter saturated cooldown for the bonus-engagement path
+        if(!e.boss){ p._saturated=2; if(b) b._bonusFragmentFired=1; }
       }
     }
   }
