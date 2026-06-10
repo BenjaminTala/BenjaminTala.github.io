@@ -7038,20 +7038,49 @@ function stageReveal(opts){
 }
 function relicNoteFor(name){const r=RELICS.find(x=>x.name===name);return r?r.note:'';}
 function synergyDescFor(name){const s=SYNERGIES.find(x=>x.name===name);return s?s.desc:'';}
+// Plain-text version for the title="" hover tooltip on pills and inventory rows. The browser
+// strips HTML in a title attr, so this stays single-paragraph but uses bullets and dashes that
+// at least separate tiers visually when the tooltip wraps.
 function affinityTipFor(p,k){
   const m=AFF_META[k],t=p.affTier[k];
-  let s=`${m.name} — ${p.aff[k]} points.\n`;
+  const parts=[`${m.name} — ${p.aff[k]} points.`];
+  const th=affThresh(k);
   for(let tier=1;tier<=AFF_TIER_MAX;tier++){
     const reached=t>=tier;
     const marker=reached?'[✓]':(tier===t+1?'[next]':'[ ]');
-    const at=tier<=AFF_TIER_MAX?` (${affThresh(k)[tier-1]} pts)`:'';
-    s+=`\n${marker} ${AFF_TIER_TITLE[k][tier]}${at}`;
+    parts.push(`${marker} T${tier} @ ${th[tier-1]}pts — ${AFF_TIER_TITLE[k][tier]}`);
   }
-  return s;
+  return parts.join('\n');
+}
+// Rich-HTML version for the click-through modal. Each tier is its own block so the four
+// readouts are not one wall of text. Colored marker (gold check / amber arrow / dim square),
+// bold tier label, effect on its own line, threshold on the right.
+function affinityModalHtml(p,k){
+  const m=AFF_META[k],t=p.affTier[k]; const th=affThresh(k); const col=m.color;
+  const head=`<div style="margin-bottom:10px;font-size:10px;color:#cfcbef"><b class="${col}">${m.name}</b> &mdash; <b>${p.aff[k]}</b> points</div>`;
+  const rows=[];
+  for(let tier=1;tier<=AFF_TIER_MAX;tier++){
+    const reached=t>=tier; const isNext=(tier===t+1);
+    const marker = reached ? '<span style="color:#5cff8f">✓</span>'
+                 : isNext  ? `<span class="amber">▸</span>`
+                 :           '<span style="color:#3a3a55">○</span>';
+    const tierLabel=`<b class="${reached?col:isNext?'amber':'muted'}">T${tier}</b>`;
+    const cost=`<span class="muted" style="font-size:8.5px;letter-spacing:.5px">${th[tier-1]} pts</span>`;
+    const body=`<div style="font-size:9.5px;line-height:1.7;color:${reached?'#e6dcff':isNext?'#ffd87a':'#888'};margin-top:2px">${AFF_TIER_TITLE[k][tier]}</div>`;
+    const bg = reached ? 'rgba(60,40,90,.22)' : isNext ? 'rgba(90,60,20,.20)' : 'rgba(20,20,32,.30)';
+    const bd = reached ? '#5cff8f' : isNext ? '#ffcf4d' : '#2a2a40';
+    rows.push(`<div style="display:block;padding:7px 10px;margin:5px 0;border-left:3px solid ${bd};background:${bg};border-radius:2px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span>${marker} &nbsp; ${tierLabel}</span>${cost}
+      </div>
+      ${body}
+    </div>`);
+  }
+  return head+rows.join('');
 }
 function showRelicInfo(name){ showInfo({title:name,body:relicNoteFor(name)||'A relic of unknown power.'}); }
 function showSynergyInfo(name){ const s=SYNERGIES.find(x=>x.name===name); showInfo({title:name,body:s?`${s.desc}<br><br><span class="muted">Formed by: ${s.need.join(' + ')}</span>`:'A relic synergy.'}); }
-function showPathInfo(k){ if(!G.player)return; showInfo({title:AFF_META[k].name+' PATH',body:affinityTipFor(G.player,k)}); }
+function showPathInfo(k){ if(!G.player)return; showInfo({title:AFF_META[k].name+' PATH',body:affinityModalHtml(G.player,k)}); }
 /* HTML-attr-safe escape */
 const escAttr=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function infoBtnHtml(key){
