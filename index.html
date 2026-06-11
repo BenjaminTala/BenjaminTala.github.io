@@ -5792,6 +5792,20 @@ function fReforge(s){ const p=G.player; const snap=forgeSnap(p.equip[s]); const 
 function fImbue(){ const p=G.player; const snap=forgeSnap(p.weapon); const ok=forgeImbue(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'imbue':'fail'); renderForge(); if(ok)forgeResultPopup(p.weapon,snap,'imbue'); }
 function leaveForge(){ leaveRoom(); }
 function renderForge(){ const p=G.player; discoverLore('l11');
+  // FIRST-EVER FORGE — same one-shot teaching pattern as Heat / Miasma / Abyss. The Forge is a
+  // core progression loop (essence -> permanent power) but a fresh player walking in had to
+  // figure out what essence is, where it comes from, and what each option does, all at once.
+  try{
+    if(!localStorage.getItem('crypt_seen_forge')){
+      localStorage.setItem('crypt_seen_forge','1');
+      setTimeout(()=>showInfo({title:'&#128296; THE SOUL FORGE &mdash; SPEND, GROW',body:
+        '<p class="shout" style="font-size:12px;line-height:1.8">A phantom smith hammers starlight into your gear. This is where you get <b>permanently</b> stronger.</p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:10px">You spend <b class="teal">Soul Essence</b> (the &#9670; currency you earn from kills) to: <b>UPGRADE</b> a gear piece (+2 item levels), <b>REFORGE</b> a piece up a rarity tier (Common &rarr; Uncommon &rarr; ... &rarr; Legendary), <b>IMBUE</b> your weapon with an on-hit effect, or <b>ATTUNE</b> to a path (+2 affinity toward the next tier capstone).</p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:6px">The smaller options &mdash; <b>SHARPEN</b>, <b>WARD</b>, <b>DREAD</b> &mdash; are repeatable but capped per visit / per run. Cheap, fast wins.</p>'+
+        '<p class="muted" style="font-size:9px;line-height:1.7;margin-top:8px">Essence does not carry between runs. Spend it. The forge does not give refunds.</p>'
+      }),0);
+    }
+  }catch(e){}
   const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${formatMech(sub)}</small></button>`;
   const slots=SLOTS;
   const up=slots.map(s=>{const it=p.equip[s];if(!it)return '';const c=14+it.ilvl*2;
