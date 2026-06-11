@@ -2752,10 +2752,80 @@ function paleRumorChance(){ const d=(loadRecords().deepest)||0;
 function paleRumor(){ const hit=chance(paleRumorChance()); if(hit)noteRumor('pale'); return hit; }
 /* atmospheric whispers — drip the world into the player run by run */
 const WHISPERS={
-  0:['You hear something turn over in its sleep, far below.','Dust falls in still air. The crypt is listening.','A name is scratched into the stone — you do not know it. Yet.','The torches here are newer than the tombs.','A single boot lies forgotten. Its owner did not walk back this way.'],
-  1:['Iron sweats. The Furnace is testing you.','A draught carries the smell of cooked metal.','Something hammers in time with your heart.','The walls remember being warmer than this.','A handprint, melted into the stone, fingers spread wide.'],
-  2:['Your breath is the loudest sound in the world now.','Frost forms on the rim of your eye.','A whisper, barely there: "you opened it."','Wounds you do not remember taking weep slowly.','You think you saw your own reflection turn a corner ahead.'],
-  3:['Reality grows thin like worn cloth.','You step where there is no floor and do not fall.','You catch yourself thinking thoughts that are not yours.','The Deep has been waiting a very long time. It is patient.','A voice that sounds like yours says: "we are almost home."'],
+  0:[
+    'You hear something turn over in its sleep, far below.',
+    'Dust falls in still air. The crypt is listening.',
+    'A name is scratched into the stone — you do not know it. Yet.',
+    'The torches here are newer than the tombs.',
+    'A single boot lies forgotten. Its owner did not walk back this way.',
+    'A door, ahead, has been bricked over from the OUTSIDE.',
+    'You pass a small pile of teeth. Arranged. Not scattered.',
+    'The flagstones here are level. Wherever you are going, someone wanted you to arrive comfortably.',
+    'Old graffiti in the corner: a tally of forty marks, the last one not finished.',
+    'A child\'s shoe. Empty. Dry. The lace is still tied.',
+  ],
+  1:[
+    'Iron sweats. The Furnace is testing you.',
+    'A draught carries the smell of cooked metal.',
+    'Something hammers in time with your heart.',
+    'The walls remember being warmer than this.',
+    'A handprint, melted into the stone, fingers spread wide.',
+    'A bell, very far away, rings once. The bell is on fire.',
+    'You catch yourself sweating from the bone outward, not the skin in.',
+    'A small pool of metal, cooling. It is the shape of a face screaming.',
+    'The Furnace coughs once, in the way a man does when he is pretending not to be sick.',
+    'Footprints scorched into the floor, walking the wrong way. Whoever they belong to is going UP.',
+  ],
+  2:[
+    'Your breath is the loudest sound in the world now.',
+    'Frost forms on the rim of your eye.',
+    'A whisper, barely there: "you opened it."',
+    'Wounds you do not remember taking weep slowly.',
+    'You think you saw your own reflection turn a corner ahead.',
+    'The cold here is not OUTSIDE the cold. It is what the cold is for.',
+    'You hear someone breathing, very slowly, in a room you have not entered.',
+    'A long line of small frozen things, perfectly arranged, that used to be insects.',
+    'You look at your hand and find that you are not sure how old it is.',
+    'Snow inside a stone hall. No window. No sky. It is falling anyway.',
+  ],
+  3:[
+    'Reality grows thin like worn cloth.',
+    'You step where there is no floor and do not fall.',
+    'You catch yourself thinking thoughts that are not yours.',
+    'The Deep has been waiting a very long time. It is patient.',
+    'A voice that sounds like yours says: "we are almost home."',
+    'A door at the end of the corridor opens, looks at you, and closes again.',
+    'You have been here before. You will be here again. None of this is in the order you think.',
+    'The dark is no longer empty. It is FURNISHED.',
+    'You sit down for a moment. You realise an hour later that you are still walking.',
+    'Something steps when you step. Not behind you. WITH you.',
+  ],
+};
+// MID-ZONE BEATS — fired once at the halfway chamber of each zone (5/15/25/35) to anchor the
+// zone's character mid-descent. Three lines per zone keeps the beat fresh across runs without
+// piling up content. Tone leans into the zone's identity (oldness in 0, heat in 1, cold/dread
+// in 2, unreal in 3) and lands a little heavier than the random whispers.
+const MID_ZONE_BEATS={
+  0:[
+    'Five chambers in. The walls are older here than at the door. Someone built this place INWARD.',
+    'You realise the torches are not lit by anyone. They are simply burning. They have been burning a long time.',
+    'A faint smell of bread. Then nothing. There is no kitchen down here.',
+  ],
+  1:[
+    'The Furnace has not been built. It has been BORN. You can feel the wall breathing under your hand.',
+    'You begin to sweat in a way that does not stop. Somewhere ahead, the fire wants you specifically.',
+    'A foundryman\'s mark, repeated on every iron beam: a circle with a face in it, eyes squeezed shut.',
+  ],
+  2:[
+    'The cold is no longer a temperature. It is a SUBSTANCE. It pools where you do not stand.',
+    'You hear weeping from a room you have already left.',
+    'Your own footprints, ahead of you, in undisturbed frost. You have not walked here yet.',
+  ],
+  3:[
+    'You start to notice that the corridor does not turn — it FORGETS being straight.',
+    'A long table set for one. The chair is pulled out. You almost sit down without meaning to.',
+    'You hear yourself, somewhere ahead, telling someone what happened. You have not happened yet.',
+  ],
 };
 // Rare wall-inscriptions about the Pale — only deep (zone 3 / Abyss) and double-gated so even
 // there they are uncommon. The walls themselves are too afraid to say it plainly.
@@ -4921,6 +4991,13 @@ function nextCorridor(){ G.depth++;
     G._whisper = chance(24) ? whisperFor(G.depth) : null;
     return; }
   if(G.depth===1||G.depth===11||G.depth===21||G.depth===31){ const z=ZONES[zoneOf(G.depth)]; G._zoneMsg=`<b class="${z.color}">${z.name}</b> — ${z.lore}`; ({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]&&discoverLore(({1:'l2',11:'l3',21:'l6',31:'l9'})[G.depth]); if(G.depth>1)stagePopup(G.depth); }
+  // MID-ZONE BEAT — halfway through each zone (chambers 5/15/25/35), surface a single anchoring
+  // line so the zone doesn't go ten quiet corridors between intro banner and boss. These are
+  // mood lines, not lore-progression; they push the player's read of the zone deeper without
+  // adding a system to learn. Surfaced through the same whisper banner the random whispers use.
+  if(G.depth===5 || G.depth===15 || G.depth===25 || G.depth===35){
+    G._whisper = pick(MID_ZONE_BEATS[zoneOf(G.depth)] || []);
+  }
   // ----- DUNGEON-MEMORY WHISPER (Hades-lite: the crypt notices the player's
   //       past runs).  Fires only on the very first chamber of a non-first run.
   //       Surfaces previous-run stats as in-fiction acknowledgement.
