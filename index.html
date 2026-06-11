@@ -6494,16 +6494,22 @@ function tickDoT(entity,st,name){ // returns false if entity died
   // in applyEnemyHit, just for the DoT timing window (burn/poison expiring at end-of-turn).
   const phx=(rawDmg)=>{ if(!isPlayer||!entity.flags||!entity.flags.secondWind||entity._phoenixUsed)return rawDmg;
     if(entity.hp-rawDmg>0) return rawDmg;
-    entity._phoenixUsed=1; const heal=Math.max(1,Math.round(entity.maxHp*0.30));
-    blog('PHOENIX FEATHER — the wound that would have closed your eyes leaves them open. (+'+heal+' HP)','crit');
-    setTimeout(()=>showInfo({title:'PHOENIX FEATHER',body:'<p class="shout-red" style="font-size:11px">The end came for you and your relic answered. You are at <b>1 HP</b>, and then the feather burns to dust and gives you <b>'+heal+' HP</b>.</p>'}),0);
+    entity._phoenixUsed=1;
+    // BAL: matched the physical-hit Phoenix path — 15% revive + permanent 8% max-HP loss instead
+    // of the old 30% revive with no aftermath. The DoT save was actually MORE generous than the
+    // hit save (30% vs 25%); now they're consistent and both noticeably costlier than before.
+    const loss=Math.max(4,Math.round(entity.maxHp*0.08));
+    entity.maxHp=Math.max(1, entity.maxHp-loss);
+    const heal=Math.max(1,Math.round(entity.maxHp*0.15));
+    blog(`PHOENIX FEATHER &mdash; the wound that would have closed your eyes leaves them open. (+${heal} HP, &minus;${loss} max HP)`,'crit');
+    setTimeout(()=>showInfo({title:'PHOENIX FEATHER',body:`<p class="shout-red" style="font-size:11px">The end came for you and your relic answered. You are at <b>1 HP</b>, the feather burns to dust to give you <b>${heal} HP</b> back &mdash; and your frame, frailer, holds <b>${loss}</b> less of you from here on.</p>`}),0);
     return entity.hp-1;   // leave them at exactly 1 HP, then heal below
   };
   if(st.burnT>0){ let d=Math.max(1,Math.round(st.burn*ward)); d=phx(d); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('burn',bf-entity.hp); blog(`Burn sears ${name} for ${d}.`,'dmg'); st.burnT--; }
   if(st.poisonT>0){ let d=Math.max(1,Math.round(st.poison*ward)); d=phx(d); const bf=entity.hp; entity.hp=clamp(entity.hp-d,0,entity.maxHp||entity.hp+d); if(isPlayer)attrib('poison',bf-entity.hp); blog(`Poison wracks ${name} for ${d}.`,'dmg'); st.poisonT--; }
   // If Phoenix fired, restore the heal now (player sits at 1 HP after the tick, jump to ~30% maxHp).
   if(isPlayer && entity._phoenixUsed && entity.hp<=1 && entity.flags && entity.flags.secondWind){
-    entity.hp=Math.min(entity.maxHp, 1+Math.max(1,Math.round(entity.maxHp*0.30)));
+    entity.hp=Math.min(entity.maxHp, 1+Math.max(1,Math.round(entity.maxHp*0.15)));
   }
   if(st.regenT>0 && entity.hp>0){ const before=entity.hp; entity.hp=clamp(entity.hp+st.regen,0,entity.maxHp); if(entity.hp>before)blog(`${name} regenerates ${entity.hp-before}.`,'heal'); st.regenT--; }
   return entity.hp>0;
@@ -6590,8 +6596,14 @@ function applyEnemyHit(e,p,b,baseDmg,label,kind){
     // Attribute the lethal hit to enemy so cause-of-death is honest even if Phoenix saved you.
     // The previous formula (lost0 - p.hp) went negative when revive HP > current HP and credited 0.
     attrib('enemy', Math.max(0, p.hp));
-    p.hp=Math.max(1,Math.round(p.maxHp*0.25));
-    SFX.play('levelup'); blog('PHOENIX FEATHER! You cheat death! (the feather burns away &mdash; one charge, this run.)','lvl'); }
+    // BAL: was 25% revive with no aftermath -> 94.2% win-rate-when-held in the sim (a single relic
+    // collapsing the difficulty ceiling). Now 15% revive + a permanent 8% max-HP loss for the rest
+    // of the run, so the "second life" still saves you but leaves you noticeably shakier than
+    // before. The identity is preserved; the free-win is gone.
+    const loss=Math.max(4,Math.round(p.maxHp*0.08));
+    p.maxHp=Math.max(p.hp>0?1:1, p.maxHp-loss);
+    p.hp=Math.max(1,Math.round(p.maxHp*0.15));
+    SFX.play('levelup'); blog(`PHOENIX FEATHER! You cheat death &mdash; the feather burns away, leaving you frailer (&minus;${loss} max HP).`,'lvl'); }
   else { const before=p.hp; p.hp=clamp(p.hp-dmg,0,p.maxHp); attrib('enemy',before-p.hp); SFX.play(dmg>0?'hurt':'dodge'); blog(`${label} for ${dmg}!`,'dmg'); if(dmg>0){gainCharge(9);(b.floats=b.floats||[]).push({idx:-1,text:'-'+dmg,cls:'pdmg'});pushFx(-1,'pdmg');
       // Shake the scene when YOU take a real hit — bigger shake on >=15% maxHp hits.
       const sc=document.getElementById('scene');
