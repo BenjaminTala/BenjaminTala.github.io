@@ -74,6 +74,16 @@
   .shrine-panel{border-color:#5a3a8a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(160,90,220,.10)}
   .pstrip .track.xpline{height:4px;margin-top:2px;border-width:1px}
   .pstrip .stats.pstats{font-size:8.5px;line-height:1.45;margin-top:2px;color:var(--dim);flex:1;min-width:0}
+  /* HUD stat clustering — the row is too dense if every number reads at the same weight. Primary
+     combat numbers (ATK/DEF) stay bright; modifiers (DODGE/CRIT/MP/LS) dim down a half-step; the
+     currencies sit in a tinted chunk so the eye finds gold/essence in one saccade. The tester
+     said "I have to LOOK for things" — this row is now scannable in clusters, not as a list. */
+  .pstats .ps-pri{color:#e6ddc8}
+  .pstats .ps-pri b{color:#fff}
+  .pstats .ps-sub{color:#8a8aa0}
+  .pstats .ps-sub b{color:#bcbcd0}
+  .pstats .ps-cur{padding-left:8px;border-left:1px solid #2a2a3a;margin-left:2px}
+  .pstats .ps-sep{color:#3a3a4a;margin:0 2px}
   /* INTEGRATED HUD ACTIONS — INVENTORY + SAGA inline on the right of the stats row. Same row as
      the player's numbers, so the eye that just read the stats lands on them naturally. */
   .pstrip-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -1077,6 +1087,10 @@ const pick=a=>a[rnd(a.length)];
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const chance=p=>Math.random()*100<p;
 const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+// HP display rounding — once values cross 100, exact ones-place precision is cognitive noise
+// (the player doesn't tactically care if a boss is at 487 vs 489). Round to nearest 5 above 100
+// and nearest 10 above 1000; keep <=100 exact (low-HP precision is read every turn).
+const hpRound=v=>{ v=Math.max(0,Math.round(v)); if(v<=100) return v; if(v<1000) return Math.round(v/5)*5; return Math.round(v/10)*10; };
 
 /* ============================================================
    AUDIO  —  chiptune SFX + music (WebAudio synth, no assets)
@@ -3649,12 +3663,14 @@ function gearCompareHtml(it,cur){ const keys=[...new Set([...Object.keys(it.stat
   const parts=keys.map(k=>{ const nv=it.stats[k]||0, ov=(cur&&cur.stats[k])||0, d=nv-ov; const pc=PCT_STAT[k]?'%':'';
     const dt=!cur?'':d>0?` <span class="green">&#9650;${d}${pc}</span>`:d<0?` <span class="red">&#9660;${-d}${pc}</span>`:'';
     return `${STAT_LBL[k]||k} <b>${nv}${pc}</b>${dt}`; });
-  // Net verdict — answers "is this an upgrade?" so players don't have to do the math.
+  // Net verdict — answers "is this an upgrade?" BEFORE the stat list so the player reads the
+  // bottom-line first, then dives into the numbers only if they're curious. (Was at the end —
+  // moved to the front per tester feedback "I scan for the verdict and have to find it.")
   let verdict=''; if(cur){ const ds=gearScore(it)-gearScore(cur);
-    verdict = ds>1.5 ? ' &middot; <span class="green">UPGRADE</span>'
-            : ds<-1.5 ? ' &middot; <span class="red">DOWNGRADE</span>'
-            : ' &middot; <span class="muted">SIDEGRADE</span>'; }
-  return parts.join(' &middot; ')+verdict+itemExtraText(it); }
+    verdict = ds>1.5 ? '<span class="green"><b>UPGRADE</b></span> &middot; '
+            : ds<-1.5 ? '<span class="red"><b>DOWNGRADE</b></span> &middot; '
+            : '<span class="muted"><b>SIDEGRADE</b></span> &middot; '; }
+  return verdict+parts.join(' &middot; ')+itemExtraText(it); }
 // SYNERGY FLAGS — the Balatro/Spire "show the player the half-built combo" move.
 // Given a reward option, returns a short coloured banner that fires ONLY when the
 // reward would advance something the player has already started: complete an armor
@@ -5928,7 +5944,7 @@ function renderBattle(){
       ${charge}
       ${dead?'':intentBadgeHtml(e)}
       ${spriteHtml}
-      <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${Math.max(0,e.hp)}/${e.maxHp}</span></div>
+      <div class="bar mini"><div class="lbl"><span class="${e.boss?'red':e.elite?'amber':'red'}">${e.name}</span><span>${hpRound(Math.max(0,e.hp))}/${hpRound(e.maxHp)}</span></div>
         <div class="track"><div class="fill ${e.boss?'boss':'hp'}" style="width:${clamp(e.hp/e.maxHp*100,0,100)}%"></div></div></div>
       <div class="center">${dead?'<span class="muted" style="font-size:8px">DEFEATED</span>':(e.hunted?'<span class="chip c-burn" title="Hunted: bounty on death">&#127993; HUNTED</span>':'')+(e.counter?`<span class="chip c-vuln" title="${escAttr(COUNTERS[e.counter].label)}">&#128737; ${COUNTERS[e.counter].short}</span>`:'')+stChips(e.st)}</div>
       ${(multi&&!dead)?`<button class="tgt ${i===b.target?'on':''}" onclick="setTarget(${i})" title="Switch target to ${e.name}">${i===b.target?'&#9654; TARGET':'TARGET'}</button>`:''}</div>`;
@@ -7301,7 +7317,7 @@ function playerBar(p,full){
       <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div>
       <div class="track xpline"><div class="fill mp" style="width:${mpPct}%"></div></div></div>
     <div class="pstrip-row">
-      <div class="stats pstats">MP <b>${p.mana}/${p.maxMana}</b> &middot; ATK <b>${p.atk+p.weapon.dmg}</b> &middot; DEF <b>${p.def}</b> &middot; DODGE <b>${ed}%</b> &middot; CRIT <b>${ec}%</b>${p.lifesteal?' &middot; LS <b>'+p.lifesteal+'%</b>':''} &middot; <span class="amber" title="Gold — spend at merchants">${p.gold}g</span> &middot; <span class="teal" title="Soul Essence — spent at the Forge">${p.essence} ${ESS}</span>${p.relics.length?` &middot; <span class="purple" title="${p.relics.length} relic${p.relics.length===1?'':'s'} carried">&#9670;${p.relics.length}</span>`:''}${affPills?' &middot; '+affPills:''}</div>
+      <div class="stats pstats"><span class="ps-pri">ATK <b>${p.atk+p.weapon.dmg}</b> <span class="ps-sep">&middot;</span> DEF <b>${p.def}</b></span> <span class="ps-sep">&middot;</span> <span class="ps-sub">DODGE <b>${ed}%</b> <span class="ps-sep">&middot;</span> CRIT <b>${ec}%</b>${p.maxMana?' <span class="ps-sep">&middot;</span> MP <b>'+p.mana+'/'+p.maxMana+'</b>':''}${p.lifesteal?' <span class="ps-sep">&middot;</span> LS <b>'+p.lifesteal+'%</b>':''}</span><span class="ps-cur"><span class="amber" title="Gold — spend at merchants">${p.gold}g</span> <span class="ps-sep">&middot;</span> <span class="teal" title="Soul Essence — spent at the Forge">${p.essence} ${ESS}</span>${p.relics.length?` <span class="ps-sep">&middot;</span> <span class="purple" title="${p.relics.length} relic${p.relics.length===1?'':'s'} carried">&#9670;${p.relics.length}</span>`:''}</span>${affPills?' <span class="ps-sep">&middot;</span> '+affPills:''}</div>
       <div class="pot-row" title="Potions ready (heal ~30% HP each)">${potPips}</div>
       ${invBtns}
     </div>
