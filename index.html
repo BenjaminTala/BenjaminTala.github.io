@@ -5534,7 +5534,7 @@ function renderMerchant(){
   else if(met===2 || met===3){ greet='"Ah. You. Coin for comfort, as we agreed."'; sub='He recognises you the way a riverbed recognises water.'; }
   else { greet='"Coin for comfort, traveler. I do not ask your name."'; sub='An old man at a stall in a place that should not have stalls.'; }
   const heatNote=(st.pm||1)>1?`<div class="center red" style="font-size:8px">The Furnace's heat has driven prices up <span class="muted">(+${Math.round(((st.pm||1)-1)*100)}%)</span>.</div>`:'';
-  const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${sub}</small></button>`;
+  const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${formatMech(sub)}</small></button>`;
   const relicBtn=st.relic?item('Relic: '+st.relic.name,mc(70),st.relic.note,"buy('relic')",p.gold>=mc(70)):'';
   const gcost=st.gear?mc(40+st.gear.rarity*22):0;
   // Show the delta against what's equipped in that slot (same readout as the reward screen) so
@@ -5686,7 +5686,7 @@ function fReforge(s){ const p=G.player; const snap=forgeSnap(p.equip[s]); const 
 function fImbue(){ const p=G.player; const snap=forgeSnap(p.weapon); const ok=forgeImbue(); SFX.play(ok?'upgrade':'fail'); forgeFlash(ok?'imbue':'fail'); renderForge(); if(ok)forgeResultPopup(p.weapon,snap,'imbue'); }
 function leaveForge(){ leaveRoom(); }
 function renderForge(){ const p=G.player; discoverLore('l11');
-  const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${sub}</small></button>`;
+  const fb=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k teal">${cost}${ESS}</span>${label}<small>${formatMech(sub)}</small></button>`;
   const slots=SLOTS;
   const up=slots.map(s=>{const it=p.equip[s];if(!it)return '';const c=14+it.ilvl*2;
     return fb(`Upgrade ${s.toUpperCase()}: ${itemLabel(it)}`,c,`+2 item levels &middot; ${itemStatsText(it)}`,`fUpgrade('${s}')`,p.essence>=c);}).join('');
@@ -6008,7 +6008,7 @@ function renderBattle(){
     ? `<div class="build-flash-wrap">${b._buildFlash.map(f=>`<div class="build-flash k-${f.kind||'synergy'}">${f.label}${f.sub?`<span class="bf-sub">${f.sub}</span>`:''}</div>`).join('')}</div>`
     : '';
   b.floats=[]; b.fx=[]; b.intro=false;
-  const logHtml=G.log.slice(-8).map(l=>`<div class="${l.cls}">${l.text}</div>`).join('');
+  const logHtml=G.log.slice(-8).map(l=>`<div class="${l.cls}">${formatMech(l.text)}</div>`).join('');
   const pStatus=(b.barrier>0?`<span class="chip c-guard">BARRIER ${b.barrier}</span>`:'')
     +(b.pdefTurns>0?`<span class="chip c-guard">GUARD ${b.pdefTurns}</span>`:'')
     +(b.evadeTurns>0?`<span class="chip c-pois">EVADE ${b.evadeTurns}</span>`:'')
@@ -6829,8 +6829,8 @@ function renderReward(){ const p=G.player,pd=G.pending;
       const slotTxt=cur?`<span class="muted">swap</span>`:'<span class="green">empty slot</span>';
       const hover=escAttr(cur?`Replaces ${cur.name} Lv${cur.ilvl}`:'Fills an empty slot');
       return `<button class="btn" onclick="takeReward(${i})" title="${hover}">${itemIconHtml(it)}<span class="k amber">${icon[it.slot]}</span>${it.slot.toUpperCase()}: ${itemLabel(it)}<small>${gearCompareHtml(it,cur)}${tag(it.aff)} &middot; ${slotTxt}</small>${syn}</button>`; }
-    if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${o.data.note}${tag(o.data.aff)}</small>${syn}</button>`;
-    return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${o.data.note}${tag(o.data.aff)}</small>${syn}</button>`;}).join('');
+    if(o.kind==='relic')return `<button class="btn" onclick="takeReward(${i})"><span class="k purple">&#9670;</span>${o.data.name} (relic)<small>${formatMech(o.data.note)}${tag(o.data.aff)}</small>${syn}</button>`;
+    return `<button class="btn" onclick="takeReward(${i})"><span class="k green">&#9650;</span>${o.data.name}<small>${formatMech(o.data.note)}${tag(o.data.aff)}</small>${syn}</button>`;}).join('');
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
     <div class="panel fade room-in"><h3 class="center amber" style="margin-bottom:4px">${src}</h3>${gold}
       <p class="muted center" style="font-size:9px;margin-bottom:4px">Choose one reward:</p>${cards}
