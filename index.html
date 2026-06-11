@@ -2949,7 +2949,11 @@ function ascActiveInfo(){
 }
 function newGame(){ try{clearTimeout(G&&G._navTimer);}catch(e){}   // don't orphan the prior run's nav-lock timer
   G={screen:'title',player:null,depth:0,abyss:0,doors:[],room:null,battle:null,pending:null,log:[],omen:null,mods:defaultMods(),omenChoices:[],seenEvents:[],
-  heat:0,miasma:0,collapsed:0,dmgBy:{},debt:0,collectorEta:0,_forceCollector:0}; }
+  heat:0,miasma:0,collapsed:0,dmgBy:{},debt:0,collectorEta:0,_forceCollector:0,
+  // PITY TIMERS — chambers since each service was last offered in any door. The tester said
+  // "I went 12 chambers without seeing a merchant and the run felt broken." Pure RNG can do
+  // that; pity guarantees a service shows up before that threshold even on bad seeds.
+  _pity:{merchantSince:0,forgeSince:0,fountainSince:0,shrineSince:0}}; }
 newGame();
 
 /* ============================================================
@@ -4773,6 +4777,45 @@ function doorHint(room){
   if(room._clue==null) room._clue = doorClue();
   return room._clue;
 }
+// PITY TIMERS — post-process G.doors after natural generation. If a service hasn't been OFFERED
+// in N chambers (visible in any door of any corridor, regardless of whether the player entered
+// it), replace one of the corridor's lower-stakes slots with that service. Thresholds:
+//   merchant : 8 chambers without one  (active from chamber 4+)
+//   forge    : 12 chambers without one (active from chamber 6+)
+//   fountain : 6 chambers without one  (active in miasma zones only)
+//   shrine   : 7 chambers without one  (active in miasma zones only)
+// Only one pity replacement per corridor. Then counters update from the FINAL door list.
+function applyPityTimers(){
+  if(!G.doors || G.doors.length<2) return;   // boss / collector / single-door corridors are sacred
+  const p=G._pity=G._pity||{merchantSince:0,forgeSince:0,fountainSince:0,shrineSince:0};
+  const types=G.doors.map(d=>d.type);
+  const has={merchant:types.includes('merchant'),forge:types.includes('forge'),fountain:types.includes('fountain'),shrine:types.includes('shrine')};
+  const tryForce=(kind, threshold, active)=>{
+    if(has[kind]) return false;
+    if(!active) return false;
+    if((p[kind+'Since']||0) < threshold) return false;
+    // Find a replaceable slot — prefer empty, then chest. Never replace enemies (combat is the spine)
+    // and never replace existing services (don't trade one service for another).
+    let i=G.doors.findIndex(d=>d.type==='empty'); if(i<0) i=G.doors.findIndex(d=>d.type==='chest');
+    if(i<0) return false;
+    G.doors[i]={type:kind, peek:peek(kind), _pity:1};
+    has[kind]=true;
+    return true;
+  };
+  // priority: merchant first (most felt), then forge, then cleansing services in miasma zones
+  const d=G.depth;
+  let forced=false;
+  if(!forced) forced = tryForce('merchant', 8, d>=4);
+  if(!forced) forced = tryForce('forge',    12, d>=6);
+  if(!forced && miasmaActive()) forced = tryForce('fountain', 6, true);
+  if(!forced && miasmaActive()) forced = tryForce('shrine',   7, true);
+  // Update counters from the FINAL list — anything offered this corridor resets that timer.
+  const final=G.doors.map(d=>d.type);
+  p.merchantSince = final.includes('merchant') ? 0 : (p.merchantSince||0)+1;
+  p.forgeSince    = final.includes('forge')    ? 0 : (p.forgeSince||0)+1;
+  p.fountainSince = final.includes('fountain') ? 0 : (p.fountainSince||0)+1;
+  p.shrineSince   = final.includes('shrine')   ? 0 : (p.shrineSince||0)+1;
+}
 function nextCorridor(){ G.depth++;
   G._discRolled=0;   // one rare-discovery attempt per corridor
   if(G._luckBoom>0){ G._luckBoom--; if(G._luckBoom===0)G._worldMsg='The false-exit luck fades.'; }
@@ -4797,7 +4840,7 @@ function nextCorridor(){ G.depth++;
       else if(key==='remembered') peek='A silhouette at the end of the corridor. You know the shape of it, and you wish you didn\'t.';
       else peek='A horror of the deep stirs. It has been waiting.';
       G.doors=[{type:'enemy',boss:key,peek}]; }
-    else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); }
+    else { G.doors=Array.from({length:2+rnd(2)},()=>makeRoom(G.depth)); adjacency(G.doors); applyPityTimers(); }
     // Deep Cold threshold announcement — fired ONCE per tier escalation so the player feels the deep
     // closing in (priority banner, so it isn't lost under ambient whispers).
     const dct=dcTier(); if(dct>(G._dcTier||0)){ G._dcTier=dct;
@@ -4815,7 +4858,7 @@ function nextCorridor(){ G.depth++;
   //       Surfaces previous-run stats as in-fiction acknowledgement.
   if(G.depth===1 && !G.abyss){ G._memoryMsg = dungeonMemoryLine(); }
   if(BOSS_CHAMBERS[G.depth]!==undefined) G.doors=[makeRoom(G.depth)];
-  else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); }
+  else { const n=2+rnd(2); G.doors=Array.from({length:n},()=>makeRoom(G.depth)); adjacency(G.doors); applyPityTimers(); }
   // Whispers are ambient texture — measured at ~7.8/run (one every ~4 corridors), which read as
   // constant rather than occasional. Trimmed to ~18% so a whisper feels like a held breath, not a
   // running commentary. (The priority system also suppresses them whenever a real beat is showing.)
