@@ -5634,11 +5634,18 @@ function renderMerchant(){
   else { greet='"Coin for comfort, traveler. I do not ask your name."'; sub='An old man at a stall in a place that should not have stalls.'; }
   const heatNote=(st.pm||1)>1?`<div class="center red" style="font-size:8px">The Furnace's heat has driven prices up <span class="muted">(+${Math.round(((st.pm||1)-1)*100)}%)</span>.</div>`:'';
   const item=(label,cost,sub,fn,can)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${formatMech(sub)}</small></button>`;
-  const relicBtn=st.relic?item('Relic: '+st.relic.name,mc(70),st.relic.note,"buy('relic')",p.gold>=mc(70)):'';
+  // BUILD-SYNERGY BADGE — the merchant's gear/relic offers now surface the same set/path/tier
+  // flags the reward screen has carried for ages. Tester's "merchant impact" feedback: visits
+  // should FEEL meaningful, and a gear that would complete Shadowdancer or push you to Wrath III
+  // is a meaningful visit even at a steep price. Pure cosmetic — the flag is a clear callout.
+  const relicSyn = st.relic ? rewardSynergyFlags({kind:'relic',data:st.relic},p) : '';
+  const gearSyn  = st.gear  ? rewardSynergyFlags({kind:'gear', data:st.gear }, p) : '';
+  const itemSyn=(label,cost,sub,fn,can,syn)=>`<button class="btn" ${can?'':'disabled'} onclick="${fn}"><span class="k amber">${cost}g</span>${label}<small>${formatMech(sub)}</small>${syn||''}</button>`;
+  const relicBtn=st.relic?itemSyn('Relic: '+st.relic.name,mc(70),st.relic.note,"buy('relic')",p.gold>=mc(70),relicSyn):'';
   const gcost=st.gear?mc(40+st.gear.rarity*22):0;
   // Show the delta against what's equipped in that slot (same readout as the reward screen) so
   // the player can judge the buy without detouring through the inventory.
-  const gearBtn=st.gear?item(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,gearCompareHtml(st.gear,p.equip[st.gear.slot]),"buy('gear')",p.gold>=gcost):'';
+  const gearBtn=st.gear?itemSyn(itemIconHtml(st.gear)+st.gear.slot.toUpperCase()+': '+st.gear.name+' Lv'+st.gear.ilvl,gcost,gearCompareHtml(st.gear,p.equip[st.gear.slot]),"buy('gear')",p.gold>=gcost,gearSyn):'';
   const arrangement = (buys>=5) ? `<p class="muted center" style="font-size:8px;opacity:.75;margin-top:4px">&#9670; he has our arrangement &middot; ${spent}g spent here, across ${met} visits</p>` : '';
   app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p,true)}
     <div class="panel fade room-in shop-panel">
