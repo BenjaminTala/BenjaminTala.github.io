@@ -505,16 +505,17 @@
   /* Boss preview chip (StS-style) — mid-corridor look-ahead.  Sits between the
      player strip and the door list so it's part of the decision context, not
      buried in the header. */
-  .boss-preview{display:flex;align-items:center;gap:10px;margin:6px auto 0;padding:6px 12px;
-    max-width:380px;border:2px solid #6c2a3a;background:linear-gradient(180deg,#1a0a14,#0e0610);
-    border-radius:3px;box-shadow:0 0 14px rgba(180,40,80,.20)}
-  .boss-preview .bp-port{width:36px;height:36px;image-rendering:pixelated;flex:0 0 36px;
-    filter:drop-shadow(0 0 6px rgba(255,80,80,.55))}
-  .boss-preview .bp-port.bp-mystery{display:flex;align-items:center;justify-content:center;
-    background:#1a0a14;border:2px dashed #6c2a3a;color:#cbb6e6;font-size:18px;font-weight:bold}
-  .boss-preview .bp-text{font-size:9px;line-height:1.5;letter-spacing:1px}
-  .boss-preview .bp-name{font-size:9.5px}
-  .boss-preview .bp-sub{font-size:7.5px;letter-spacing:1px;opacity:.85}
+  /* Boss FORESHADOWING — replaces the old name+portrait preview. The skull marker says "a boss
+     waits"; the line beside it is environmental dread, not identity. As the chamber approaches,
+     the line gets more specific. The player learns to read the world, not a menu. */
+  .boss-foreshadow{display:flex;align-items:center;gap:12px;margin:6px auto 0;padding:8px 14px;
+    max-width:520px;border:1px solid #4a1828;border-left:3px solid #6c2a3a;
+    background:linear-gradient(180deg,rgba(28,10,18,.6),rgba(14,6,12,.4));border-radius:2px}
+  .boss-foreshadow .bf-mark{font-size:18px;color:#a8482a;flex:0 0 22px;text-align:center;
+    text-shadow:0 0 8px rgba(255,80,80,.4);animation:bfPulse 2.6s ease-in-out infinite}
+  @keyframes bfPulse{0%,100%{opacity:.55}50%{opacity:1}}
+  .boss-foreshadow .bf-text{font-size:9px;line-height:1.7;color:#cfcbef;letter-spacing:.5px;font-style:italic}
+  .boss-foreshadow .bf-line{color:#e6dcff}
   /* "THE CRYPT REMEMBERS" — Neow/Hades return banner shown on the title screen
      the run after a death.  Two visual states: amber-bordered when the previous
      run was a win-and-retirement, purple-bordered when it was a death.  Italic
@@ -1469,7 +1470,7 @@ const BOSS_CHAMBERS={10:0,20:1,30:2,40:3};   // chamber -> zone index for boss p
 const ZONES=[
   {name:'THE WARM CRYPT',color:'amber',lore:'An ancient stone prison, dry and dust-choked. The deeper you go, the warmer the air — as if something below has been burning for a very long time. The air grows warmer. Stone sweats.'},
   {name:'THE FURNACE',  color:'red',lore:'The prison is awake. Heat shimmers off iron walls; the deeper you push, the hotter it gets. Push too hard and the fire turns on you — but the flames forge richer spoils.'},
-  {name:'THE FROZEN BELOW',color:'blue',lore:'Past the furnace, a cold older than fire. No flame survives here. The crypt begins to taste your soul — MIASMA seeps in, and wounds no longer close on their own.'},
+  {name:'THE FROZEN BELOW',color:'blue',lore:'Past the furnace, a cold older than fire. No flame survives here. Something colder than the cold has begun to settle INSIDE you — a corruption the crypt calls MIASMA. It is yours now, not the room\'s, and you carry it from here down.'},
   {name:'THE SILENT DEEP',color:'purple',lore:'Beneath everything, reality thins to nothing. The crypt does not eat bodies. It eats possibility. What you brought down here may not all leave with you.'},
 ];
 const zoneOf=d=>d<=10?0:d<=20?1:d<=30?2:3;
@@ -3018,6 +3019,20 @@ function addMiasma(n){ if(!miasmaActive())return;
   const beforeTier=miasmaTier(); const beforeBucket=Math.floor(G.miasma/10);
   G.miasma=clamp(G.miasma+n,0,99);
   const afterTier=miasmaTier(); const afterBucket=Math.floor(G.miasma/10);
+  // FIRST-EVER MIASMA — teach what it is, EXPLICITLY, the first time the player takes any. The
+  // zone lore line frames it; this is the in-your-face "this is INSIDE you, not the room"
+  // moment that the playtester said was missing. localStorage-gated so it only fires once ever.
+  try{
+    if(!localStorage.getItem('crypt_seen_miasma') && G.miasma>0){
+      localStorage.setItem('crypt_seen_miasma','1');
+      setTimeout(()=>showInfo({title:'&#9763; MIASMA &mdash; THE CORRUPTION INSIDE YOU',body:
+        '<p class="shout-purple" style="font-size:12px;line-height:1.8">Something cold has settled inside you. Not on the room. Not on this floor. <b>Inside you.</b></p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:10px">It rises by 1-2 each chamber crossing in the Frozen Below and below. It does <b>NOT</b> reset between floors. Cleansing fountains and shrines purge it; nothing else does.</p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:6px">At <b>20</b> miasma your potions heal less. At <b>40</b> the cold cuts you directly each chamber. At <b>60</b> your max HP rots until you cleanse.</p>'+
+        '<p class="muted" style="font-size:9px;line-height:1.7;margin-top:8px"><b>Heat</b> is the room burning you. <b>Miasma</b> is YOU rotting from the inside. They are not the same meter.</p>'
+      }),0);
+    }
+  }catch(e){}
   if(afterTier>beforeTier){ G._worldMsg=MIASMA_MSG[Math.min(6,afterTier)]; SFX.play('frost'); flashWorld(); }
   for(let bucket=beforeBucket+1; bucket<=afterBucket; bucket++){
     const tm=MIASMA_TICK[bucket*10]; if(tm) G._miasmaTickMsg=tm;
@@ -3920,24 +3935,96 @@ function nextBossChamber(){
   for(let d = G.depth+1; d<=RUN_LENGTH; d++){ if(BOSS_CHAMBERS[d]!==undefined) return d; }
   return null;
 }
+// Boss FOREBODING — environmental dread that escalates as the boss chamber approaches. The
+// old version showed name + portrait, which broke the game's "the crypt never tells you what
+// a room holds" contract. Now: distance-gated sensory clues per boss key (heat for fire, ice
+// for cold, footfalls for the warden, etc), with the language getting more specific as you
+// near the chamber. The pool ID is still visible (chamber number remains a known unknown),
+// but WHICH boss is genuinely a discovery on first meeting.
+const BOSS_FORESHADOW={
+  // chamber-10 pool (ogre / gobking / spider) — early zone, dread is small and tactile
+  ogre:[
+    'A heavy step on stone, far ahead. Not yet, but not far.',
+    'The walls down here are dented at shoulder height. Something tall walks past them often.',
+    'A grunt, then a long silence. Like the silence of a man eating.',
+  ],
+  gobking:[
+    'Many small feet, organising themselves. They have been told you are coming.',
+    'The torchlight ahead is wrong. Someone has rearranged it on purpose, badly.',
+    'A bell rings somewhere. Then another. Whoever rings the bells is not very tall.',
+  ],
+  spider:[
+    'A patch of corridor where nothing has nested for a long time.',
+    'Silk. Old and clean. The web was kept up.',
+    'Many small eyes catch your torch and do not look away.',
+  ],
+  // chamber-20 (warden) — heavier, single-creature, immovable
+  warden:[
+    'The corridor ahead is older than the corridor behind. Something has been here long enough that the stone agrees with it.',
+    'A door, far ahead. It has not been opened in a very long time. Something is in front of it.',
+    'Heat from the wrong direction. Whatever is past this door is sitting in front of a door of its own.',
+  ],
+  // chamber-30 pool (demon / lich / flameknight) — mid-late
+  demon:[
+    'A smell like a chimney that has not been cleaned in a hundred years.',
+    'Brass and old fire. A workshop full of un-tools.',
+    'A laugh, very dry, from a throat that has not been a throat for a while.',
+  ],
+  lich:[
+    'A draught of dry pages. Someone is still keeping a library down here.',
+    'A faint scratch of pen on parchment. The hand writing has not eaten in a very long time.',
+    'A footnote scrawled on the wall as you pass. It is about you.',
+  ],
+  flameknight:[
+    'A handprint melted into stone. The hand was warmer than the stone.',
+    'Armour, set in a neat pile. The armour is too warm to touch.',
+    'A wall scorched in the shape of a kneeling figure that did not stand up.',
+  ],
+  // chamber-40 (king) — wrong-feeling, weight-of-the-throne dread
+  king:[
+    'The corridor begins to tilt very slightly downward. The throne sits in a small dip in the world.',
+    'A hush. The kind that follows the announcement of a name nobody wants to say.',
+    'A draft from below that smells of old velvet and a colder thing under it.',
+  ],
+  // abyss / secret bosses — only fired when the pool resolves to these
+  devourer:[
+    'Things stop happening up ahead. Not because they are quiet. Because they have not started.',
+    'A door that is not waiting for you. A door that is sleeping.',
+    'You count your breaths. The dark seems to count them too.',
+  ],
+  remembered:[
+    'A figure at the end of the corridor. It does not turn when you walk.',
+    'Your reflection in the stones has been keeping different time.',
+    'You hear footsteps in front of you that match yours, exactly.',
+  ],
+  paledevourer:[
+    'Past this, even the dread of dread is not there.',
+    'The cold here is not coming from anywhere. The cold here is what is left.',
+    'You do not feel watched. You feel un-watched. As if your existence had not been noted.',
+  ],
+};
+function bossForeshadowLine(key, turns){
+  const pool=BOSS_FORESHADOW[key]; if(!pool||!pool.length) return null;
+  // Distance bucket: 4+ turns = first line (vague), 2-3 = middle (specific), <=1 = closest (named-but-still-environmental)
+  let i=0; if(turns<=1) i=Math.min(2,pool.length-1); else if(turns<=3) i=Math.min(1,pool.length-1); else i=0;
+  return pool[i];
+}
 function bossPreviewHtml(){
   const d = nextBossChamber(); if(!d) return '';
   const pool = BOSS_POOL[BOSS_CHAMBERS[d]] || [];
   const turns = d - G.depth;
-  const single = pool.length===1 ? BOSSES[pool[0]] : null;
-  const sprKey = single ? (BOSS_SPRITE[single.name] || 'demonlord') : 'demonlord';
-  const portrait = single
-    ? `<img class="bp-port" src="assets/monsters/${sprKey}.png" alt="${single.name}" draggable="false">`
-    : `<span class="bp-port bp-mystery">?</span>`;
-  const label = single
-    ? `<span class="bp-name red">${single.name}</span>`
-    : `<span class="bp-name muted">Something stirs</span>`;
-  const subtitle = turns<=1
-    ? `<span class="amber">NEXT CHAMBER</span>`
-    : `at chamber ${d} <span class="muted">&middot; ${turns} away</span>`;
-  return `<div class="boss-preview" title="Boss arrives at chamber ${d}${single?': '+single.name:''}">
-    ${portrait}
-    <div class="bp-text">${label}<br><span class="bp-sub">${subtitle}</span></div>
+  // Foreshadowing only fires when a SPECIFIC boss is locked in for this chamber. If the pool
+  // has multiple candidates, the player gets a generic "something stirs" — the chamber is
+  // known but the identity isn't.  Either way, no name or portrait reveal.
+  const single = pool.length===1 ? pool[0] : null;
+  const line = single ? bossForeshadowLine(single, turns) : null;
+  const proximity = turns<=1 ? '<b class="red">NEXT CHAMBER</b>'
+                  : turns<=3 ? `<span class="amber">${turns} chambers ahead</span>`
+                  :            `<span class="muted">at chamber ${d} &middot; ${turns} away</span>`;
+  const text = line || 'Something gathers up ahead. The crypt is rehearsing.';
+  return `<div class="boss-foreshadow" title="A boss waits at chamber ${d}.">
+    <div class="bf-mark">&#9760;</div>
+    <div class="bf-text"><span class="bf-line">${text}</span><br>${proximity}</div>
   </div>`;
 }
 function worldBar(){ const parts=[];
