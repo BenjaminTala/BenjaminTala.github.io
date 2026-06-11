@@ -4928,6 +4928,22 @@ function applyPityTimers(){
   const p=G._pity=G._pity||{merchantSince:0,forgeSince:0,fountainSince:0,shrineSince:0};
   const types=G.doors.map(d=>d.type);
   const has={merchant:types.includes('merchant'),forge:types.includes('forge'),fountain:types.includes('fountain'),shrine:types.includes('shrine')};
+  // ANTI-FLOOD CAP — the inverse of the pity floor. The tester said merchants felt spiky: dry
+  // for ages, then three in a row. Pity covers the dry. This covers the flood. If a service was
+  // offered within the last N chambers, demote any natural roll for it this corridor back to an
+  // empty room. (Demotes only the FIRST instance, so the natural multi-door variety stays.)
+  const demote=(kind, minGap)=>{
+    if(!has[kind]) return;
+    if((p[kind+'Since']||0) >= minGap) return;
+    const i=G.doors.findIndex(d=>d.type===kind);
+    if(i<0) return;
+    G.doors[i]={type:'empty', peek:peek('empty'), _flood:1};
+    has[kind]=false;
+  };
+  demote('merchant', 2);   // max one merchant per 3-chamber window
+  demote('forge',    4);   // max one forge per 5-chamber window
+  demote('fountain', 1);   // no back-to-back fountains
+  demote('shrine',   1);   // no back-to-back shrines
   const tryForce=(kind, threshold, active)=>{
     if(has[kind]) return false;
     if(!active) return false;
