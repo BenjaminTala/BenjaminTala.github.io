@@ -2997,6 +2997,19 @@ function addHeat(n){ if(!heatActive())return;
   const beforeTier=heatTier(); const beforeBucket=Math.floor(G.heat/10);
   G.heat=clamp(G.heat+n,0,HEAT_MAX);
   const afterTier=heatTier(); const afterBucket=Math.floor(G.heat/10);
+  // FIRST-EVER HEAT — same teaching pattern as Miasma. Heat is room pressure (Furnace zone only),
+  // resets between zones, can be cooled by drinking water/blood. Spell that out the first time.
+  try{
+    if(!localStorage.getItem('crypt_seen_heat') && G.heat>0){
+      localStorage.setItem('crypt_seen_heat','1');
+      setTimeout(()=>showInfo({title:'&#128293; HEAT &mdash; THE FURNACE PRESSES IN',body:
+        '<p class="shout-red" style="font-size:12px;line-height:1.8">The Furnace is a room with weather. The deeper you go, the more the air <b>pushes back</b>.</p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:10px">Heat is a meter on YOU but caused by THIS ZONE. It rises when you push hard, skip cooling, or burn things. <b>It does NOT carry past the Furnace</b> &mdash; cross into the Frozen Below and it bleeds away.</p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:6px">At <b>10</b> WARM, at <b>20</b> ASHEN, at <b>30</b> MOLTEN &mdash; each chamber, Heat above 3 hurts you directly. But high Heat also <b>fattens drops</b> in this zone, so the burning is a choice.</p>'+
+        '<p class="muted" style="font-size:9px;line-height:1.7;margin-top:8px"><b>Heat</b> is the room. Leave the room, lose the Heat. <b>Miasma</b> (next zone) is INSIDE you and stays.</p>'
+      }),0);
+    }
+  }catch(e){}
   if(afterTier>beforeTier){ G._worldMsg=HEAT_MSG[Math.min(4,afterTier)]; SFX.play(afterTier>=3?'fire':'skill'); flashWorld(); }
   for(let bucket=beforeBucket+1; bucket<=afterBucket; bucket++){
     const tm=HEAT_TICK[bucket*10]; if(tm) G._heatTickMsg=tm;
@@ -6816,6 +6829,19 @@ function startAbyss(){ const p=G.player; G.abyss=1; p.won=true; G._abyssOffer=0;
   G.mods.essMul=(G.mods.essMul||1)*1.6; G.mods.luck=1; G.mods.goldMul*=1.3;
   discoverLore('l14');
   SFX.play('door'); G._affMsg='You step off the throne into THE ABYSS. There is no floor here — only how deep you dare to fall.';
+  // FIRST-EVER ABYSS — playtester said "this is the most important threshold in the game and
+  // the player gets no teaching for it." Spell it out: post-win, voluntary, no exit, score race.
+  try{
+    if(!localStorage.getItem('crypt_seen_abyss')){
+      localStorage.setItem('crypt_seen_abyss','1');
+      setTimeout(()=>showInfo({title:'&#10022; THE ABYSS &mdash; PAST THE ENDING',body:
+        '<p class="shout-purple" style="font-size:12px;line-height:1.8">You already won. Everything past this point is <b>extra</b>. You are descending because YOU chose to, not because the crypt demands it.</p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:10px">There are <b>no more zones</b> &mdash; only depth. A boss every 4th floor. Essence gain is <b>+60%</b>, gold <b>+30%</b>. Miasma is permanent here.</p>'+
+        '<p class="evtext" style="font-size:10px;line-height:1.8;margin-top:6px">Past floor 8 of the Abyss, the <b>Deep Cold</b> starts cutting you each chamber. It rises forever. There is no door out, and no exit menu mid-run &mdash; only how far you got.</p>'+
+        '<p class="muted" style="font-size:9px;line-height:1.7;margin-top:8px">If you die here, the run still counts as a <b>WIN</b> for records. The Abyss is a score race, not a second campaign.</p>'
+      }),0);
+    }
+  }catch(e){}
   nextCorridor(); G.screen='corridor'; render(); playTransition('#1a0e2e', true); }   // the longest, heaviest descent
 function causeOfDeathHtml(){
   const labels={enemy:'Enemy Damage',miasma:'Miasma',burn:'Burn',poison:'Poison',heat:'Furnace Heat',deepcold:'The Deep Cold',hazard:'Hazards',debt:'Debt Pressure',self:'Self-Inflicted'};
