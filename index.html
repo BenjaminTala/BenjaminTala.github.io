@@ -5306,7 +5306,13 @@ function scaleEnemy(unit,depth){
   return e;
 }
 function cloneBoss(key){ const b=BOSSES[key]; const e=Math.max(0,G.depth-10); const dm=debtMul();
-  const hpF=(1+e*0.07+e*e*0.0058)*dm, atkF=(1+e*0.05+e*e*0.0033)*dm;
+  // BAL: boss kill rate was 99%+ at every chamber in the sim (a skilled player walks through the
+  // endgame). Bumping boss HP +12% / ATK +6% uniformly, then stacking an additional +10% HP /
+  // +5% ATK on the chamber-40 "final" tier (king / dragon) so the throne fight is the hardest one
+  // in the game and not the easiest by selection-bias. Per-boss base tables unchanged so existing
+  // narrative beats and intro scripting still land at the right power level.
+  const lateMul = (key==='king'||key==='dragon') ? 1.10 : 1.0;
+  const hpF=(1+e*0.07+e*e*0.0058)*dm*1.12*lateMul, atkF=(1+e*0.05+e*e*0.0033)*dm*1.06*(key==='king'||key==='dragon'?1.05:1);
   const boss=freshEnemy({...b,hp:Math.round(b.hp*hpF),maxHp:Math.round(b.hp*hpF),atk:Math.round(b.atk*atkF),cry:bossCryFor(key),_key:key});
   // FURNACE BOSSES feed on Heat. Walk in hot and they hit harder, hold more HP, ignite you.
   if(heatActive() && heatTier()>=3 && (key==='warden'||key==='dragon')){
