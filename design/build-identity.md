@@ -119,3 +119,80 @@ screenshot review already flags the stance row as a probably-ignored feature
 
 Each path lands as its own commit with its own sim pass + micro-tests, so any one can
 be reverted without touching the others.
+
+---
+
+# Design-Only Balance Review (pre-implementation)
+
+## The seven questions
+
+**1. Easiest to understand: WRATH.** "Hit the same thing repeatedly, get stronger" is
+instantly graspable; pips make it legible at a glance. GUILE requires understanding
+statuses first (one prerequisite system). VEIL requires understanding barrier AND
+intent-reading (two prerequisites). Comprehension order: Wrath > Guile > Veil.
+
+**2. Most fun (predicted):** GUILE has the highest ceiling — the detonation turn is a
+designed climax, and the T3 spread is a screen-clearing payoff. WRATH has the best
+moment-to-moment loop — every single turn carries the keep-or-break tension. VEIL is
+the most novel but its fun is hostage to enemy intent variety: if enemies mostly throw
+plain attacks, brace timing is shallow. Under the current enemy roster: WRATH ≥ GUILE >
+VEIL. With more telegraphed-heavy enemies, VEIL rises.
+
+**3. Dominance risk: GUILE, clearly.** Exploit scales with status sources, which the
+game is full of (imbued weapons, gear procs, Trickster +1 turn). Percent-of-maxHp
+detonation math vs 1000+ HP bosses is the classic roguelike breaker. WRATH's T4
+OVERKILL is the secondary risk if 5 stacks are reliably reachable in every pack fight.
+
+**4. Ignored risk: VEIL.** It asks the player to skip attack turns. Loss aversion makes
+players systematically undervalue defensive verbs — the existing GRD stance proves this
+in this exact game (see below). If the stored-riposte payoff isn't a visible coiled
+spring (a meter that LOOKS like it wants to explode), players will default to
+attack-attack-attack and the path plays like current Veil: passive stats.
+
+**5. Overlap: VEIL heaviest.** Brace ≈ GRD stance ≈ Shield Wall (warrior) ≈ barrier
+relics ≈ mage mana shield — five systems in the same design space. The proposal absorbs
+two (mana shield counts as absorption; GRD folds in) but Shield Wall needs a decision:
+for a Veil-committed warrior, Brace and Shield Wall are nearly the same button. GUILE
+overlap is moderate but COMPOSITIONAL — Trickster/imbues are fuel for Exploit, not
+duplicates of it. WRATH overlap: none. Cleanest of the three.
+
+**6. Boss-fight breakage:**
+- GUILE two ways: (a) %-maxHp detonation needs a boss coefficient (suggest 40-50%
+  effectiveness vs bosses); (b) T4 stun-on-detonate can chain-stun a boss through its
+  cataclysm window — stun is *designed* to interrupt cataclysms once, so repeatable
+  exploit-stun needs boss diminishing returns on stun.
+- WRATH breaks bosses inversely: a boss is a single target, so momentum's cost
+  (target-switch reset) never applies. Mitigation already in the design: guarding and
+  potions also reset, so cataclysm turns force the dilemma. Balance Wrath against the
+  boss ramp, not pack fights.
+- VEIL anti-breaks bosses — it's strongest exactly where bosses are scariest. Good.
+
+**7. First implementation: GUILE** — confirmed, with a sharpened reason: it's the only
+path needing a NEW VERB wired end-to-end (button, targeting, log, floats, bot policy,
+micro-tests), so it derisks the implementation pattern for the other two; and since it
+carries the highest dominance risk, it should get the longest playtest runway. WRATH
+first is defensible if implementation risk matters more (zero new UI), but it touches
+basicHit — the hottest code path in combat.
+
+## Stance row — honest verdict
+
+**The evidence it's ignored:** the balance-sim bot never calls setStance — zero stance
+usage — and still wins 58% of runs. The system is provably optional at a competent
+level of play. It defaults to BAL, nothing in the game ever prompts engagement, and
+novices have no reason to touch it.
+
+**Is there real depth?** Some. The intent system creates exactly two stance moments:
+AGG on kill-secured turns, GRD into a telegraphed cataclysm. With the 2-turn lock,
+that's a genuine decision — for the ~10% of turns where it matters. The other 90% of
+the time, three captioned panels occupy permanent command-area real estate presenting
+a choice nobody is making. It is depth, but mispriced UI.
+
+**Recommendation: dissolve stances into the path redesign (option b).**
+- AGG's identity (more out, more in) IS Wrath's momentum mechanic.
+- GRD's identity (less out, less in) IS Veil's Brace verb.
+- BAL is just "not committed yet."
+The stance row's depth doesn't die — it re-emerges as build identity, attached to
+choices the player has already made and therefore cares about. The row itself
+disappears, returning a band of combat UI. Until the paths ship, leave stances alone
+(removing them first would orphan the AGG/GRD tactical moments with nothing replacing
+them).
