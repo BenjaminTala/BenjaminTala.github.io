@@ -779,9 +779,28 @@
   .sprite-enemy.boss.spr-winterking{max-height:168px}
   .sprite-enemy.boss.spr-dragon   {max-height:160px;max-width:220px}
   .sprite-enemy.boss.spr-demonlord{max-height:170px}
-  /* In room-preview cells they shrink uniformly so the row line up */
-  .enemy-cell .sprite-enemy     {max-height:72px;max-width:90px}
-  .enemy-cell .sprite-enemy.boss{max-height:104px;max-width:130px}
+  /* In ROOM-PREVIEW cells they shrink uniformly so the row lines up. (Scoped to .enemies-row —
+     the battle stage shows the per-monster identity sizes above, so a slime is small and a
+     broodmother is huge IN THE FIGHT, where presence matters.) */
+  .enemies-row .enemy-cell .sprite-enemy     {max-height:72px;max-width:90px}
+  .enemies-row .enemy-cell .sprite-enemy.boss{max-height:104px;max-width:130px}
+  /* BATTLE PRESENCE — fewer foes = bigger foes. The stage carries a living-count class
+     (n1/n2/n3); solo enemies loom, packs stay readable. Bosses get a battle-only cap high
+     above the roster (one rule outranks the per-key boss sizes by specificity, so every boss
+     renders at native ratio up to the cap). Dead cells shrink to corpse size so the living
+     dominate the stage as a fight thins out. */
+  .ff-stage .enemy-cell{max-width:260px}
+  .ff-stage .enemy-cell .sprite-enemy.boss{max-height:205px;max-width:300px}
+  .ff-stage.n1 .enemy-cell.bosscell{max-width:340px}
+  /* Solo presence: scale the SPRITE, not the cell — the target border and intent badge keep
+     their size, the creature alone grows. transform doesn't reflow, so floats/bars stay put. */
+  .ff-stage.n1 .enemy-cell:not(.dead):not(.bosscell) .sprite-enemy{transform:scale(1.18);transform-origin:bottom center}
+  .ff-stage.n1 .enemy-cell:not(.dead):not(.bosscell) pre.sprite{font-size:13px}
+  .ff-stage .enemy-cell.dead .sprite-enemy{max-height:64px}
+  @media (max-width:640px){
+    .ff-stage .enemy-cell .sprite-enemy.boss{max-height:160px;max-width:230px}
+    .ff-stage.n1 .enemy-cell:not(.dead):not(.bosscell) .sprite-enemy{transform:scale(1.08)}
+  }
   .enemy-cell.elite .sprite-enemy{filter:drop-shadow(0 0 6px #ffcf4d)}
   /* zone tiers — escalating menace after each boss */
   .sprite-enemy.tier-1{filter:drop-shadow(0 0 5px #4ce0d0) drop-shadow(0 0 2px #4ce0d0)}
@@ -6143,7 +6162,7 @@ function renderBattle(){
     // Boss charge banner sits ABOVE the cell so it cannot be missed. Replaces the polite chip for
     // the single most readability-critical moment in the fight.
     const charge = (!dead && e.boss) ? bossChargeBanner(e) : '';
-    return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''} ${b._acting===i&&!dead?'acting'+(b._actPhase==='windup'?' windup':''):''}">
+    return `<div class="enemy-cell ${i===b.target&&!dead?'target':''} ${dead?'dead':''} ${e.elite?'elite':''} ${e.boss?'bosscell':''} ${b._acting===i&&!dead?'acting'+(b._actPhase==='windup'?' windup':''):''}">
       ${efx}${flo?`<div class="fxlayer">${flo}</div>`:''}
       ${charge}
       ${dead?'':intentBadgeHtml(e)}
@@ -6181,7 +6200,7 @@ function renderBattle(){
   const um=ultMeta(p.cls);
   app.innerHTML=`<div class="floortag">${b.hadBoss?'<span class="red">BOSS BATTLE</span>':depthLabel()}</div>${worldBar()}
     <div class="panel ff ${b.anim}" id="scene">
-      <div class="ff-stage ${b.intro?'enter-foe':''} ${(b._acting!=null&&b._acting>=0&&b.enemies.filter(e=>e.hp>0).length>1)?'stage-dim':''}">${flashHtml}${cells}</div>
+      <div class="ff-stage n${Math.min(3,Math.max(1,b.enemies.filter(e=>e.hp>0).length))} ${b.intro?'enter-foe':''} ${(b._acting!=null&&b._acting>=0&&b.enemies.filter(e=>e.hp>0).length>1)?'stage-dim':''}">${flashHtml}${cells}</div>
       <div class="ff-narrator"><div class="log">${logHtml||'<div class="muted">&#8230;</div>'}</div></div>
       <div class="ff-bottom">
         <div class="ff-portrait">
