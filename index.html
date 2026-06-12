@@ -74,12 +74,18 @@
   .shrine-panel{border-color:#5a3a8a;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 34px rgba(160,90,220,.10)}
   .pstrip .track.xpline{height:4px;margin-top:2px;border-width:1px}
   .pstrip .stats.pstats{font-size:8.5px;line-height:1.45;margin-top:2px;color:var(--dim);flex:1;min-width:0}
-  /* HUD stat clustering — the row is too dense if every number reads at the same weight. Primary
-     combat numbers (ATK/DEF) stay bright; modifiers (DODGE/CRIT/MP/LS) dim down a half-step; the
-     currencies sit in a tinted chunk so the eye finds gold/essence in one saccade. The tester
-     said "I have to LOOK for things" — this row is now scannable in clusters, not as a list. */
-  .pstats .ps-pri{color:#e6ddc8}
-  .pstats .ps-pri b{color:#fff}
+  /* HUD COLLAPSE — primary row defaults to HP / ATK / gold / essence only. The expand button
+     toggles a localStorage-persisted second row with DEF / DODGE / CRIT / MP / LS / paths. Most
+     of the time you don't need those numbers; when you do, they're one tap away. */
+  .hud-expand{font-family:inherit;font-size:9px;color:#bba888;background:transparent;border:1px solid #4a4a60;
+    padding:1px 6px;margin-left:6px;cursor:pointer;border-radius:1px;letter-spacing:1px;
+    transition:color .12s,border-color .12s,background .12s}
+  .hud-expand:hover{color:#fff;border-color:var(--amber);background:#1a1408}
+  .pstrip-secondary{font-size:8.5px;line-height:1.7;margin-top:4px;padding-top:4px;
+    border-top:1px dashed #2a2a3a;color:#8a8aa0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pstrip-secondary b{color:#bcbcd0}
+  .pstats .ps-pri{color:#fff}
+  .pstats .ps-pri b{color:#fff;font-weight:bold}
   .pstats .ps-sub{color:#8a8aa0}
   .pstats .ps-sub b{color:#bcbcd0}
   .pstats .ps-cur{padding-left:8px;border-left:1px solid #2a2a3a;margin-left:2px}
@@ -293,6 +299,11 @@
   .btn.ult.ready{border-color:var(--amber);color:#fff;text-shadow:0 0 6px var(--amber);animation:chgpulse 1s ease-in-out infinite}
   .stats{font-size:9px;line-height:2;color:var(--dim)}.stats b{color:var(--ink)}
   .chip{display:inline-block;background:#000;border:2px solid var(--line);padding:3px 7px;margin:3px 3px 3px 0;font-size:8px}
+  /* ICON CHIPS — combat statuses (BURN/POISON/etc) now read as icon + remaining-turns count,
+     not three-letter labels. Same density, much faster eye-sort. Full name + amount stays
+     accessible via title (hover) and is announced via aria. */
+  .chip.icon{font-size:11px;padding:2px 6px;letter-spacing:0;line-height:1.2;cursor:help}
+  .chip.icon b{font-size:9px;font-weight:normal}
   .relics{margin-top:6px}.relics .chip{border-color:var(--purple);color:var(--purple)}
   .r-com{color:#cfcbef}.r-unc{color:var(--green)}.r-rare{color:var(--blue)}.r-epic{color:var(--purple)}.r-leg{color:var(--amber)}
   .slot{border:2px solid var(--line);background:#00000055;padding:5px 9px;margin:3px 0;font-size:10px;text-align:left;line-height:1.45}
@@ -6082,11 +6093,14 @@ function skillProjChip(p, s, isAOE){
 }
 function setTarget(i){ if(battleBusy())return; if(G.battle.enemies[i].hp>0){ G.battle.target=i; render(); } }   // retarget only on your turn (don't let it bypass the lock / wipe damage floats mid-enemy-turn)
 function stChips(st){ let c='';
-  if(st.burnT>0)   c+=`<span class="chip c-burn" title="BURN — ${Math.max(1,Math.round(st.burn))} damage at end of every turn. ${st.burnT} turn(s) left.">BURN ${st.burnT}</span>`;
-  if(st.poisonT>0) c+=`<span class="chip c-pois" title="POISON — ${Math.max(1,Math.round(st.poison))} damage at end of every turn. ${st.poisonT} turn(s) left.">PSN ${st.poisonT}</span>`;
-  if(st.weakT>0)   c+=`<span class="chip c-weak" title="WEAKEN — outgoing damage reduced by ~40%. ${st.weakT} turn(s) left.">WEAK ${st.weakT}</span>`;
-  if(st.vulnT>0)   c+=`<span class="chip c-vuln" title="VULNERABLE — takes +25% damage from all sources. ${st.vulnT} turn(s) left.">VULN ${st.vulnT}</span>`;
-  if(st.stunT>0)   c+=`<span class="chip c-stun" title="STUN — skips next turn entirely.">STUN</span>`;
+  // Was: "BURN 3" / "PSN 2" / "WEAK 2" — five colored text chips per target, stacked, every turn.
+  // Now: an icon + remaining-turns count. The full name + amount is on hover/tap (title attr).
+  // The eye sorts a row of icons faster than a row of three-letter labels at the same size.
+  if(st.burnT>0)   c+=`<span class="chip c-burn icon" title="BURN — ${Math.max(1,Math.round(st.burn))} damage / turn. ${st.burnT} left.">&#128293; ${st.burnT}</span>`;
+  if(st.poisonT>0) c+=`<span class="chip c-pois icon" title="POISON — ${Math.max(1,Math.round(st.poison))} damage / turn. ${st.poisonT} left.">&#9879; ${st.poisonT}</span>`;
+  if(st.weakT>0)   c+=`<span class="chip c-weak icon" title="WEAKEN — outgoing damage -40%. ${st.weakT} left.">&#128081; ${st.weakT}</span>`;
+  if(st.vulnT>0)   c+=`<span class="chip c-vuln icon" title="VULNERABLE — incoming damage +25%. ${st.vulnT} left.">&#10070; ${st.vulnT}</span>`;
+  if(st.stunT>0)   c+=`<span class="chip c-stun icon" title="STUN — skips next turn.">&#9889;</span>`;
   return c; }
 function renderBattle(){
   const p=G.player,b=G.battle; ensureTarget();
@@ -6129,13 +6143,14 @@ function renderBattle(){
     : '';
   b.floats=[]; b.fx=[]; b.intro=false;
   const logHtml=G.log.slice(-8).map(l=>`<div class="${l.cls}">${formatMech(l.text)}</div>`).join('');
-  const pStatus=(b.barrier>0?`<span class="chip c-guard">BARRIER ${b.barrier}</span>`:'')
-    +(b.pdefTurns>0?`<span class="chip c-guard">GUARD ${b.pdefTurns}</span>`:'')
-    +(b.evadeTurns>0?`<span class="chip c-pois">EVADE ${b.evadeTurns}</span>`:'')
-    +(b.lastStand>0?`<span class="chip c-burn">LAST STAND ${b.lastStand}</span>`:'')
-    +(b.glassNext?`<span class="chip c-vuln" title="Next skill will shatter across all enemies">SIGIL READY</span>`:'')
-    +(p._saturated>0?`<span class="chip c-pois" title="SATURATED — recently harvested a fragment. Cannot harvest again until this fades. ${p._saturated} turn(s) left.">SATURATED ${p._saturated}</span>`:'')
-    +(b.guardDown>0?`<span class="chip c-vuln">EXPOSED</span>`:'')+stChips(b.pst);
+  // Player buff / debuff chips — same icon-first pass as enemy stChips.
+  const pStatus=(b.barrier>0?`<span class="chip c-guard icon" title="BARRIER — absorbs ${b.barrier} damage.">&#128737; ${b.barrier}</span>`:'')
+    +(b.pdefTurns>0?`<span class="chip c-guard icon" title="GUARD — incoming damage halved. ${b.pdefTurns} turn(s) left.">&#128739; ${b.pdefTurns}</span>`:'')
+    +(b.evadeTurns>0?`<span class="chip c-pois icon" title="EVADE — next hit misses. ${b.evadeTurns} turn(s) left.">&#10148; ${b.evadeTurns}</span>`:'')
+    +(b.lastStand>0?`<span class="chip c-burn icon" title="LAST STAND — cannot be killed below 1 HP. ${b.lastStand} turn(s) left.">&#9763; ${b.lastStand}</span>`:'')
+    +(b.glassNext?`<span class="chip c-vuln icon" title="SIGIL — next skill will shatter across all enemies">&#10022;</span>`:'')
+    +(p._saturated>0?`<span class="chip c-pois icon" title="SATURATED — cannot harvest a fragment until this fades. ${p._saturated} turn(s) left.">&#127858; ${p._saturated}</span>`:'')
+    +(b.guardDown>0?`<span class="chip c-vuln icon" title="EXPOSED — guard broken.">&#9888;</span>`:'')+stChips(b.pst);
   const cm=G.mods.skillCost;
   const ultReady=b.charge>=100;
   const skills=p.skills.map(s=>{const cost=Math.max(1,Math.round(s.cost*cm)); const enabled=p.mana>=cost;
@@ -7467,27 +7482,40 @@ function affinityBar(p){
   return s;
 }
 function playerBar(p,full){
-  // COMPACT out-of-combat strip. HP gets the visible bar; MP/ATK/DEF/etc. become inline text.
-  // INVENTORY / SKILLS / SAGA live INSIDE this strip, on the same row as the stats — so they sit
-  // inside the player's natural eye path (chamber title -> HP bar -> stats + actions -> doors)
-  // instead of floating in the empty bottom-right corner where players stop scanning.
+  // The HUD used to display 8 numbers + 3 affinity pills + relic count in one inline row.
+  // Per the playtester's literal feedback ("collapse the stat row to HP/ATK/gold; move
+  // DEF/DODGE/CRIT/LS into tap-to-expand"), the strip now defaults to a tight primary line
+  // (HP bar + ATK + currencies) and gates the secondary numbers behind a toggle that
+  // persists in localStorage. Most chambers don't need DODGE% or MP visible.
   const ec=effCrit(p),ed=effDodge(p); const ch=p._charge||0;
   const xpPct=clamp(p.xp/xpNeeded(p.level)*100,0,100);
   const mpPct=p.maxMana?clamp(p.mana/p.maxMana*100,0,100):0;
   const ultTag = ch>=100?' &middot; <span class="purple">&#10022; ULT READY</span>':'';
-  // Affinity pills — inline at the end of the stats line so the HUD reads as ONE row, not three.
-  // A path you haven't entered (tier 0, no points) is hidden — the row only shows what the build is
-  // actually doing, which is what the player needs to track.
   const tierRoman=['','I','II','III','IV'];
   const affEntry=k=>{ const meta=AFF_META[k]; const t=p.affTier[k]; const pts=p.aff[k];
-    if(t===0 && pts===0) return '';   // dead path — don't crowd the strip with it
+    if(t===0 && pts===0) return '';
     const next=t<AFF_TIER_MAX?affThresh(k)[t]:null;
     const lbl = t>0?` <span class="muted">${tierRoman[t]}</span>`:'';
     const prog = next!=null ? `<span class="muted">${pts}/${next}</span>` : `<span class="amber">MAX</span>`;
     return `<span class="aff-pill aff-${meta.color}" title="${escAttr(affinityTipFor(p,k))}" data-info-path="${k}" role="button" tabindex="0"><b>${meta.name}</b>${lbl} ${prog}</span>`; };
   const affPills = ['w','g','v'].map(affEntry).filter(s=>s).join('');
-  // Each button TOGGLES its own view (tap again to close). The active view is highlighted so the strip
-  // doubles as the tab bar — no in-panel tabs needed.
+  // Expanded? localStorage gate so the player's preference sticks across screens and runs.
+  let hudExpanded=false; try{ hudExpanded = localStorage.getItem('crypt_hud_expanded')==='1'; }catch(e){}
+  const expandIcon = hudExpanded ? '&#9650;' : '&#9660;';
+  const expandTitle = hudExpanded ? 'Hide secondary stats' : 'Show secondary stats (DEF / DODGE / CRIT / MP / LS / paths)';
+  // PRIMARY row — only the four numbers a player makes turn-to-turn decisions on.
+  const primary = `<span class="ps-pri">ATK <b>${p.atk+p.weapon.dmg}</b></span> <span class="ps-sep">&middot;</span> <span class="amber" title="Gold — spend at merchants">${p.gold}g</span> <span class="ps-sep">&middot;</span> <span class="teal" title="Soul Essence — spent at the Forge">${p.essence} ${ESS}</span>`;
+  // SECONDARY row — only rendered when expanded. The numbers are still ONE TAP away.
+  const secondaryParts=[];
+  secondaryParts.push(`DEF <b>${p.def}</b>`);
+  secondaryParts.push(`DODGE <b>${ed}%</b>`);
+  secondaryParts.push(`CRIT <b>${ec}%</b>`);
+  if(p.maxMana) secondaryParts.push(`MP <b>${p.mana}/${p.maxMana}</b>`);
+  if(p.lifesteal) secondaryParts.push(`LS <b>${p.lifesteal}%</b>`);
+  if(p.relics.length) secondaryParts.push(`<span class="purple">&#9670;${p.relics.length}</span>`);
+  const secondary = hudExpanded
+    ? `<div class="pstrip-secondary"><span class="ps-sub">${secondaryParts.join(' <span class="ps-sep">&middot;</span> ')}</span>${affPills?' <span class="ps-sep">&middot;</span> '+affPills:''}</div>`
+    : '';
   const onInv=G.screen==='inventory'; const cv=G._invView||'gear';
   const act=v=>onInv&&cv===v?' on':'';
   const invBtns = `<div class="hud-actions">
@@ -7496,9 +7524,7 @@ function playerBar(p,full){
     <button class="hud-btn hud-saga${act('saga')}" onclick="openInventory('saga')" title="Bestiary &amp; your Saga"><span>&#128220;</span> SAGA</button>
     <button class="hud-btn hud-help" onclick="showGlossary()" title="Glossary &mdash; learn every system">?</button>
   </div>`;
-  // Potion pips — Slay-the-Spire-style explicit slot view.  Show up to 5 pips;
-  // anything past that condenses to "+N".  Filled = available, empty = consumed
-  // (visualises max-potions-this-run progression from relics/events).
+  // Potion pips
   const potShown = Math.max(p.potions||0, 1);
   const potCap = Math.min(5, Math.max(3, potShown));
   let potPips = '';
@@ -7512,11 +7538,17 @@ function playerBar(p,full){
       <div class="track"><div class="fill hp" style="width:${clamp(p.hp/p.maxHp*100,0,100)}%"></div></div>
       <div class="track xpline"><div class="fill mp" style="width:${mpPct}%"></div></div></div>
     <div class="pstrip-row">
-      <div class="stats pstats"><span class="ps-pri">ATK <b>${p.atk+p.weapon.dmg}</b> <span class="ps-sep">&middot;</span> DEF <b>${p.def}</b></span> <span class="ps-sep">&middot;</span> <span class="ps-sub">DODGE <b>${ed}%</b> <span class="ps-sep">&middot;</span> CRIT <b>${ec}%</b>${p.maxMana?' <span class="ps-sep">&middot;</span> MP <b>'+p.mana+'/'+p.maxMana+'</b>':''}${p.lifesteal?' <span class="ps-sep">&middot;</span> LS <b>'+p.lifesteal+'%</b>':''}</span><span class="ps-cur"><span class="amber" title="Gold — spend at merchants">${p.gold}g</span> <span class="ps-sep">&middot;</span> <span class="teal" title="Soul Essence — spent at the Forge">${p.essence} ${ESS}</span>${p.relics.length?` <span class="ps-sep">&middot;</span> <span class="purple" title="${p.relics.length} relic${p.relics.length===1?'':'s'} carried">&#9670;${p.relics.length}</span>`:''}</span>${affPills?' <span class="ps-sep">&middot;</span> '+affPills:''}</div>
+      <div class="stats pstats">${primary} <button class="hud-expand" onclick="toggleHud()" title="${expandTitle}" aria-label="Toggle secondary stats">${expandIcon}</button></div>
       <div class="pot-row" title="Potions ready (heal ~30% HP each)">${potPips}</div>
       ${invBtns}
     </div>
+    ${secondary}
   </div>`;
+}
+function toggleHud(){
+  let cur=false; try{ cur = localStorage.getItem('crypt_hud_expanded')==='1'; }catch(e){}
+  try{ localStorage.setItem('crypt_hud_expanded', cur?'0':'1'); }catch(e){}
+  render();
 }
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
