@@ -14,6 +14,11 @@ A single-file 8-bit text roguelike, **Crypt of the Champion**, deployed via GitH
 # Syntax-check the game script (extract <script> and run it in a stubbed env)
 node -e "const fs=require('fs');const html=fs.readFileSync('index.html','utf8');const m=html.match(/<script>([\s\S]*?)<\/script>/);const src=m[1].replace(/\"use strict\";/,'');global.localStorage={_:{},getItem(k){return this._[k]||null;},setItem(k,v){this._[k]=String(v);}};global.window={};const fakeEl={innerHTML:'',classList:{toggle:()=>{},add:()=>{},remove:()=>{}},textContent:'',offsetWidth:0};global.document={getElementById:()=>fakeEl,querySelector:()=>fakeEl,querySelectorAll:()=>[],addEventListener:()=>{},removeEventListener:()=>{}};global.setTimeout=()=>0;global.clearTimeout=()=>{};eval('(function(){'+src+'})();');console.log('OK');"
 
+# Micro-tests — targeted assertions on individual mechanic contracts (hpRound, formatMech,
+# pity timers, refcounted flags, status-effect re-apply, affinity tiers, boss scaling, ...).
+# Run from the repo root. Exit 0 = all pass. Run after ANY mechanics change.
+node test/micro.js
+
 # Local preview (any static server works; pick one):
 python -m http.server 8000      # then open http://localhost:8000
 # or:  npx serve .
@@ -22,7 +27,9 @@ python -m http.server 8000      # then open http://localhost:8000
 git push origin main
 ```
 
-There is no test framework, lint, or build. "Tests" historically were ad-hoc Node sim harnesses (e.g. `/tmp/v4.js`) that stubbed `document`/`setTimeout`, evaluated the script, and auto-played 300 runs/class to measure win rates (target was Mage 61% / Warrior 75% / Ranger 76% pre-difficulty-pass; current is harder). The stub-and-eval pattern shown above is the supported way to write new harnesses — match it so AudioContext absence and `localStorage`/`document` stubs work.
+There is no test framework, lint, or build. Two kinds of tests exist, both plain-Node stub-and-eval scripts:
+- **`test/micro.js`** (committed) — fast contract assertions per mechanic. Add a micro-test whenever you add or change a mechanic's contract.
+- **Balance sims** (ad-hoc, `/tmp/bal_sim.js` style) — a competent bot plays ~1200 full runs and reports throne-reach % per class/strategy/omen. Target ~45-60% overall; mage/warrior/ranger should sit within ~10pp of each other. The stub-and-eval pattern shown above is the supported way to write new harnesses — match it so AudioContext absence and `localStorage`/`document` stubs work.
 
 ## Architecture
 
