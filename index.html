@@ -260,8 +260,14 @@
      events keep the default look. */
   .anchor-mark{display:inline-block;font-size:8px;letter-spacing:2px;color:var(--teal);
     border:1px solid var(--teal);padding:2px 7px;margin:0 0 6px;border-radius:1px;
-    box-shadow:0 0 12px rgba(76,224,208,.25);text-shadow:0 0 6px rgba(76,224,208,.5)}
-  .panel.anchor-event{border-color:#2a8a82;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 26px rgba(76,224,208,.05)}
+    box-shadow:0 0 12px rgba(76,224,208,.25);text-shadow:0 0 6px rgba(76,224,208,.5);
+    animation:anchorPulse 4s ease-in-out infinite}
+  @keyframes anchorPulse{0%,100%{box-shadow:0 0 12px rgba(76,224,208,.25)}50%{box-shadow:0 0 22px rgba(76,224,208,.55)}}
+  /* Anchor panels — recurring NPCs sit inside a visibly different frame than one-shot
+     events, with a soft teal aura that says "this is a person, not a room." */
+  .panel.anchor-event{border-color:#2a8a82;box-shadow:0 0 0 3px #000,6px 6px 0 rgba(0,0,0,.5),inset 0 0 26px rgba(76,224,208,.08),0 0 28px rgba(76,224,208,.18)}
+  .panel.anchor-event h3{text-shadow:0 0 10px rgba(76,224,208,.5)}
+  .panel.anchor-event .ev-sprite{filter:drop-shadow(0 0 8px rgba(76,224,208,.35))}
   /* GENERIC EVENT ART — framed as a "field sketch" so the ASCII reads as a hurried drawing in a
      traveler's journal, not as a debug placeholder. Smaller, dimmer, parchment-bordered. */
   .ev-ascii{margin:8px auto 10px;padding:10px 12px;font-size:9px;line-height:1.35;
@@ -4608,15 +4614,36 @@ function makeRoom(depth){
   if(r<99) return {type:'fountain',peek:peek('fountain')};
   return {type:'empty',peek:peek('empty')};
 }
+// Anchor NPCs — the recurring characters the cross-run memory system is built around.
+// Audit found these were met in 0.2-1.1% of runs each because they competed in a uniform
+// pool with 50 one-shots. The scheduler below biases pickEvent toward them so the system
+// actually surfaces. (Watcher is gated by Devour path length; its `available` check still
+// applies.)
+const ANCHOR_NPC_IDS = ['lantern','cardinal','cartog','wsmith','scholar','watcher','prisoner'];
 function pickEvent(){
   const p=G.player;
   const gateOk=e=>!e.available || e.available(p);
+  const z=G.abyss?3:zoneOf(G.depth);
+  // ----- ANCHOR SCHEDULER -----
+  // Step 1: if this zone has unmet anchors (lifetime, not just this run), bias HARD
+  // toward one of them — the player should meet recurring faces before they meet
+  // every one-shot.  Step 2: once met, anchors enter a 25%/event recurrence so the
+  // "they remember you" promise actually fires again.  Step 3 (fallthrough): the
+  // original uniform pick, preserved for one-shot variety.
+  const zoneAnchors = EVENTS.filter(e=>e.npc && ANCHOR_NPC_IDS.includes(e.npc) && e.zone===z && gateOk(e) && !G.seenEvents.includes(e.id));
+  const unmetZoneAnchors = zoneAnchors.filter(e=>npcState(e.npc).met===0);
+  if(unmetZoneAnchors.length && chance(70)){
+    const e=pick(unmetZoneAnchors); G.seenEvents.push(e.id); return e;
+  }
+  if(zoneAnchors.length && chance(25)){
+    const e=pick(zoneAnchors); G.seenEvents.push(e.id); return e;
+  }
+  // ----- existing uniform pick (one-shots + anchors mixed) -----
   let avail=EVENTS.filter(e=>!G.seenEvents.includes(e.id) && gateOk(e));
   if(!avail.length){ G.seenEvents=[]; avail=EVENTS.filter(gateOk); }
   if(!avail.length) avail=EVENTS;
   // Mystery zone-bias: ~78% chance the event is one tagged for THIS zone (the NPC drip).
   // The mystery layer needs to actually surface — these encounters carry the story.
-  const z=G.abyss?3:zoneOf(G.depth);
   const zoneMatch=avail.filter(e=>e.zone===z);
   if(zoneMatch.length && chance(78)) avail=zoneMatch;
   const e=pick(avail); G.seenEvents.push(e.id); return e;
@@ -5580,12 +5607,35 @@ function drinkFountain(){ const p=G.player,roll=rnd(100); const cl=miasmaActive(
   else { p.maxHp+=12; heal(p,12); p.atk+=2; if(cl)cleanse(20); SFX.play('upgrade'); proceed('A surge of vigor! +12 max HP, +2 ATK.'+(cl?' (-20 miasma)':'')); } }
 
 /* ---------- EVENTS ---------- */
+// FIRST-MEETING DRAMATIZATION — when the player encounters an anchor NPC for the very
+// first time across ALL runs (npcState.met went 0 -> 1), the game pauses and runs a
+// full-stage reveal. The cross-run memory system finally lands as a moment, not a card.
+const ANCHOR_FIRST_MEETING = {
+  lantern:  { kicker:'A FACE YOU WILL SEE AGAIN', title:'THE LANTERN KEEPER', body:'A keeper of small green lights. He keeps a tally of who comes back, and who does not.' },
+  cardinal: { kicker:'A FACE YOU WILL SEE AGAIN', title:'THE CARDINAL WITHOUT A FACE', body:'He serves a god you have not been introduced to yet. He thinks you might be acceptable.' },
+  cartog:   { kicker:'A FACE YOU WILL SEE AGAIN', title:'THE LAST CARTOGRAPHER', body:'He has been mapping this place for longer than he can remember. He has started mapping you, too.' },
+  wsmith:   { kicker:'A FACE YOU WILL SEE AGAIN', title:'THE WEEPING SMITH', body:'He breaks champions\' swords across his knee, with the steady patience of a chore. There is always more.' },
+  scholar:  { kicker:'A FACE YOU WILL SEE AGAIN', title:'THE FROZEN SCHOLAR', body:'She writes by lamplight that does not warm. She has read about you in a book she has not yet finished.' },
+  watcher:  { kicker:'A FACE YOU WILL SEE AGAIN', title:'THE WATCHFUL PRISONER', body:'A figure behind glass at the edge of the deep. He has been waiting a long time for someone like you to step through.' },
+  prisoner: { kicker:'A FACE YOU WILL SEE AGAIN', title:'THE PRISONER', body:'They have been here since before the crypt remembered itself. They will be here after.' },
+};
 function renderEvent(){
   const r=G.room,ev=r.ev,p=G.player;
   // First reveal of an anchor NPC this room — bump their persistent meet counter once.
   // Doors get re-rendered; without this guard the counter would tick on every render call.
   // The counter MUST tick before any text is computed so the intro reflects this meeting.
-  if(!r._npcMet && ev.npc){ npcMeet(ev.npc); r._npcMet=1; }
+  if(!r._npcMet && ev.npc){
+    const wasFirstEver = npcState(ev.npc).met===0;
+    npcMeet(ev.npc); r._npcMet=1;
+    // First time across ALL runs — stage-reveal so the meeting carries the weight of "this
+    // is a person, not a room." Subsequent meetings flow straight into the existing card.
+    if(wasFirstEver){
+      const m = ANCHOR_FIRST_MEETING[ev.npc];
+      if(m){
+        try{ stageReveal({kicker:m.kicker, title:m.title, body:m.body, color:'teal', duration:3000, sfx:'relic'}); }catch(e){}
+      }
+    }
+  }
   // Anchor NPCs put their intro text in a function so it reads current persistence; ordinary
   // events keep using a plain string. Resolve either form here.
   const evText = (typeof ev.text==='function') ? ev.text(p) : ev.text;
@@ -5598,7 +5648,15 @@ function renderEvent(){
   // Anchor NPCs (lantern keeper / cardinal / scholar / smith / prisoner / cartographer) get a teal
   // sigil + a faintly haloed panel so the player can FEEL "this is someone the crypt has been
   // keeping" without being told. Generic one-shot events keep the default look.
-  const anchorMark = ev.npc ? `<div class="anchor-mark center" style="display:block;width:fit-content;margin:0 auto 6px">&#10070; RECURRING</div>` : '';
+  // Anchor mark — now actually carries memory. First meeting in a run reads "RECURRING";
+  // subsequent meetings show how many TIMES they've met before, surfacing the persistence
+  // the system has always tracked but never displayed. "&#10070; MET 4 TIMES BEFORE" is
+  // worth more to the player than a generic RECURRING badge.
+  const anchorMark = (()=>{ if(!ev.npc) return '';
+    const s=npcState(ev.npc); const m=Math.max(0,(s.met||1)-1);   // met was just bumped to >=1 above
+    const label = m===0 ? 'RECURRING' : m===1 ? 'MET ONCE BEFORE' : `MET ${m} TIMES BEFORE`;
+    return `<div class="anchor-mark center" style="display:block;width:fit-content;margin:0 auto 6px">&#10070; ${label}</div>`;
+  })();
   const anchorCls  = ev.npc ? ' anchor-event' : '';
   if(r.outcome){
     app.innerHTML=`<div class="floortag">${depthLabel()}</div>${omenTag()}${worldBar()}${playerBar(p)}
